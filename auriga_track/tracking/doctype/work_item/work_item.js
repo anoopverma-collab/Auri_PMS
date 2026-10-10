@@ -100,6 +100,7 @@ function wi_log_time(frm) {
 			{ fieldname: "hours", label: __("Hours"), fieldtype: "Float", reqd: 1 },
 			{ fieldname: "activity_type", label: __("Activity"), fieldtype: "Link", options: "Activity Type", reqd: 1 },
 			{ fieldname: "date", label: __("Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1 },
+			{ fieldname: "is_billable", label: __("Billable"), fieldtype: "Check", default: 1 },
 			{ fieldname: "comment", label: __("Comment"), fieldtype: "Small Text" },
 		],
 		(values) => {

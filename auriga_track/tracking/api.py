@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, getdate, today
+from frappe.utils import add_days, cint, flt, getdate, today
 
 from auriga_track.permissions import can_see_project
 from auriga_track.tracking.utils import (
@@ -145,7 +145,12 @@ def project_create_query(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 def log_time(
-	work_item: str, hours: float, activity_type: str, date: str | None = None, comment: str | None = None
+	work_item: str,
+	hours: float,
+	activity_type: str,
+	date: str | None = None,
+	comment: str | None = None,
+	is_billable: int | str = 1,
 ) -> str:
 	"""Create a Time Entry for the current user on ``work_item`` and return its name."""
 	entry = frappe.get_doc(
@@ -157,6 +162,7 @@ def log_time(
 			"activity_type": activity_type,
 			"date": getdate(date or today()),
 			"comment": comment,
+			"is_billable": cint(is_billable),
 		}
 	)
 	entry.insert()
@@ -209,3 +215,177 @@ def move_to_sprint(work_items: str | list, sprint: str | None = None) -> dict:
 			del frappe.local.message_log[message_count:]  # reported in the result, not as popups
 			failed.append({"name": name, "error": frappe.utils.strip_html(str(exc))})
 	return {"moved": moved, "failed": failed}
+
+
+# --------------------------------------------------------------------------- Project Hub
+@frappe.whitelist()
+def get_hub_projects() -> list[dict]:
+	"""Projects the user can see, with the numbers shown on the Project Hub cards."""
+	projects = frappe.get_list(
+		"Project",
+		fields=["name", "project_name", "tracker_identifier", "status", "is_public"],
+		order_by="modified desc",
+		limit_page_length=0,
+	)
+	if not projects:
+		return []
+	names = [p.name for p in projects]
+	today_ = getdate(today())
+	stats = {n: {"open": 0, "overdue": 0, "mine": 0, "total": 0} for n in names}
+	for item in frappe.get_list(
+		"Work Item",
+		filters={"project": ["in", names]},
+		fields=["project", "is_closed", "due_date", "assigned_to"],
+		limit_page_length=0,
+	):
+		row = stats[item.project]
+		row["total"] += 1
+		if not cint(item.is_closed):
+			row["open"] += 1
+			row["overdue"] += int(bool(item.due_date and getdate(item.due_date) < today_))
+			row["mine"] += int(item.assigned_to == frappe.session.user)
+	sprints = {
+		s.project: s
+		for s in frappe.get_list(
+			"Sprint",
+			filters={"project": ["in", names], "status": "Active"},
+			fields=["name", "project", "percent_complete", "end_date"],
+			limit_page_length=0,
+		)
+	}
+	members: dict[str, int] = {}
+	for row in frappe.get_all(
+		"Project Member", filters={"parent": ["in", names], "parenttype": "Project"}, fields=["parent"]
+	):
+		members[row.parent] = members.get(row.parent, 0) + 1
+	for project in projects:
+		project.update(stats[project.name])
+		project["members"] = members.get(project.name, 0)
+		project["active_sprint"] = sprints.get(project.name)
+	return projects
+
+
+@frappe.whitelist()
+def get_project_hub(project: str) -> dict:
+	"""Everything the Project Hub shows for one project (visibility rules apply)."""
+	from auriga_track.permissions import can_see_project
+	from auriga_track.tracking.utils import get_burndown
+
+	if not frappe.db.exists("Project", project) or not can_see_project(project):
+		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	info = frappe.db.get_value(
+		"Project",
+		project,
+		["name", "project_name", "tracker_identifier", "status", "is_public"],
+		as_dict=True,
+	)
+	caps = get_capabilities(project)
+	user, today_ = frappe.session.user, getdate(today())
+	items = frappe.get_list(
+		"Work Item",
+		filters={"project": project},
+		fields=[
+			"name",
+			"subject",
+			"status",
+			"priority",
+			"tracker",
+			"assigned_to",
+			"due_date",
+			"is_closed",
+			"modified",
+			"sprint",
+			"done_percent",
+		],
+		order_by="modified desc",
+		limit_page_length=0,
+	)
+	open_items = [i for i in items if not cint(i.is_closed)]
+	week_start = add_days(today_, -today_.weekday())
+	hours = frappe.get_list(
+		"Time Entry", filters={"project": project}, fields=["hours", "date", "user"], limit_page_length=0
+	)
+	numbers = {
+		"total": len(items),
+		"open": len(open_items),
+		"closed": len(items) - len(open_items),
+		"overdue": sum(1 for i in open_items if i.due_date and getdate(i.due_date) < today_),
+		"unassigned": sum(1 for i in open_items if not i.assigned_to),
+		"mine": sum(1 for i in open_items if i.assigned_to == user),
+		"hours_total": flt(sum(flt(h.hours) for h in hours), 2),
+		"hours_week": flt(sum(flt(h.hours) for h in hours if getdate(h.date) >= week_start), 2),
+		"hours_mine": flt(sum(flt(h.hours) for h in hours if h.user == user), 2),
+	}
+
+	def count_by(field: str) -> list[dict]:
+		counts: dict[str, int] = {}
+		for item in open_items:
+			counts[item.get(field) or _("(none)")] = counts.get(item.get(field) or _("(none)"), 0) + 1
+		return [{"label": k, "count": v} for k, v in sorted(counts.items(), key=lambda kv: -kv[1])]
+
+	sprints = frappe.get_list(
+		"Sprint",
+		filters={"project": project},
+		fields=[
+			"name",
+			"sprint_name",
+			"status",
+			"start_date",
+			"end_date",
+			"percent_complete",
+			"total_items",
+			"closed_items",
+			"goal",
+		],
+		order_by="start_date desc",
+		limit_page_length=0,
+	)
+	active = next((s for s in sprints if s.status == "Active"), None)
+	if active:
+		burndown = get_burndown(active.name)
+		active["burndown"] = {
+			"unit": burndown["unit"],
+			"rows": [
+				{"date": str(r["date"]), "ideal": r["ideal"], "actual": r["actual"]}
+				for r in burndown["rows"]
+				if r["actual"] is not None
+			],
+		}
+	releases = frappe.get_list(
+		"Release",
+		filters={"project": project},
+		fields=["name", "release_name", "status", "due_date", "percent_complete", "total_items"],
+		order_by="due_date asc",
+		limit_page_length=0,
+	)
+	members = frappe.get_all(
+		"Project Member",
+		filters={"parent": project, "parenttype": "Project"},
+		fields=["user", "full_name", "project_role"],
+		order_by="idx asc",
+	)
+	return frappe._dict(
+		project=info,
+		capabilities=caps,
+		numbers=numbers,
+		by_status=count_by("status"),
+		by_tracker=count_by("tracker"),
+		by_priority=count_by("priority"),
+		active_sprint=active,
+		sprints=sprints,
+		releases=releases,
+		members=members,
+		recent_items=items[:10],
+		backlog_items=sum(1 for i in open_items if not i.sprint),
+	)
+
+
+@frappe.whitelist()
+def get_project_health(project: str, period: str = "3m") -> dict:
+	"""Project Health dashboard data for one project (visibility rules apply)."""
+	from auriga_track.permissions import can_see_project
+	from auriga_track.tracking.health import get_health
+
+	if not frappe.db.exists("Project", project) or not can_see_project(project):
+		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	return get_health(project, period)

@@ -45,6 +45,8 @@ decides what they can do.
 
 ## 10-minute quick start
 
+Start from the **Project Hub** (Tracker workspace > Project Hub, or the *Project Hub* button on a Project): it lists the projects you are a member of (plus public ones). Open a project to see its tickets, overdue and unassigned counts, the active sprint with burndown, releases, team and time, and to create tickets, sprints and releases already scoped to that project. Views (list, board, Gantt, calendar) and reports open filtered to the project. The **Health Dashboard** button shows a client-ready health status (on track / at risk / off track with reasons), open vs closed and created vs resolved tickets, backlog trend, sprint velocity, ticket aging and spent vs billable hours (mark time as *Billable* on the Time Entry or in *Log Time*); the *Range* menu switches between 1 month, 3 months, 6 months and Overall.
+
 1. Give yourself the *Tracker Manager* role. Open the **Tracker** workspace.
 2. Open a Project (or create one), go to the **Tracker** tab, set an **Identifier** (e.g. `WEB`), add
    members with a project role (Manager / Developer / Reporter) and save. Members who lack a tracker

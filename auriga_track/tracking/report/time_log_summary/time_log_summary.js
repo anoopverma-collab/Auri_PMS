@@ -7,6 +7,7 @@ frappe.query_reports["Time Log Summary"] = {
 		{fieldname: "to_date", label: __("To Date"), fieldtype: "Date", reqd: 1, default: frappe.datetime.get_today()},
 		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
 		{fieldname: "user", label: __("User"), fieldtype: "Link", options: "User"},
+		{fieldname: "billable", label: __("Billable"), fieldtype: "Select", options: ["", "Billable", "Non-billable"]},
 		{fieldname: "group_by", label: __("Group By"), fieldtype: "Select", options: ["User", "Project", "Activity", "Work Item"], default: "User"},
 	],
 };

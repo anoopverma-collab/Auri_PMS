@@ -124,8 +124,8 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     that isolation, which is why emails are queued per recipient. Tests also cope with existing data on the site.
 38. **Frappe skips Version rows in tests** unless `ignore_version=False`; the test helper saves with it so the
     history checks (UAT-04, T-076) are real.
-39. **92 spec tests + `test_e2e.py` + 40 additional tests (22 for sprints)** (UI API, global search, performance and indexes, lifecycle,
-    the missing outgoing mail account, ERPNext permissions): 133 in total.
+39. **92 spec tests + `test_e2e.py` + 64 additional tests (22 for sprints, 6 for the Project Hub, 18 for project health)** (UI API, global search, performance and indexes, lifecycle,
+    the missing outgoing mail account, ERPNext permissions): 157 in total.
 40. **UAT-01..08** are scripted in `test_e2e.py`. UAT-09..14 are covered by automated tests (T-050/T-064, T-119,
     T-084, T-096/T-097, T-120..T-125) and the Desk was exercised with a headless browser for the workspace, list,
     quick entry, form buttons, Log Time, Close/Reopen, Kanban, Gantt, Calendar, the four reports, the Project Tracker
@@ -150,6 +150,45 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     options.
 48. **Standard files:** `delete_doc` in developer mode deletes a standard document's JSON file, so uninstall removes the
     Workspace, Workspace Sidebar and Desktop Icon rows with `frappe.db.delete` only.
+
+## Project Hub
+
+49. **Project-first entry point:** a standard Desk Page (`project-hub`) lists the projects the user can see and opens a
+    per-project page. Data comes from two whitelisted calls (`get_hub_projects`, `get_project_hub`) that use
+    `frappe.get_list`, so every visibility rule applies; the page also receives the user's capabilities and only offers
+    the actions they may perform. Projects without an identifier are listed with a warning and open the Project form.
+50. **Scoping:** list, Gantt, calendar, Kanban and report shortcuts pass `project` as a filter (Kanban/Gantt/calendar through
+    the URL query, because those views ignore route options). The header of Frappe v16 pages shows breadcrumbs only, so the
+    project name is rendered in the page body.
+
+51. **Hub themes:** eight themes in three families, each with a light and a dark palette that follows Frappe's own
+    light/dark switch: *Glass + Soft*, *Soft UI (Neumorphism)*, *Minimal Clean*; flat (*Solid colour*, *Tinted*, *Outline*:
+    no shadows or gradients); and bento (*Pastel*, *Vivid*: large rounded blocks, a mosaic tile layout with one big tile,
+    pastel panels). The choice is stored in the browser (`localStorage`), per user and device; a stored name that no longer
+    exists falls back to Glass + Soft. Themes apply to the Project Hub only; no global stylesheet is loaded, so every other
+    Desk screen keeps Frappe's stock look.
+
+## Project Health dashboard and billable time
+
+52. **Billable flag:** Time Entry gets `is_billable` (default on, so existing entries stay billable). It feeds the health
+    dashboard, the *Time Log Summary* report (filter and two extra columns) and the Log Time dialog. No rates or invoicing
+    are involved; billing from time stays out of scope.
+53. **Definitions:** *created* = ticket creation date, *resolved* = date of `closed_on` of tickets that are currently closed
+    (a reopened ticket stops counting). *Open backlog* at a period end = tickets created by then and not yet closed.
+    *Resolution time* = creation to `closed_on`. *Burn* = spent hours / sum of ticket estimates. **Range:** 1 month (5 weekly
+    buckets), 3 months (13), 6 months (26) or Overall (from the project's first ticket, time entry or sprint). Buckets are
+    weeks starting on Monday; Overall switches to calendar months once the project is older than 26 weeks (at most 36
+    months). The range only changes the charted series; open/closed totals, hours, status and velocity always describe the
+    whole project. The "backlog grew" rule always looks at the last 28 days. The choice is stored in the browser.
+54. **Health status** (traffic light plus a 0-100 score, 25 points per red reason and 10 per amber): overdue share of open
+    tickets (>10% amber, >25% red); active sprint behind the ideal burndown (>10% amber, >25% red); spent hours over the
+    estimate (red) or effort used 25 points ahead of work completed (amber); an open release past due and under 80% (red) or
+    close to / just past due (amber); more than 1.5x as many tickets created as resolved over the last 4 weeks (amber).
+    The reasons are listed next to the status so a client can see why.
+55. *(removed)* A client-view toggle and a print button were tried and removed at the owner's request; the people-level
+    panels (tickets and hours by person) always show.
+56. **Sample data:** the SJDM sample tickets were back-dated (creation and closing dates spread over the project timeline) and
+    meetings/support time marked non-billable so the dashboard has a history to show.
 
 ## Uninstall
 

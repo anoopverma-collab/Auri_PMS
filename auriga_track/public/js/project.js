@@ -11,7 +11,10 @@ frappe.ui.form.on("Project", {
 	},
 	refresh(frm) {
 		// The identifier is fixed once saved (set-only-once rule R-02).
-		if (frm.doc.tracker_identifier && !frm.is_new()) frm.set_df_property("tracker_identifier", "read_only", 1);
+		if (frm.doc.tracker_identifier && !frm.is_new()) {
+			frm.set_df_property("tracker_identifier", "read_only", 1);
+			frm.add_custom_button(__("Project Hub"), () => frappe.set_route("project-hub", frm.doc.name));
+		}
 	},
 	tracker_identifier(frm) {
 		if (frm.doc.tracker_identifier) {

@@ -32,6 +32,13 @@ def get_columns(group_by: str) -> list[dict]:
 		},
 		{"fieldname": "hours", "label": _("Hours"), "fieldtype": "Float", "width": 110},
 		{"fieldname": "entries", "label": _("Entries"), "fieldtype": "Int", "width": 100},
+		{"fieldname": "billable_hours", "label": _("Billable Hours"), "fieldtype": "Float", "width": 130},
+		{
+			"fieldname": "non_billable_hours",
+			"label": _("Non-billable Hours"),
+			"fieldtype": "Float",
+			"width": 150,
+		},
 	]
 	if group_by == "Work Item":
 		columns.append(
@@ -47,14 +54,26 @@ def get_data(filters: frappe._dict, group_by: str) -> list[dict]:
 	for key in ("project", "user"):
 		if filters.get(key):
 			entry_filters.append([key, "=", filters[key]])
+	if filters.get("billable"):
+		entry_filters.append(["is_billable", "=", 1 if filters.billable == "Billable" else 0])
 	entries = frappe.get_list(
-		"Time Entry", filters=entry_filters, fields=[field, "hours"], limit_page_length=0
+		"Time Entry", filters=entry_filters, fields=[field, "hours", "is_billable"], limit_page_length=0
 	)
 	groups: dict[str, dict] = {}
 	for entry in entries:
 		key = entry.get(field) or _("(none)")
-		row = groups.setdefault(key, {"group": entry.get(field), "hours": 0.0, "entries": 0})
+		row = groups.setdefault(
+			key,
+			{
+				"group": entry.get(field),
+				"hours": 0.0,
+				"entries": 0,
+				"billable_hours": 0.0,
+				"non_billable_hours": 0.0,
+			},
+		)
 		row["hours"] += flt(entry.hours)
+		row["billable_hours" if entry.is_billable else "non_billable_hours"] += flt(entry.hours)
 		row["entries"] += 1
 	rows = sorted(groups.values(), key=lambda r: -r["hours"])
 	if group_by == "Work Item" and rows:

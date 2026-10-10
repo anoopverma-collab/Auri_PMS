@@ -14,7 +14,7 @@
    "label": "Hours by Project, last 30 days"
   }
  ],
- "content": "[{\"id\": \"trk01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My work</b></span>\", \"col\": 12}}, {\"id\": \"trk02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Overdue Items\", \"col\": 3}}, {\"id\": \"trk04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Opened This Week\", \"col\": 3}}, {\"id\": \"trk05\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Hours This Week\", \"col\": 3}}, {\"id\": \"trk06\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Status\", \"col\": 6}}, {\"id\": \"trk07\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Priority\", \"col\": 6}}, {\"id\": \"trk08\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Hours by Project, last 30 days\", \"col\": 12}}, {\"id\": \"trk09\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"trk10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Work Item\", \"col\": 3}}, {\"id\": \"trk11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kanban\", \"col\": 3}}, {\"id\": \"trk40\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sprints\", \"col\": 3}}, {\"id\": \"trk13\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Gantt\", \"col\": 3}}, {\"id\": \"trk14\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Log Time\", \"col\": 3}}, {\"id\": \"trk15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Releases\", \"col\": 3}}, {\"id\": \"trk16\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projects\", \"col\": 3}}, {\"id\": \"trk30\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"trk41\", \"type\": \"card\", \"data\": {\"card_name\": \"Planning\", \"col\": 4}}, {\"id\": \"trk31\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"trk32\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"trk01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My work</b></span>\", \"col\": 12}}, {\"id\": \"trk02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Overdue Items\", \"col\": 3}}, {\"id\": \"trk04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Opened This Week\", \"col\": 3}}, {\"id\": \"trk05\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Hours This Week\", \"col\": 3}}, {\"id\": \"trk06\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Status\", \"col\": 6}}, {\"id\": \"trk07\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Priority\", \"col\": 6}}, {\"id\": \"trk08\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Hours by Project, last 30 days\", \"col\": 12}}, {\"id\": \"trk09\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"trk50\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Project Hub\", \"col\": 3}}, {\"id\": \"trk10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Work Item\", \"col\": 3}}, {\"id\": \"trk11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kanban\", \"col\": 3}}, {\"id\": \"trk40\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sprints\", \"col\": 3}}, {\"id\": \"trk13\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Gantt\", \"col\": 3}}, {\"id\": \"trk14\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Log Time\", \"col\": 3}}, {\"id\": \"trk15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Releases\", \"col\": 3}}, {\"id\": \"trk16\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projects\", \"col\": 3}}, {\"id\": \"trk30\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"trk41\", \"type\": \"card\", \"data\": {\"card_name\": \"Planning\", \"col\": 4}}, {\"id\": \"trk31\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"trk32\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-10-10 10:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -200,7 +200,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-10 18:36:47.000000",
+ "modified": "2026-10-10 18:51:47.000000",
  "modified_by": "Administrator",
  "module": "Tracking",
  "name": "Tracker",
@@ -237,6 +237,12 @@
  ],
  "sequence_id": 1,
  "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Project Hub",
+   "link_to": "project-hub",
+   "type": "Page"
+  },
   {
    "color": "Grey",
    "doc_view": "New",

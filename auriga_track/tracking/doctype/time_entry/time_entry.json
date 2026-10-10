@@ -13,6 +13,7 @@
 		"date",
 		"hours",
 		"activity_type",
+		"is_billable",
 		"comment",
 		"release"
 	],
@@ -75,6 +76,15 @@
 			"label": "Activity",
 			"options": "Activity Type",
 			"reqd": 1
+		},
+		{
+			"default": "1",
+			"description": "Counts towards billable hours in the project health dashboard",
+			"fieldname": "is_billable",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Billable"
 		},
 		{
 			"fieldname": "comment",
