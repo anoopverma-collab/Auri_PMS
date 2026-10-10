@@ -161,12 +161,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     the URL query, because those views ignore route options). The header of Frappe v16 pages shows breadcrumbs only, so the
     project name is rendered in the page body.
 
-51. **Hub themes:** eight themes in three families, each with a light and a dark palette that follows Frappe's own
-    light/dark switch: *Glass + Soft*, *Soft UI (Neumorphism)*, *Minimal Clean*; flat (*Solid colour*, *Tinted*, *Outline*:
-    no shadows or gradients); and bento (*Pastel*, *Vivid*: large rounded blocks, a mosaic tile layout with one big tile,
-    pastel panels). The choice is stored in the browser (`localStorage`), per user and device; a stored name that no longer
-    exists falls back to Glass + Soft. Themes apply to the Project Hub only; no global stylesheet is loaded, so every other
-    Desk screen keeps Frappe's stock look.
+51. **Hub themes:** eight themes, each with a light and a dark palette that follows Frappe's own light/dark switch: *Glass + Soft*,
+    *Soft UI (Neumorphism)* and four effect variants of it (*Convex*, *Pressed*, *Glow*, *Pearl*), *Minimal Clean* and *Flat - Solid
+    colour* (no shadows or gradients). The earlier Flat Tinted, Flat Outline and Bento themes were removed. The choice is stored
+    in the browser (`localStorage`), per user and device; a stored name that no longer exists falls back to Glass + Soft. Themes
+    apply to the Project Hub and the dashboards only; no global stylesheet is loaded, so every other Desk screen keeps Frappe's stock look.
 
 ## Project Health dashboard and billable time
 
@@ -227,6 +226,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     profile (Project Hub overview and health, Portfolio, Quality, My Work) separates tickets *with us* from tickets *waiting on
     the client*, with a "Waiting on client" panel listing what is needed and for how long. The **Client Dependencies** script
     report (Project, Assigned To, Waiting since, days, note) is the drill-down; the Waiting on client tiles open it.
+
+65. **Health status switches.** Project has three checkboxes, off by default (tick them to show the verdict): *Show on Project Hub (Health Dashboard)*, *Show on
+    Portfolio* and *Show in Client Status Report*. Off hides only the verdict (level, score, reasons): the Health dashboard drops
+    its banner, the Portfolio row reads "Hidden" (level none, counted under "No data"), and the report/email/PDF omit the status
+    block. Counts, charts and hours are unchanged. The Quality and My Work dashboards have no project health verdict.
 
 ## Uninstall
 

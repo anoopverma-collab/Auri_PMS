@@ -411,11 +411,14 @@ def get_project_hub(project: str) -> dict:
 def get_project_health(project: str, period: str = "3m") -> dict:
 	"""Project Health dashboard data for one project (visibility rules apply)."""
 	from auriga_track.permissions import can_see_project
-	from auriga_track.tracking.health import get_health
+	from auriga_track.tracking.health import get_health, health_visible
 
 	if not frappe.db.exists("Project", project) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
-	return get_health(project, period)
+	data = get_health(project, period)
+	if not health_visible(project, "hub"):
+		data["status"] = None
+	return data
 
 
 # --------------------------------------------------------------------------- dashboards

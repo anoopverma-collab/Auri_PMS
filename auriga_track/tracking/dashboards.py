@@ -88,6 +88,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		items_by[item.project].append(item)
 	for entry in entries:
 		entries_by[entry.project].append(entry)
+	show_status = {
+		p.name: cint(p.show_health_portfolio)
+		for p in frappe.get_all(
+			"Project", filters={"name": ["in", names or [""]]}, fields=["name", "show_health_portfolio"]
+		)
+	}
 	sprints = {
 		s.project: s
 		for s in frappe.get_list(
@@ -117,6 +123,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		):
 			series[key] = [a + b for a, b in zip(series[key], source, strict=True)]
 		reasons = [r for r in status["reasons"] if r["level"] in ("red", "amber")]
+		hidden = not show_status.get(project.name)
+		all_reasons = [] if hidden else [{"level": r["level"], "text": r["text"]} for r in status["reasons"]]
+		if hidden:
+			# the project owner chose not to show the health status here: the numbers stay, the verdict does not
+			status = {"level": "none", "label": _("Hidden"), "score": None}
+			reasons = []
 		activity = [as_date(i.modified) for i in p_items] + [as_date(e.date) for e in p_entries]
 		sprint = sprints.get(project.name)
 		rows.append(
@@ -125,10 +137,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 				"project_name": project.project_name or project.name,
 				"identifier": project.tracker_identifier,
 				"level": status["level"],
+				"health_hidden": hidden,
 				"label": status["label"],
 				"score": status["score"],
 				"headline": reasons[0]["text"] if reasons else "",
 				"reasons": len(reasons),
+				"reason_list": all_reasons,
 				"open": flow["open"],
 				"closed": flow["closed"],
 				"total": flow["total"],
@@ -170,7 +184,8 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		"red": sum(r["level"] == "red" for r in rows),
 		"amber": sum(r["level"] == "amber" for r in rows),
 		"green": sum(r["level"] == "green" for r in rows),
-		"none": sum(r["level"] == "none" for r in rows),
+		"none": sum(r["level"] == "none" and not r["health_hidden"] for r in rows),
+		"hidden": sum(r["health_hidden"] for r in rows),
 		"open": sum(r["open"] for r in rows),
 		"closed": sum(r["closed"] for r in rows),
 		"overdue": sum(r["overdue"] for r in rows),
@@ -636,7 +651,7 @@ def quality_status(
 		add("green", _("No critical or reopened-bug risks detected"))
 	return {
 		"level": level,
-		"label": {"green": _("Healthy"), "amber": _("Needs attention"), "red": _("At risk")}[level],
+		"label": {"green": _("Healthy"), "amber": _("Needs attention"), "red": _("At Risk")}[level],
 		"score": score,
 		"reasons": reasons,
 	}

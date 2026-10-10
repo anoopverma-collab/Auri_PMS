@@ -21,7 +21,7 @@ from frappe.utils import (
 
 from auriga_track.permissions import can_see_project
 from auriga_track.tracking.dashboards import blocked_by_open, full_names
-from auriga_track.tracking.health import as_date, get_health, release_health
+from auriga_track.tracking.health import as_date, get_health, health_visible, release_health
 from auriga_track.tracking.utils import has_capability
 
 MAX_RANGE_DAYS = 366
@@ -153,7 +153,7 @@ def build_report(project: str, from_date, to_date) -> frappe._dict:
 		from_date=start,
 		to_date=end,
 		generated=str(now_datetime().replace(microsecond=0)),
-		status=health.status,
+		status=health.status if health_visible(project, "report") else None,
 		summary=frappe._dict(
 			delivered=len(delivered),
 			created=len(created),
@@ -206,13 +206,13 @@ REPORT_TEMPLATE = """
   <div style="font-size:24px;font-weight:700;margin-top:4px;">{{ r.project.project_name | e }} <span style="font-size:13px;font-weight:600;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 10px;vertical-align:middle;">{{ r.project.tracker_identifier | e }}</span></div>
   <div style="font-size:13px;opacity:.85;margin-top:6px;">{{ frappe.utils.formatdate(r.from_date) }} &ndash; {{ frappe.utils.formatdate(r.to_date) }}</div>
 </td></tr>
-<tr><td style="padding:22px 28px 6px;">
+{% if r.status %}<tr><td style="padding:22px 28px 6px;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e5e7eb;border-left:6px solid {{ colour }};border-radius:8px;"><tr>
     <td style="padding:14px 16px;">
       <div style="font-size:20px;font-weight:700;color:{{ colour }};">{{ r.status.label | e }}{% if r.status.score is not none %} <span style="font-size:13px;color:#6b7280;font-weight:600;">&middot; {{ _("score") }} {{ r.status.score }}/100</span>{% endif %}</div>
       {% for reason in r.status.reasons %}<div style="font-size:13px;margin-top:4px;color:#374151;">&bull; {{ reason.text | e }}</div>{% endfor %}
     </td></tr></table>
-</td></tr>
+</td></tr>{% endif %}
 {% if note %}<tr><td style="padding:14px 28px 0;"><div style="background:#eef2ff;border-radius:8px;padding:12px 16px;font-size:14px;line-height:1.5;">{{ note | e | replace("\\n", "<br>") | safe }}</div></td></tr>{% endif %}
 <tr><td style="padding:18px 28px 0;">
   <table role="presentation" cellpadding="0" cellspacing="6" width="100%"><tr>
@@ -284,7 +284,7 @@ def render_html(report: frappe._dict, note: str | None = None) -> str:
 		{
 			"r": report,
 			"note": (note or "").strip(),
-			"colour": LEVEL_COLOUR.get(status.level, LEVEL_COLOUR["none"]),
+			"colour": LEVEL_COLOUR.get(status.level if status else "none", LEVEL_COLOUR["none"]),
 			"tiles": tiles,
 			"risk_releases": [rel for rel in report.releases if rel["risk"] in ("late", "risk")],
 		},
@@ -352,7 +352,7 @@ def send_report(
 			"project": project,
 			"from_date": report.from_date,
 			"to_date": report.to_date,
-			"status_level": report.status.level,
+			"status_level": report.status.level if report.status else "",
 			"sent_on": now_datetime(),
 			"sent_by": frappe.session.user,
 			"scheduled": 1 if scheduled else 0,

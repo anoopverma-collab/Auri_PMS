@@ -123,7 +123,7 @@ class StatusReport {
 			<div class="hub-cols">
 				<div class="hub-col"><div class="hub-panel"><h6>${__("Preview")}</h6><iframe class="hub-frame" sandbox="allow-same-origin" title="${__("Report preview")}"></iframe></div></div>
 				<div class="hub-col">
-					${ui.statusBanner(preview.status)}
+					${preview.status ? ui.statusBanner(preview.status) : ""}
 					<div class="hub-panel"><h6>${__("Recently sent")}</h6>${past}</div>
 					<div class="hub-panel"><h6>${__("Weekly schedule")}</h6><div class="text-muted small">${__("Set Report Recipients and Send Weekly On in the Tracker tab of the Project to email this report automatically.")}</div></div>
 				</div>

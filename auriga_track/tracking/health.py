@@ -84,6 +84,19 @@ def make_buckets(period: str, earliest: date | None, today_: date) -> Buckets:
 	return Buckets("month", [add_months(current, -n) for n in range(months - 1, -1, -1)], today_)
 
 
+HEALTH_FLAGS = {
+	"hub": "show_health_hub",
+	"portfolio": "show_health_portfolio",
+	"report": "show_health_report",
+}
+
+
+def health_visible(project: str, screen: str) -> bool:
+	"""Whether the health status of ``project`` is shown on ``screen`` (hub, portfolio or report); off by default."""
+	value = frappe.db.get_value("Project", project, HEALTH_FLAGS[screen])
+	return bool(cint(value))
+
+
 def get_health(project: str, period: str = "3m") -> frappe._dict:
 	"""Compute every number of the Project Health dashboard (permission aware through frappe.get_list)."""
 	period = period if period in PERIODS else "3m"
@@ -495,12 +508,14 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 	if flow["created_4w"] > flow["resolved_4w"] * 1.5 and flow["created_4w"] >= 4:
 		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"))
 	if flow["client_dependent"]:  # informational: shown, but neither the level nor the score changes
-		add(
-			"info",
-			_("{0} tickets are waiting on the client (oldest {1} days)").format(
-				flow["client_dependent"], flow["client_oldest_days"] or 0
-			),
-		)
+		waiting, oldest = flow["client_dependent"], flow["client_oldest_days"] or 0
+		if waiting == 1:
+			text = _("1 ticket is waiting on the client (oldest {0})").format(
+				_("1 day") if oldest == 1 else _("{0} days").format(oldest)
+			)
+		else:
+			text = _("{0} tickets are waiting on the client (oldest {1} days)").format(waiting, oldest)
+		add("info", text)
 	level = (
 		"red"
 		if any(r["level"] == "red" for r in reasons)
@@ -514,7 +529,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 		- 25 * sum(r["level"] == "red" for r in reasons)
 		- 10 * sum(r["level"] == "amber" for r in reasons),
 	)
-	label_ = {"green": _("On track"), "amber": _("At risk"), "red": _("Off track")}[level]
+	label_ = {"green": _("On Track"), "amber": _("At Risk"), "red": _("Off Track")}[level]
 	if level == "green":
 		add("green", _("No schedule, effort or backlog risks detected"))
 	return {"level": level, "label": label_, "score": score, "reasons": reasons}

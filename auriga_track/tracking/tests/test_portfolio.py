@@ -62,7 +62,9 @@ class TestPortfolio(TrackerTestCase):
 		data, rows = self.portfolio()
 		self.assertEqual(data.kpis.projects, len(rows))
 		self.assertEqual(data.kpis.open, sum(r.open for r in rows.values()))
-		self.assertEqual(data.kpis.red + data.kpis.amber + data.kpis.green + data.kpis.none, len(rows))
+		self.assertEqual(
+			data.kpis.red + data.kpis.amber + data.kpis.green + data.kpis.none + data.kpis.hidden, len(rows)
+		)
 		for series in data.series.values():
 			self.assertEqual(len(series), len(data.labels))
 		self.assertEqual(sum(data.series.created), sum(r.created_period for r in rows.values()))

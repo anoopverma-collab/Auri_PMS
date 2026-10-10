@@ -49,7 +49,7 @@ shown separately from tickets with us on every screen.
 
 ![Project Health](docs/screenshots/03-project-health.png)
 
-**Portfolio** compares every project you can see: health (on track, at risk, off track), overdue share, budget burn, billable share and client-waiting tickets.
+**Portfolio** compares every project you can see: health (On Track, At Risk, Off Track), overdue share, budget burn, billable share and client-waiting tickets.
 
 ![Portfolio](docs/screenshots/04-portfolio.png)
 
@@ -79,21 +79,22 @@ shown separately from tickets with us on every screen.
 
 ### Themes
 
-Pick a theme from the *Theme* menu on any dashboard. It applies to all five dashboards, in light and dark, and is remembered per browser. Besides the first three (Glass + Soft, Soft UI and Minimal Clean) there are five more:
+Pick a theme from the *Theme* menu on any dashboard. It applies to all five dashboards, in light and dark, and is remembered per browser. There are eight: Glass + Soft, Soft UI (Neumorphism), Minimal Clean and Flat - Solid colour, plus four Soft UI variants that each add a surface effect:
 
-| Theme | Look | Best for |
+| Theme | Effect | Best for |
 |---|---|---|
-| **Flat - Solid colour** | plain white cards on a cool grey page, solid coloured accents, no shadows | everyday use, closest to the standard Desk |
-| **Flat - Tinted** | flat cards on a near-white page with soft tinted accents | calm, low-contrast reading |
-| **Flat - Outline** | white page, cards drawn with thin outlines only | printing and screen sharing |
-| **Bento - Pastel** | rounded tiles in different pastel colours on a warm page | friendly client demos |
-| **Bento - Vivid** | large, saturated coloured tiles of different sizes | showing headline numbers at a glance |
+| **Soft UI - Convex** | cards are slightly domed, with a light-to-dark gradient across the surface | a tactile, classic neumorphic look |
+| **Soft UI - Pressed** | panels are sunk into the page like trays, while tiles stay raised | a calm, layered look |
+| **Soft UI - Glow** | every tile glows in its own colour (blue, red, green...); strongest in dark mode | dark screens and wall displays |
+| **Soft UI - Pearl** | glossy cards with a bright top edge and a soft sheen | a clean, polished look |
 
-![Flat - Solid colour](docs/screenshots/theme-flat-solid.png)
-![Flat - Tinted](docs/screenshots/theme-flat-tint.png)
-![Flat - Outline](docs/screenshots/theme-flat-line.png)
-![Bento - Pastel](docs/screenshots/theme-bento-pastel.png)
-![Bento - Vivid](docs/screenshots/theme-bento-vivid.png)
+Every Soft UI theme has a matching dark version that follows Frappe's light/dark switch.
+
+![Soft UI - Convex](docs/screenshots/theme-soft-convex.png)
+![Soft UI - Pressed](docs/screenshots/theme-soft-pressed.png)
+![Soft UI - Glow](docs/screenshots/theme-soft-glow.png)
+![Soft UI - Glow, dark mode](docs/screenshots/theme-soft-glow-dark.png)
+![Soft UI - Pearl](docs/screenshots/theme-soft-pearl.png)
 
 ## Install
 
@@ -120,7 +121,8 @@ Activity Types are left alone).
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types |
+| **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
+| **Project > Tracker tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **Tracker Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |
@@ -137,8 +139,8 @@ Dashboards (all share one theme choice, 8 themes in light and dark, and the *Ran
 
 | Screen | For | What it shows |
 |---|---|---|
-| **Project Hub > Health Dashboard** | project manager, client | on track / at risk / off track with reasons, open vs closed, created vs resolved, backlog trend, sprint velocity, ticket aging, spent vs billable hours, tickets waiting on the client |
-| **Portfolio** | management | one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; health mix and hour charts |
+| **Project Hub > Health Dashboard** | project manager, client | On Track / At Risk / Off Track with reasons, open vs closed, created vs resolved, backlog trend, sprint velocity, ticket aging, spent vs billable hours, tickets waiting on the client |
+| **Portfolio** | management | a status banner like the other dashboards (worst health, average score and the projects that need attention, for projects with the Portfolio switch ticked) and one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; ticket, budget, flow and hour charts |
 | **My Work** | everyone | my tickets by due date (overdue / today / this week / later), blocked and client-waiting badges, my sprints, hours this week against the weekly capacity, one-click *Log time* |
 | **Quality Dashboard** | QA, project manager | bugs opened vs fixed, critical bugs, time to fix by priority, reopen rate, defects per 100 hours, bugs by category and project (ticket types marked *Counts as Defect*) |
 | **Client Dependencies** (report) | project manager | every open ticket waiting on the client, how long, and what is needed; opened from the *Waiting on client* tiles |

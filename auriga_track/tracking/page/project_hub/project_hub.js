@@ -168,14 +168,13 @@ class ProjectHub {
 		const { table, link, stack } = ui;
 		const tile = (value, label, cls, route, sub) => ui.tile(value, label, cls, sub, route);
 		const waiting_text = (count) => (count ? __("{0} waiting on client", [count]) : "");
-		const hours_label = (value, label) => tile(value, label, "hub-teal");
 		// open tickets split into "with us" and "waiting on client"
 		const split = (rows) =>
 			stack(rows.map((r) => [__(r.label), r.count - r.client, r.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"]);
 		const waiting_panel = `<div class="hub-panel"><h6>${__("Waiting on client")} (${n.client_dependent}) <a class="small" style="float:right" href="#" data-open-report>${__("View all")}</a></h6>${
 			d.client_tickets.length
 				? table(d.client_tickets, [__("Ticket"), __("Summary"), __("What we need"), __("Waiting")], (t) =>
-					`<tr><td style="white-space:nowrap">${link("Work Item", t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.note || "")}</td><td class="${t.days > 7 ? "text-danger" : ""}" style="white-space:nowrap">${__("{0} days", [t.days])}</td></tr>`)
+					`<tr><td style="white-space:nowrap">${link("Work Item", t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.note || "")}</td><td class="${t.days > 7 ? "text-danger" : ""}" style="white-space:nowrap">${ui.days(t.days)}</td></tr>`)
 				: `<div class="text-muted small">${__("Nothing is waiting on the client.")}</div>`
 		}</div>`;
 		const sprint = d.active_sprint;
@@ -203,7 +202,7 @@ class ProjectHub {
 				${tile(n.mine, __("Assigned to me"), "hub-purple", "mine")}${tile(n.unassigned, __("Unassigned"), "hub-orange", "unassigned")}
 				${tile(d.backlog_items, __("Backlog (no sprint)"), "hub-cyan", "backlog", waiting_text(d.backlog_client))}${tile(n.closed, __("Closed"), "hub-green", "closed")}
 				${tile(n.client_dependent, __("Waiting on client"), n.client_dependent ? "hub-orange" : "hub-teal", "client", n.client_oldest_days === null || n.client_oldest_days === undefined ? "" : __("oldest {0} days", [n.client_oldest_days]))}
-				${hours_label(n.hours_week, __("Hours this week"))}${hours_label(n.hours_total, __("Hours total"))}
+				${tile(n.hours_total, __("Hours logged"), "hub-teal", null, __("{0} h this week", [n.hours_week]))}
 			</div>
 			<div class="hub-cols">
 				<div class="hub-col">
@@ -275,13 +274,12 @@ class ProjectHub {
 			`${__("Waiting on client")} (${f.client_dependent}) <a class="small" style="float:right" href="#" data-open-report>${__("View all")}</a>`,
 			d.client_tickets.length
 				? table(d.client_tickets, [__("Ticket"), __("Summary"), __("What we need"), __("Waiting")], (t) =>
-					`<tr><td style="white-space:nowrap">${link("Work Item", t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.note || "")}</td><td class="${t.days > 7 ? "text-danger" : ""}" style="white-space:nowrap">${__("{0} days", [t.days])}</td></tr>`)
+					`<tr><td style="white-space:nowrap">${link("Work Item", t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.note || "")}</td><td class="${t.days > 7 ? "text-danger" : ""}" style="white-space:nowrap">${ui.days(t.days)}</td></tr>`)
 				: `<div class="text-muted small">${__("Nothing is waiting on the client.")}</div>`
 		);
 		const tile = (value, label, cls, sub) =>
 			`<div class="hub-tile ${cls || ""}"><b>${value}</b><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div>`;
-		const reasons = st.reasons.map((r) => `<li class="hub-reason hub-${r.level}"><i></i>${esc(r.text)}</li>`).join("");
-		const risk_badge = (r) => `<span class="hub-badge hub-risk-${r.risk}">${r.risk === "late" ? __("Late") : r.risk === "risk" ? __("At risk") : __("On track")}</span>`;
+		const risk_badge = (r) => `<span class="hub-badge hub-risk-${r.risk}">${r.risk === "late" ? __("Late") : r.risk === "risk" ? __("At Risk") : __("On Track")}</span>`;
 		const releases = h.releases.length
 			? `<table class="table table-sm hub-table"><thead><tr><th>${__("Release")}</th><th>${__("Due")}</th><th>${__("Days left")}</th><th>${__("Progress")}</th><th></th></tr></thead><tbody>${h.releases
 					.map(
@@ -302,17 +300,13 @@ class ProjectHub {
 		this.$body.html(`
 			<div class="hub-title"><h4>${esc(info.project_name || info.name)}</h4><span class="hub-ident">${esc(info.tracker_identifier)}</span>
 				<span class="text-muted">${__("Project health")} · ${__(ui.PERIOD_NOTE[h.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span></div>
-			<div class="hub-status hub-${st.level}">
-				<div class="hub-status-dial"><b>${st.score === null ? "-" : st.score}</b><span>${__("health score")}</span></div>
-				<div><h5>${esc(st.label)}</h5><ul>${reasons}</ul></div>
-			</div>
+			${st ? ui.statusBanner(st) : ""}
 			<div class="hub-tiles">
 				${tile(`${f.completion_pct}%`, __("Complete"), "hub-green", __("{0} of {1} tickets", [f.closed, f.total]))}
 				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`)}
 				${tile(f.closed, __("Closed tickets"), "hub-green", __("{0} h estimated", [f.estimated_closed_hours]))}
 				${tile(`${f.overdue_pct}%`, __("Open & overdue"), f.overdue ? "hub-red" : "hub-teal", __("{0} tickets", [f.overdue]))}
 				${tile(f.client_dependent, __("Waiting on client"), f.client_dependent ? "hub-orange" : "hub-teal", f.client_oldest_days === null ? "" : __("oldest {0} days", [f.client_oldest_days]))}
-				${tile(f.avg_resolution_days === null ? "-" : f.avg_resolution_days, __("Avg days to resolve"), "hub-purple")}
 				${tile(t.spent, __("Hours spent"), "hub-cyan", t.burn_pct === null ? "" : __("{0}% of estimate", [t.burn_pct]))}
 				${tile(t.billable, __("Billable hours"), "hub-teal", __("{0}% of spent", [t.billable_pct]))}
 				${tile(t.non_billable, __("Non-billable hours"), "hub-orange")}

@@ -101,13 +101,13 @@ class TestProjectHealth(TrackerTestCase):
 		self.assertEqual(frappe.db.get_value("Time Entry", name, "is_billable"), 0)
 
 	def test_status_green_when_clean(self):
-		"""No overdue, no effort or release risk: On track."""
+		"""No overdue, no effort or release risk: On Track."""
 		self.aged_item(-2, estimated_hours=10)
 		status = self.health().status
-		self.assertEqual((status.level, status.label, status.score), ("green", "On track", 100))
+		self.assertEqual((status.level, status.label, status.score), ("green", "On Track", 100))
 
 	def test_status_red_on_overdue_and_budget(self):
-		"""Many overdue tickets and spending over the estimate make the project Off track with reasons."""
+		"""Many overdue tickets and spending over the estimate make the project Off Track with reasons."""
 		first = self.aged_item(-10, estimated_hours=2, due_date=days(-3))
 		self.aged_item(-10, estimated_hours=2, due_date=days(-2))
 		self.logged_time(DEV, first.name, 5)
@@ -119,7 +119,7 @@ class TestProjectHealth(TrackerTestCase):
 		self.assertLessEqual(status.score, 50)
 
 	def test_status_amber_for_effort_ahead_of_progress(self):
-		"""Effort used far ahead of completed work is flagged At risk."""
+		"""Effort used far ahead of completed work is flagged At Risk."""
 		first = self.aged_item(-5, estimated_hours=10)
 		self.aged_item(-5, estimated_hours=10)
 		self.logged_time(DEV, first.name, 8)  # 40% burned, 0% done

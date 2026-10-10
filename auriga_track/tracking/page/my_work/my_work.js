@@ -105,7 +105,7 @@ class MyWork {
 		const mine_waiting = Object.values(d.groups).flat().filter((i) => cint(i.dependent_on_client));
 		const waiting = mine_waiting.length
 			? ui.table(mine_waiting, [__("Ticket"), __("Summary"), __("What we need"), __("Waiting")], (i) =>
-				`<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td><td>${ui.esc(i.subject)}</td><td>${ui.esc(i.client_dependency_note || "")}</td><td style="white-space:nowrap">${i.client_dependency_since ? __("{0} days", [frappe.datetime.get_diff(d.today, i.client_dependency_since)]) : ""}</td></tr>`)
+				`<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td><td>${ui.esc(i.subject)}</td><td>${ui.esc(i.client_dependency_note || "")}</td><td style="white-space:nowrap">${i.client_dependency_since ? ui.days(frappe.datetime.get_diff(d.today, i.client_dependency_since)) : ""}</td></tr>`)
 			: `<div class="text-muted small">${__("None of your tickets is waiting on the client.")}</div>`;
 		const missing = d.hours.missing_days.length ? `<div class="hub-badge hub-badge-warn" style="display:inline-block;margin-top:8px">${__("No hours logged on {0}", [d.hours.missing_days.join(", ")])}</div>` : "";
 		this.$body.html(`

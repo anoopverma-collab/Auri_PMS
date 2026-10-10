@@ -11,7 +11,7 @@ frappe.provide("auriga_track.ui");
 // Hub themes. Every theme has a light and a dark palette and follows Frappe's own light/dark switch.
 // Tokens: bg, b1/b3 (backdrop glows), glass, strong (raised surface), border, text, muted, nl/nd (soft-UI light/dark
 // shadow colours), acc (accent), bar (progress gradient), blur (px), d (shadow offset px), bm (shadow blur multiplier),
-// r (radius px) and optional p (four pastel panel colours used by the bento themes).
+// r (radius px).
 const NONE = "rgba(0,0,0,0)";
 const THEMES = {
 	glass: {
@@ -24,6 +24,26 @@ const THEMES = {
 		light: { bg: "#e4e8ef", b1: "transparent", b3: "transparent", glass: "#e4e8ef", strong: "#e9edf3", border: "transparent", text: "#374151", muted: "#6b7280", nl: "#ffffff", nd: "rgba(163,177,198,.75)", acc: "#4f46e5", bar: "linear-gradient(90deg,#4f46e5,#7c3aed)", blur: 0, d: 8, bm: 2.2, r: 24 },
 		dark: { bg: "#25282e", b1: "transparent", b3: "transparent", glass: "#25282e", strong: "#2b2f36", border: "transparent", text: "#e5e7eb", muted: "#9ca3af", nl: "rgba(255,255,255,.06)", nd: "rgba(0,0,0,.6)", acc: "#818cf8", bar: "linear-gradient(90deg,#6366f1,#a78bfa)", blur: 0, d: 8, bm: 2.2, r: 24 },
 	},
+	"soft-convex": {
+		label: "Soft UI - Convex",
+		light: { bg: "#e6e9ef", b1: "transparent", b3: "transparent", glass: "#e6e9ef", strong: "#e6e9ef", border: "transparent", text: "#374151", muted: "#6b7280", nl: "#ffffff", nd: "rgba(163,177,198,.75)", acc: "#4f46e5", bar: "linear-gradient(90deg,#4f46e5,#7c3aed)", blur: 0, d: 8, bm: 2.2, r: 24 },
+		dark: { bg: "#25282e", b1: "transparent", b3: "transparent", glass: "#25282e", strong: "#25282e", border: "transparent", text: "#e5e7eb", muted: "#9ca3af", nl: "rgba(255,255,255,.07)", nd: "rgba(0,0,0,.6)", acc: "#818cf8", bar: "linear-gradient(90deg,#6366f1,#a78bfa)", blur: 0, d: 8, bm: 2.2, r: 24 },
+	},
+	"soft-pressed": {
+		label: "Soft UI - Pressed",
+		light: { bg: "#e1e5ec", b1: "transparent", b3: "transparent", glass: "#e1e5ec", strong: "#e1e5ec", border: "transparent", text: "#374151", muted: "#6b7280", nl: "#ffffff", nd: "rgba(155,170,192,.8)", acc: "#0f766e", bar: "linear-gradient(90deg,#0f766e,#22c55e)", blur: 0, d: 8, bm: 2.2, r: 24 },
+		dark: { bg: "#22252b", b1: "transparent", b3: "transparent", glass: "#22252b", strong: "#22252b", border: "transparent", text: "#e5e7eb", muted: "#9ca3af", nl: "rgba(255,255,255,.06)", nd: "rgba(0,0,0,.65)", acc: "#2dd4bf", bar: "linear-gradient(90deg,#14b8a6,#4ade80)", blur: 0, d: 8, bm: 2.2, r: 24 },
+	},
+	"soft-glow": {
+		label: "Soft UI - Glow",
+		light: { bg: "#e7e8f2", b1: "transparent", b3: "transparent", glass: "#e7e8f2", strong: "#e7e8f2", border: "transparent", text: "#374151", muted: "#6b7280", nl: "#ffffff", nd: "rgba(165,170,200,.75)", acc: "#6366f1", bar: "linear-gradient(90deg,#6366f1,#ec4899)", blur: 0, d: 8, bm: 2.2, r: 24 },
+		dark: { bg: "#141824", b1: "transparent", b3: "transparent", glass: "#141824", strong: "#141824", border: "transparent", text: "#e5e7eb", muted: "#9ca3af", nl: "rgba(120,130,200,.09)", nd: "rgba(0,0,0,.7)", acc: "#818cf8", bar: "linear-gradient(90deg,#818cf8,#f472b6)", blur: 0, d: 8, bm: 2.2, r: 24 },
+	},
+	"soft-pearl": {
+		label: "Soft UI - Pearl",
+		light: { bg: "#eceff4", b1: "transparent", b3: "transparent", glass: "#eceff4", strong: "#eceff4", border: "transparent", text: "#374151", muted: "#6b7280", nl: "#ffffff", nd: "rgba(170,182,203,.7)", acc: "#2563eb", bar: "linear-gradient(90deg,#2563eb,#06b6d4)", blur: 0, d: 8, bm: 2.2, r: 24 },
+		dark: { bg: "#1c1f26", b1: "transparent", b3: "transparent", glass: "#1c1f26", strong: "#1c1f26", border: "transparent", text: "#e5e7eb", muted: "#9ca3af", nl: "rgba(255,255,255,.08)", nd: "rgba(0,0,0,.6)", acc: "#60a5fa", bar: "linear-gradient(90deg,#3b82f6,#22d3ee)", blur: 0, d: 8, bm: 2.2, r: 24 },
+	},
 	minimal: {
 		label: "Minimal Clean",
 		light: { bg: "#f7f7f8", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#ffffff", border: "#e5e7eb", text: "#111827", muted: "#6b7280", nl: "rgba(255,255,255,0)", nd: "rgba(17,24,39,.10)", acc: "#2563eb", bar: "linear-gradient(90deg,#2563eb,#2563eb)", blur: 0, d: 1, bm: 3, r: 12 },
@@ -34,26 +54,6 @@ const THEMES = {
 		light: { bg: "#eef1f6", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#ffffff", border: "#dfe4ec", text: "#1b2430", muted: "#5f6c7b", nl: NONE, nd: NONE, acc: "#2563eb", bar: "linear-gradient(90deg,#2563eb,#2563eb)", blur: 0, d: 0, bm: 0, r: 8 },
 		dark: { bg: "#10151d", b1: "transparent", b3: "transparent", glass: "#19212c", strong: "#202a37", border: "#2a3544", text: "#e8edf3", muted: "#98a5b5", nl: NONE, nd: NONE, acc: "#4f8df7", bar: "linear-gradient(90deg,#4f8df7,#4f8df7)", blur: 0, d: 0, bm: 0, r: 8 },
 	},
-	"flat-tint": {
-		label: "Flat - Tinted",
-		light: { bg: "#f7f8fa", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#ffffff", border: "#e8eaee", text: "#202328", muted: "#6b7280", nl: NONE, nd: NONE, acc: "#7c3aed", bar: "linear-gradient(90deg,#7c3aed,#7c3aed)", blur: 0, d: 0, bm: 0, r: 12 },
-		dark: { bg: "#0f1012", b1: "transparent", b3: "transparent", glass: "#17181b", strong: "#1d1e22", border: "#26282c", text: "#ececf0", muted: "#9a9ca5", nl: NONE, nd: NONE, acc: "#a78bfa", bar: "linear-gradient(90deg,#a78bfa,#a78bfa)", blur: 0, d: 0, bm: 0, r: 12 },
-	},
-	"flat-line": {
-		label: "Flat - Outline",
-		light: { bg: "#ffffff", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#f8fafc", border: "#d4d8df", text: "#111418", muted: "#667085", nl: NONE, nd: NONE, acc: "#0f766e", bar: "linear-gradient(90deg,#0f766e,#0f766e)", blur: 0, d: 0, bm: 0, r: 4 },
-		dark: { bg: "#0a0d10", b1: "transparent", b3: "transparent", glass: "#0e1216", strong: "#131920", border: "#2a323b", text: "#f1f5f9", muted: "#94a3b8", nl: NONE, nd: NONE, acc: "#2dd4bf", bar: "linear-gradient(90deg,#2dd4bf,#2dd4bf)", blur: 0, d: 0, bm: 0, r: 4 },
-	},
-	"bento-pastel": {
-		label: "Bento - Pastel",
-		light: { bg: "#f1efe9", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#ffffff", border: "transparent", text: "#1d1d1f", muted: "#6e6e73", nl: NONE, nd: NONE, acc: "#1d1d1f", bar: "linear-gradient(90deg,#1d1d1f,#6e6e73)", blur: 0, d: 0, bm: 0, r: 28, p: ["#dfe9ff", "#fbe4ec", "#e4f5df", "#fff1cf"] },
-		dark: { bg: "#0d0d0f", b1: "transparent", b3: "transparent", glass: "#1a1a1d", strong: "#232327", border: "transparent", text: "#f5f5f7", muted: "#9a9aa1", nl: NONE, nd: NONE, acc: "#f5f5f7", bar: "linear-gradient(90deg,#f5f5f7,#9a9aa1)", blur: 0, d: 0, bm: 0, r: 28, p: ["#1c2540", "#3a1f2b", "#1f3326", "#3b3220"] },
-	},
-	"bento-vivid": {
-		label: "Bento - Vivid",
-		light: { bg: "#e9ecf2", b1: "transparent", b3: "transparent", glass: "#ffffff", strong: "#ffffff", border: "transparent", text: "#11141a", muted: "#5d6675", nl: NONE, nd: NONE, acc: "#4f46e5", bar: "linear-gradient(90deg,#4f46e5,#ec4899)", blur: 0, d: 0, bm: 0, r: 26 },
-		dark: { bg: "#08090c", b1: "transparent", b3: "transparent", glass: "#14161b", strong: "#1b1e24", border: "transparent", text: "#f4f5f8", muted: "#98a0ae", nl: NONE, nd: NONE, acc: "#818cf8", bar: "linear-gradient(90deg,#818cf8,#f472b6)", blur: 0, d: 0, bm: 0, r: 26 },
-	},
 };
 const THEME_KEY = "auriga_hub_theme";
 const PERIODS = { "1m": "1 month", "3m": "3 months", "6m": "6 months", all: "Overall" };
@@ -63,8 +63,7 @@ function themeCss() {
 	const vars = (t) =>
 		`--g-bg:${t.bg};--g-blob1:${t.b1};--g-blob3:${t.b3};--g-glass:${t.glass};--g-glass-strong:${t.strong};--g-border:${t.border};` +
 		`--g-text:${t.text};--g-muted:${t.muted};--n-light:${t.nl};--n-dark:${t.nd};--acc:${t.acc};--bar:${t.bar};` +
-		`--blur:${t.blur}px;--d:${t.d}px;--bm:${t.bm};--radius:${t.r}px;` +
-		(t.p ? t.p.map((c, i) => `--p${i + 1}:${c};`).join("") : "");
+		`--blur:${t.blur}px;--d:${t.d}px;--bm:${t.bm};--radius:${t.r}px;`;
 	return Object.entries(THEMES)
 		.map(
 			([key, t]) =>
@@ -80,6 +79,7 @@ ui.THEMES = THEMES;
 ui.PERIODS = PERIODS;
 ui.PERIOD_NOTE = PERIOD_NOTE;
 ui.PALETTE = { blue: "#3b82f6", green: "#10b981", orange: "#f59e0b", purple: "#8b5cf6", cyan: "#06b6d4", red: "#ef4444", pink: "#ec4899" };
+ui.days = (n) => (cint(n) === 1 ? __("1 day") : __("{0} days", [n]));
 ui.esc = (value) => frappe.utils.escape_html(value === null || value === undefined ? "" : String(value));
 
 ui.setFlag = (key, value) => {
@@ -183,7 +183,7 @@ ui.chart = ($root, selector, config) => {
 // Traffic-light banner: {level, label, score, reasons: [{level, text}]}
 ui.statusBanner = (st, scoreLabel) =>
 	`<div class="hub-status hub-${st.level}">
-		<div class="hub-status-dial"><b>${st.score === null || st.score === undefined ? "-" : st.score}</b><span>${scoreLabel || __("health score")}</span></div>
+		<div class="hub-status-dial"><b>${st.score === null || st.score === undefined ? "-" : st.score}</b><span><strong style="font-weight:800;font-size:10px;color:inherit">${scoreLabel || __("health")}</strong></span></div>
 		<div><h5>${ui.esc(st.label)}</h5><ul>${(st.reasons || []).map((r) => `<li class="hub-reason hub-${r.level}"><i></i>${ui.esc(r.text)}</li>`).join("")}</ul></div>
 	</div>`;
 
@@ -236,7 +236,7 @@ ui.injectStyle = () => {
 			.hub-stats b { display: block; font-size: 19px; font-weight: 700; }
 			.hub-stats span, .hub-tile span { font-size: 11px; color: var(--g-muted); letter-spacing: .02em; }
 
-			.hub-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; margin-bottom: 22px; }
+			.hub-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; } @media (max-width: 900px) { .hub-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 			.hub-tile { --acc: #6366f1; padding: 16px 18px; border-radius: calc(var(--radius) * .9); background: var(--g-glass-strong); border: 1px solid var(--g-border);
 				box-shadow: var(--n-raised); position: relative; transition: transform .15s ease; }
 			.hub-tile::before { content: ""; position: absolute; left: 18px; top: 0; width: 34px; height: 4px; border-radius: 0 0 6px 6px; background: var(--acc); box-shadow: 0 2px calc(var(--bm) * 4px) var(--acc); }
@@ -293,32 +293,26 @@ ui.injectStyle = () => {
 			.hub-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--g-glass-strong); border: 1px solid var(--g-border); }
 			.hub-risk-late { color: #ef4444; } .hub-risk-risk { color: #f59e0b; } .hub-risk-ok { color: #10b981; }
 
-			/* panels may take a pastel colour (bento themes define --p1..--p4; other themes fall back to the glass colour) */
-			.hub-col > .hub-panel { background: var(--pp, var(--g-glass)); }
-			.hub-col > .hub-panel:nth-child(4n+1) { --pp: var(--p1, var(--g-glass)); } .hub-col > .hub-panel:nth-child(4n+2) { --pp: var(--p2, var(--g-glass)); }
-			.hub-col > .hub-panel:nth-child(4n+3) { --pp: var(--p3, var(--g-glass)); } .hub-col > .hub-panel:nth-child(4n) { --pp: var(--p4, var(--g-glass)); }
+			/* soft UI effects: every variant keeps the raised neumorphic base and adds its own surface effect */
+			.auriga-hub[data-hub-theme="soft-convex"] :is(.hub-tile, .hub-card, .hub-panel, .hub-status) {
+				background: linear-gradient(145deg, color-mix(in srgb, var(--g-glass) 72%, #fff), color-mix(in srgb, var(--g-glass) 86%, #000)); }
+			.auriga-hub[data-hub-theme="soft-pressed"] :is(.hub-card, .hub-panel, .hub-status) { box-shadow: var(--n-inset); }
+			.auriga-hub[data-hub-theme="soft-pressed"] .hub-panel .hub-tile, .auriga-hub[data-hub-theme="soft-pressed"] .hub-table { box-shadow: var(--n-raised); }
+			.auriga-hub[data-hub-theme="soft-glow"] .hub-tile { box-shadow: var(--n-raised), 0 0 26px color-mix(in srgb, var(--acc) 32%, transparent); }
+			.auriga-hub[data-hub-theme="soft-glow"] .hub-tile b { text-shadow: 0 0 16px color-mix(in srgb, var(--acc) 60%, transparent); }
+			.auriga-hub[data-hub-theme="soft-glow"] .hub-status { box-shadow: var(--n-raised), 0 0 30px color-mix(in srgb, var(--lvl) 30%, transparent); }
+			.auriga-hub[data-hub-theme="soft-glow"] .hub-title h4 { text-shadow: 0 0 18px color-mix(in srgb, var(--acc) 40%, transparent); }
+			.auriga-hub[data-hub-theme="soft-pearl"] :is(.hub-tile, .hub-card, .hub-panel, .hub-status) {
+				background: linear-gradient(160deg, color-mix(in srgb, var(--g-glass) 35%, #fff) 0%, var(--g-glass) 62%);
+				box-shadow: var(--n-raised), inset 0 1px 0 var(--n-light), inset 0 -1px 0 rgba(0, 0, 0, .05); }
 
-			/* flat family: no shadows, no gradients */
-			.auriga-hub[data-hub-theme^="flat"] .hub-tile, .auriga-hub[data-hub-theme^="bento"] .hub-tile { box-shadow: none; }
-			.auriga-hub[data-hub-theme^="flat"] .hub-tile::before, .auriga-hub[data-hub-theme^="bento"] .hub-tile::before { display: none; }
-			.auriga-hub[data-hub-theme^="flat"] .hub-card:hover, .auriga-hub[data-hub-theme^="bento"] .hub-card:hover { transform: none; border-color: var(--acc); }
-			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile, .auriga-hub[data-hub-theme="bento-vivid"] .hub-tile { background: var(--acc); border-color: transparent; }
-			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile *, .auriga-hub[data-hub-theme="bento-vivid"] .hub-tile *,
-			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile b, .auriga-hub[data-hub-theme="bento-vivid"] .hub-tile b { color: #fff !important; }
-			.auriga-hub[data-hub-theme="flat-tint"] .hub-tile, .auriga-hub[data-hub-theme="bento-pastel"] .hub-tile { background: color-mix(in srgb, var(--acc) 14%, var(--g-glass)); border-color: transparent; }
-			.auriga-hub[data-hub-theme="flat-line"] .hub-tile { background: transparent; border: 2px solid var(--acc); }
-			.auriga-hub[data-hub-theme="flat-line"] .hub-panel, .auriga-hub[data-hub-theme="flat-line"] .hub-card, .auriga-hub[data-hub-theme="flat-line"] .hub-status { border-width: 2px; }
-			.auriga-hub[data-hub-theme="flat-solid"] .hub-status, .auriga-hub[data-hub-theme="flat-tint"] .hub-status, .auriga-hub[data-hub-theme="flat-line"] .hub-status { border-radius: var(--radius); }
+			/* flat: no shadows or gradients, solid coloured tiles */
+			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile { box-shadow: none; background: var(--acc); border-color: transparent; }
+			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile::before { display: none; }
+			.auriga-hub[data-hub-theme="flat-solid"] .hub-card:hover { transform: none; border-color: var(--acc); }
+			.auriga-hub[data-hub-theme="flat-solid"] .hub-tile *, .auriga-hub[data-hub-theme="flat-solid"] .hub-tile b { color: #fff !important; }
+			.auriga-hub[data-hub-theme="flat-solid"] .hub-status { border-radius: var(--radius); }
 
-			/* bento: a modular mosaic of rounded blocks of different sizes */
-			.auriga-hub[data-hub-theme^="bento"] .hub-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(96px, auto); gap: 14px; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-tile:first-child { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; justify-content: flex-end; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-tile:first-child b { font-size: 54px; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-tile:nth-child(4) { grid-column: span 2; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-grid, .auriga-hub[data-hub-theme^="bento"] .hub-cols { gap: 14px; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-panel { margin-bottom: 14px; padding: 22px 24px; }
-			.auriga-hub[data-hub-theme^="bento"] .hub-card, .auriga-hub[data-hub-theme^="bento"] .hub-status { border-color: transparent; }
-			@media (max-width: 760px) { .auriga-hub[data-hub-theme^="bento"] .hub-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auriga-hub[data-hub-theme^="bento"] .hub-tile:nth-child(4) { grid-column: auto; } }
 
 			/* shared by Portfolio, My Work, Quality and Status Report */
 			.hub-reason.hub-info i { background: #3b82f6; }

@@ -81,6 +81,10 @@ def make_project(
 			"project_name": name,
 			"tracker_identifier": identifier,
 			"is_public": 1 if public else 0,
+			# the health status is off by default; the fixture projects show it so the dashboards can be tested
+			"show_health_hub": 1,
+			"show_health_portfolio": 1,
+			"show_health_report": 1,
 			"tracker_members": [{"user": u, "project_role": r} for u, r in members],
 			"enabled_trackers": [{"tracker": t} for t in (trackers or [])],
 		}
