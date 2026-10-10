@@ -8,7 +8,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        files: "auriga_track.*"
+        files: "auri_pms.*"
         exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
       - id: check-merge-conflict
       - id: check-ast
@@ -38,11 +38,11 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                auriga_track/public/dist/.*|
+                auri_pms/public/dist/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                auriga_track/templates/includes/.*|
-                auriga_track/public/js/lib/.*
+                auri_pms/templates/includes/.*|
+                auri_pms/public/js/lib/.*
             )$
 
 
@@ -55,12 +55,12 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                auriga_track/public/dist/.*|
+                auri_pms/public/dist/.*|
                 cypress/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                auriga_track/templates/includes/.*|
-                auriga_track/public/js/lib/.*
+                auri_pms/templates/includes/.*|
+                auri_pms/public/js/lib/.*
             )$
 
 ci:

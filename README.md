@@ -99,7 +99,7 @@ Every Soft UI theme has a matching dark version that follows Frappe's light/dark
 
 ```bash
 bench get-app https://github.com/anoopverma-collab/Auri_PMS
-bench --site <site> install-app auriga_track
+bench --site <site> install-app auri_pms
 bench --site <site> migrate
 ```
 
@@ -108,7 +108,7 @@ number cards, charts, reports) and creates the default data **once**: 6 statuses
 4 ticket types (Bug has a workflow), activity types, Tracker Settings and the Kanban board
 "Work Items by Status". A later `migrate` never overwrites changes you made to that data.
 
-Uninstall: `bench --site <site> uninstall-app auriga_track` (removes the Project and Email Account
+Uninstall: `bench --site <site> uninstall-app auri_pms` (removes the Project and Email Account
 custom fields, the Kanban board, the workspace and the Project permissions it added; ERPNext
 Activity Types are left alone).
 
@@ -153,13 +153,13 @@ or overdue.
 ## Development
 
 ```bash
-bench --site <site> run-tests --app auriga_track          # whole suite
-bench --site <site> run-tests --app auriga_track --module auriga_track.tracking.tests.test_workflow
+bench --site <site> run-tests --app auri_pms          # whole suite
+bench --site <site> run-tests --app auri_pms --module auri_pms.tracking.tests.test_workflow
 ruff check . && ruff format --check .                      # Python
-eslint --ext .js auriga_track                              # JS (default Frappe config)
+eslint --ext .js auri_pms                              # JS (default Frappe config)
 ```
 
-Tests live in `auriga_track/tracking/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
+Tests live in `auri_pms/tracking/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
 database savepoint. Business rules live in the DocType controllers and `tracking/utils.py`; client
 scripts are UX only.
 
@@ -168,10 +168,10 @@ Design decisions made where the specification was silent are listed in [DECISION
 ## Layout
 
 ```
-auriga_track/
+auri_pms/
   hooks.py  install.py  permissions.py  patches/
   fixtures/                 custom fields, roles
-  public/js/                auriga_hub.bundle.js (shared dashboard UI and themes), auriga_track.bundle.js, project.js
+  public/js/                auri_hub.bundle.js (shared dashboard UI and themes), auri_pms.bundle.js, project.js
   workspace_sidebar/  desktop_icon/
   tracking/
     utils.py                capabilities, hierarchy, roll-ups, progress formula

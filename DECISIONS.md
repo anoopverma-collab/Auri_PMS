@@ -101,7 +101,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     (loaded on install and every migrate) rather than exported fixtures; a Workspace Sidebar and a Desktop Icon are
     added because Frappe v16 needs them for the app to show on the desk. There is no *Gantt* option in a Workspace
     shortcut, so the Gantt shortcut is a URL shortcut (`/app/work-item/view/gantt`).
-30. **The custom Quick Entry lives in `public/js/auriga_track.bundle.js`** (loaded on every desk page,
+30. **The custom Quick Entry lives in `public/js/auri_pms.bundle.js`** (loaded on every desk page,
     built by `bench build`). Frappe only runs `work_item.js` when a form is opened, so a quick entry started from
     the list would otherwise use the default dialog.
 31. **Status colours** are stored as hex; the list/form indicator name is computed on the server
@@ -201,7 +201,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     `tracker_identifier`, `tracker_members`) to avoid renaming database columns; only DocType names and visible labels
     changed. The roles *Tracker Manager* / *Tracker User*, *Tracker Settings* and the app name *Tracker* are unchanged. A
     pre-sync patch renames the DocTypes on existing sites (data, Link fields and custom-field options follow).
-58. **Shared UI kit.** Themes, styles and helpers live in `auriga_hub.bundle.js`, loaded on demand by the five dashboard pages
+58. **Shared UI kit.** Themes, styles and helpers live in `auri_hub.bundle.js`, loaded on demand by the five dashboard pages
     (Project Hub, Portfolio, My Work, Quality, Status Report). One saved theme and one saved range apply to all of them.
     ERPNext/Frappe screens and the app's own forms and lists keep the standard look (a global skin was tried and removed).
 59. **Portfolio** covers projects with an identifier that the user can see (at most 200), computed with the same functions as the
