@@ -40,7 +40,22 @@ class StatusReport {
 		ui.applyTheme(this.$body);
 		ui.addThemeMenu(this.page, () => this.show(this.project_field.get_value()));
 		if (project && decodeURIComponent(project) !== this.project_field.get_value()) this.project_field.set_value(decodeURIComponent(project));
+		else if (!this.project_field.get_value()) this.preselect_project();
 		else this.refresh();
+	}
+
+	// Open with a project instead of a blank page: the last one used, else the first one the user can see.
+	preselect_project() {
+		let last = "";
+		try {
+			last = localStorage.getItem("auriga_status_project") || "";
+		} catch (e) {
+			// storage can be blocked; fall back to the first project
+		}
+		(last ? Promise.resolve(last) : frappe.xcall("auriga_track.tracking.api.get_hub_projects").then((rows) => (rows[0] ? rows[0].name : ""))).then((name) => {
+			if (name) this.project_field.set_value(name);
+			else this.refresh();
+		});
 	}
 
 	apply_period() {
@@ -60,6 +75,11 @@ class StatusReport {
 
 	on_project_change() {
 		this.recipients = null;
+		try {
+			if (this.project_field.get_value()) localStorage.setItem("auriga_status_project", this.project_field.get_value());
+		} catch (e) {
+			// storage can be blocked
+		}
 		this.refresh();
 	}
 

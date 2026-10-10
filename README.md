@@ -10,6 +10,25 @@ adding project members.
 * Module: **Tracking**. Nothing in Frappe or ERPNext core is modified: everything is added through
   hooks, Custom Fields, Custom DocPerms and `doc_events`.
 
+## Features
+
+| Area | What you get |
+|---|---|
+| Tickets (Work Items) | bugs, features, tasks and support requests with parent/child tickets, priorities, categories, start/due dates, estimates, relations and blockers; per-project ticket numbers such as `SJDM-00001` |
+| Ticket Types and workflow | configurable ticket types with default status, *Counts as Defect* flag and allowed status transitions per project role |
+| Project Hub | project-first screen: users only see projects they belong to (or public ones) and work inside the chosen project |
+| Roles and access | project roles with nine capability flags; private projects stay hidden from outsiders |
+| Sprints | start/end dates, goal, add tickets to a sprint, Start / Complete, Sprint Board and Burndown |
+| Releases | group tickets into versions with progress and due date |
+| Kanban board | one column per status, drag a ticket to change its status (blocked moves are refused) |
+| Gantt chart | tickets drawn from start date to due date, filtered to the project |
+| Time tracking | log hours per ticket with activity type and a *Billable* flag; limits per entry/day and lock days |
+| Dependent on Client | tick a ticket that waits on the client; tracked with a note and *Waiting since* and counted everywhere |
+| Dashboards | Project Health, Portfolio, My Work, Quality and Client Status Report |
+| Themes and range | 8 themes in light and dark and a 1 month / 3 months / 6 months / Overall range, shared by all dashboards |
+| Reports | Work Item Summary, Time Log Summary, Release Progress, Overdue Work Items, Sprint Summary, Sprint Burndown, Client Dependencies |
+| Email | email a project's status report (preview, PDF, weekly schedule), daily due-date digests, optional email-to-ticket intake |
+
 ## Screenshots
 
 All screenshots use the sample SJDM project data. Every dashboard shares one theme and one date range
@@ -47,6 +66,32 @@ shown separately from tickets with us on every screen.
 **Client Dependencies** is the drill-down report listing every open ticket waiting on the client, for how long and what is needed.
 
 ![Client Dependencies report](docs/screenshots/08-client-dependencies-report.png)
+
+**Kanban board** has one column per ticket status. Drag a card to move the ticket; a move the workflow does not allow is refused. Open it from the hub's *Views* menu to see only that project.
+
+![Kanban board](docs/screenshots/09-kanban-board.png)
+
+**Gantt chart** draws each ticket from its start date to its due date, so you can see overlaps and slips. Zoom with the Quarter Day, Day, Week, Month and Year buttons.
+
+![Gantt chart](docs/screenshots/10-gantt-chart.png)
+
+### Themes
+
+Pick a theme from the *Theme* menu on any dashboard. It applies to all five dashboards, in light and dark, and is remembered per browser. Besides the first three (Glass + Soft, Soft UI and Minimal Clean) there are five more:
+
+| Theme | Look | Best for |
+|---|---|---|
+| **Flat - Solid colour** | plain white cards on a cool grey page, solid coloured accents, no shadows | everyday use, closest to the standard Desk |
+| **Flat - Tinted** | flat cards on a near-white page with soft tinted accents | calm, low-contrast reading |
+| **Flat - Outline** | white page, cards drawn with thin outlines only | printing and screen sharing |
+| **Bento - Pastel** | rounded tiles in different pastel colours on a warm page | friendly client demos |
+| **Bento - Vivid** | large, saturated coloured tiles of different sizes | showing headline numbers at a glance |
+
+![Flat - Solid colour](docs/screenshots/theme-flat-solid.png)
+![Flat - Tinted](docs/screenshots/theme-flat-tint.png)
+![Flat - Outline](docs/screenshots/theme-flat-line.png)
+![Bento - Pastel](docs/screenshots/theme-bento-pastel.png)
+![Bento - Vivid](docs/screenshots/theme-bento-vivid.png)
 
 ## Install
 
