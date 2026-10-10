@@ -201,6 +201,18 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "chart",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Client Dependencies",
+   "link_to": "Client Dependencies",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
    "icon": "settings",
    "indent": 0,
    "keep_closed": 0,
@@ -271,7 +283,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-10 20:20:59.000000",
+ "modified": "2026-10-10 20:37:53.000000",
  "modified_by": "Administrator",
  "module": "Tracking",
  "name": "Tracker",

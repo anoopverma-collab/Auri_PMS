@@ -3,7 +3,7 @@ name = "auriga_track"
 authors = [
     { name = "Auriga IT", email = "anoop.verma@aurigait.com"}
 ]
-description = "issue tracker for ERPNext"
+description = "Issue tracker for ERPNext"
 requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]

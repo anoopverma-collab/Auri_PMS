@@ -14,6 +14,7 @@ from auriga_track.tracking.health import (
 	AGE_BUCKETS,
 	PERIODS,
 	as_date,
+	count_by,
 	deep_dict,
 	make_buckets,
 	monday,
@@ -474,10 +475,12 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 		[b for b in open_bugs if b.priority in CRITICAL_PRIORITIES], key=lambda b: str(b.creation)
 	)
 	names = full_names([b.assigned_to for b in critical_open])
-	ages = defaultdict(int)
+	ages: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 	for bug in open_bugs:
 		age = (today_ - as_date(bug.creation)).days
-		ages[next(text for limit, text in AGE_BUCKETS if age <= limit)] += 1
+		bucket = next(text for limit, text in AGE_BUCKETS if age <= limit)
+		ages[bucket][0] += 1
+		ages[bucket][1] += cint(bug.dependent_on_client)
 
 	recent_28 = today_ - timedelta(days=28)
 	opened_4w = sum(1 for b in bugs if as_date(b.creation) > recent_28)
@@ -495,6 +498,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			"status": status,
 			"tiles": {
 				"open": len(open_bugs),
+				"client_open": sum(1 for b in open_bugs if cint(b.dependent_on_client)),
 				"closed": len(closed_bugs),
 				"critical_open": len(critical_open),
 				"opened_period": len(opened_period),
@@ -513,15 +517,17 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 				"open_trend": flow["open_trend"],
 				"reopened": reopen["by_bucket"],
 			},
-			"open_by_priority": [
-				{"label": k, "count": v}
-				for k, v in sorted(count_by_priority(open_bugs).items(), key=lambda kv: -kv[1])
-			],
+			"open_by_priority": count_by(open_bugs, "priority"),
 			"fix_time": [
 				{"priority": k, "days": flt(sum(v) / len(v), 1), "count": len(v)}
 				for k, v in sorted(fix_days.items(), key=lambda kv: -len(kv[1]))
 			],
-			"aging": [{"label": text, "count": ages.get(text, 0)} for _limit, text in AGE_BUCKETS],
+			"aging": [
+				{"label": text, "count": ages[text][0], "client": ages[text][1]}
+				if text in ages
+				else {"label": text, "count": 0, "client": 0}
+				for _limit, text in AGE_BUCKETS
+			],
 			"by_category": sorted(
 				[{"label": k, "open": v[0], "closed": v[1]} for k, v in by_category.items()],
 				key=lambda r: -(r["open"] + r["closed"]),
@@ -534,6 +540,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 					"project": b.project,
 					"priority": b.priority,
 					"status": b.status,
+					"client": cint(b.dependent_on_client),
 					"age_days": (today_ - as_date(b.creation)).days,
 					"assignee": names.get(b.assigned_to, _("Unassigned"))
 					if b.assigned_to
@@ -543,14 +550,6 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			],
 		}
 	)
-
-
-def count_by_priority(bugs: list) -> dict[str, int]:
-	"""{priority: count} for ``bugs``."""
-	counts: dict[str, int] = defaultdict(int)
-	for bug in bugs:
-		counts[bug.priority or _("(none)")] += 1
-	return counts
 
 
 def category_names(categories: list[str]) -> dict[str, str]:

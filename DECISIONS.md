@@ -223,6 +223,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     count. Overdue tickets that wait on the client are excluded from the delivery "overdue" rule and from the report's overdue
     list; the status gets an informational reason (shown, but it changes neither the level nor the score).
 
+64. **Client-dependent split everywhere.** Every place that shows backlog, open/in-progress, created vs closed or an ageing
+    profile (Project Hub overview and health, Portfolio, Quality, My Work) separates tickets *with us* from tickets *waiting on
+    the client*, with a "Waiting on client" panel listing what is needed and for how long. The **Client Dependencies** script
+    report (Project, Assigned To, Waiting since, days, note) is the drill-down; the Waiting on client tiles open it.
+
 ## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.

@@ -297,6 +297,7 @@ def get_project_hub(project: str) -> dict:
 			"sprint",
 			"done_percent",
 			"dependent_on_client",
+			"client_dependency_note",
 			"client_dependency_since",
 		],
 		order_by="modified desc",
@@ -383,6 +384,24 @@ def get_project_hub(project: str) -> dict:
 		releases=releases,
 		members=members,
 		recent_items=items[:10],
+		client_tickets=[
+			{
+				"name": i.name,
+				"subject": i.subject,
+				"note": i.client_dependency_note,
+				"since": i.client_dependency_since,
+				"days": (today_ - getdate(i.client_dependency_since)).days
+				if i.client_dependency_since
+				else 0,
+				"status": i.status,
+				"priority": i.priority,
+				"due_date": i.due_date,
+			}
+			for i in sorted(
+				(i for i in open_items if cint(i.dependent_on_client)),
+				key=lambda i: str(i.client_dependency_since or "9999"),
+			)[:15]
+		],
 		backlog_items=sum(1 for i in open_items if not i.sprint),
 		backlog_client=sum(1 for i in open_items if not i.sprint and cint(i.dependent_on_client)),
 	)

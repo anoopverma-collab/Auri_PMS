@@ -53,7 +53,7 @@ class Portfolio {
 			<div class="hub-tiles">
 				${tile(k.projects, __("Projects"), "hub-blue", `${k.red} ${__("off track")} · ${k.amber} ${__("at risk")} · ${k.green} ${__("on track")}`)}
 				${tile(k.red, __("Off track"), "hub-red", "", "red")}
-				${tile(k.open, __("Open tickets"), "hub-purple", `${k.closed} ${__("closed")}`)}
+				${tile(k.open, __("Open tickets"), "hub-purple", `${k.client_dependent ? `${k.client_dependent} ${__("waiting on client")} · ` : ""}${k.closed} ${__("closed")}`)}
 				${tile(k.overdue, __("Overdue"), k.overdue ? "hub-orange" : "hub-teal")}
 				${tile(k.client_dependent, __("Waiting on client"), "hub-cyan")}
 				${tile(k.hours_period, __("Hours in range"), "hub-teal", `${k.hours_spent} ${__("h in total")}`)}
@@ -69,7 +69,7 @@ class Portfolio {
 			<div class="hub-cols hub-cols-even">
 				<div class="hub-col">
 					${panel(__("Health mix"), `<div class="hub-chart" id="pf-mix"></div>`)}
-					${panel(__("Open and closed tickets by project"), stack(d.projects.slice(0, 12).map((p) => [p.project_name, p.open, p.closed]), [__("Open"), __("Closed")], ["seg-blue", "seg-green"]))}
+					${panel(__("Open, waiting on client and closed tickets by project"), stack(d.projects.slice(0, 12).map((p) => [p.project_name, p.open - p.client_dependent, p.client_dependent, p.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"]))}
 					${panel(__("Budget burn by project (% of estimate)"), d.projects.filter((p) => p.burn_pct !== null).map((p) => bar(p.project_name, p.burn_pct, Math.max(100, ...d.projects.map((x) => x.burn_pct || 0)), p.burn_pct > 100 ? "seg-orange" : "")).join("") || `<div class="text-muted small">${__("No estimates yet")}</div>`)}
 				</div>
 				<div class="hub-col">

@@ -18,7 +18,8 @@ def days(offset: int) -> str:
 class TestClientDependency(TrackerTestCase):
 	def waiting(self, since=0, note="Please send the logo files", **kw):
 		"""A ticket that depends on the client, optionally back-dated."""
-		item = self.new_item(MGR, tracker="Task", dependent_on_client=1, client_dependency_note=note, **kw)
+		tracker = kw.pop("tracker", "Task")
+		item = self.new_item(MGR, tracker=tracker, dependent_on_client=1, client_dependency_note=note, **kw)
 		if since:
 			frappe.db.set_value(
 				"Work Item", item.name, "client_dependency_since", days(-since), update_modified=False
@@ -134,3 +135,66 @@ class TestClientDependency(TrackerTestCase):
 				"Work Item", filters={"dependent_on_client": 1, "project": self.ALP}, pluck="name"
 			)
 		self.assertEqual(names, [item.name])
+
+	def test_hub_lists_the_waiting_tickets_longest_first(self):
+		"""The hub returns the waiting tickets with what we need and how long they have waited."""
+		self.waiting(since=3, note="Newer request", subject="Newer")
+		old = self.waiting(since=11, note="Older request", subject="Older")
+		with self.as_user(DEV):
+			data = api.get_project_hub(self.ALP)
+		first = data["client_tickets"][0]
+		self.assertEqual(first["name"], old.name)
+		self.assertEqual((first["days"], first["note"], first["subject"]), (11, "Older request", "Older"))
+		self.assertEqual(data["backlog_client"], 2)
+
+	def test_open_breakdowns_split_out_the_client_part(self):
+		"""Open by status, type, priority and age all say how many of the open tickets wait on the client."""
+		self.waiting(priority="High")
+		plain = self.new_item(MGR, tracker="Task", priority="High")
+		self.save_as(MGR, plain, status="In Progress")
+		flow = get_health(self.ALP, "3m").flow
+		by_status = {r.label: (r.count, r.client) for r in flow.open_by_status}
+		self.assertEqual(by_status, {"New": (1, 1), "In Progress": (1, 0)})
+		self.assertEqual({r.label: (r.count, r.client) for r in flow.open_by_priority}["High"], (2, 1))
+		self.assertEqual(sum(a.client for a in flow.aging), 1)
+		self.assertEqual({r.label: (r.open, r.client) for r in flow.by_tracker}["Task"], (1, 1))
+		self.assertEqual(flow.created_waiting, 1)
+
+	def test_waiting_trend_follows_ticking_unticking_and_closing(self):
+		"""The waiting-on-client line is rebuilt from the change history."""
+		item = self.new_item(MGR, tracker="Task")
+		self.assertEqual(get_health(self.ALP, "3m").flow.client_trend[-1], 0)
+		self.save_as(MGR, item, dependent_on_client=1)
+		self.assertEqual(get_health(self.ALP, "3m").flow.client_trend[-1], 1)
+		self.save_as(MGR, item, dependent_on_client=0)
+		self.assertEqual(get_health(self.ALP, "3m").flow.client_trend[-1], 0)
+		born_waiting = self.waiting()  # ticked when created: no history row, uses 'waiting since'
+		self.assertEqual(get_health(self.ALP, "3m").flow.client_trend[-1], 1)
+		self.save_as(MGR, born_waiting, status="Closed")
+		self.assertEqual(get_health(self.ALP, "3m").flow.client_trend[-1], 0)
+
+	def test_quality_shows_bugs_waiting_on_the_client(self):
+		"""Open bugs, their priority split and the critical list mention the client part."""
+		self.waiting(tracker="Bug", priority="Urgent", subject="Payment screenshot needed")
+		self.new_item(MGR, tracker="Bug", priority="Urgent")
+		with self.as_user(TM):
+			data = api.get_quality(self.ALP, "3m")
+		self.assertEqual((data.tiles.open, data.tiles.client_open), (2, 1))
+		self.assertEqual({r.label: (r.count, r.client) for r in data.open_by_priority}["Urgent"], (2, 1))
+		self.assertEqual(sorted(c.client for c in data.critical), [0, 1])
+
+	def test_client_dependencies_report(self):
+		"""The drill-down report lists waiting tickets, longest wait first, honours filters and visibility."""
+		self.waiting(since=2, subject="Recent")
+		oldest = self.waiting(since=15, subject="Oldest", note="Signed contract")
+		self.new_item(MGR, tracker="Task")  # not waiting
+		with self.as_user(TM):
+			result = run_report("Client Dependencies", {"project": self.ALP})
+		rows = result["result"]
+		self.assertEqual(rows[0]["item"], oldest.name)
+		self.assertEqual((rows[0]["days_waiting"], rows[0]["note"], len(rows)), (15, "Signed contract", 2))
+		with self.as_user(TM):
+			filtered = run_report("Client Dependencies", {"project": self.ALP, "min_days": 10})["result"]
+		self.assertEqual(len(filtered), 1)
+		with self.as_user("out@test.com"):
+			self.assertEqual(run_report("Client Dependencies", {})["result"], [])

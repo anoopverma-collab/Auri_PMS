@@ -102,6 +102,11 @@ class MyWork {
 		const raised = d.raised.length
 			? d.raised.map((r) => `<div class="hub-list-row"><span>${ui.link("Work Item", r.name)} ${ui.esc(r.subject)}</span><span class="hub-sub">${ui.esc(r.assignee_name)}</span></div>`).join("")
 			: `<div class="text-muted small">${__("Nothing you raised is waiting on someone else.")}</div>`;
+		const mine_waiting = Object.values(d.groups).flat().filter((i) => cint(i.dependent_on_client));
+		const waiting = mine_waiting.length
+			? ui.table(mine_waiting, [__("Ticket"), __("Summary"), __("What we need"), __("Waiting")], (i) =>
+				`<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td><td>${ui.esc(i.subject)}</td><td>${ui.esc(i.client_dependency_note || "")}</td><td style="white-space:nowrap">${i.client_dependency_since ? __("{0} days", [frappe.datetime.get_diff(d.today, i.client_dependency_since)]) : ""}</td></tr>`)
+			: `<div class="text-muted small">${__("None of your tickets is waiting on the client.")}</div>`;
 		const missing = d.hours.missing_days.length ? `<div class="hub-badge hub-badge-warn" style="display:inline-block;margin-top:8px">${__("No hours logged on {0}", [d.hours.missing_days.join(", ")])}</div>` : "";
 		this.$body.html(`
 			<div class="hub-title"><h4>${__("My Work")}</h4><span class="text-muted">${ui.esc(frappe.user.full_name())} · ${frappe.datetime.str_to_user(d.today)}</span></div>
@@ -119,6 +124,7 @@ class MyWork {
 				<div class="hub-col">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 				<div class="hub-col">
 					${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
+					${panel(`${__("Waiting on the client")} (${mine_waiting.length})`, waiting)}
 					${panel(__("My active sprints"), sprints)}
 					${panel(__("I raised, others are working on"), raised)}
 					${panel(__("Tickets I closed (last 4 weeks)"), `<div class="hub-chart" id="mw-closed"></div>`)}
