@@ -10,6 +10,44 @@ adding project members.
 * Module: **Tracking**. Nothing in Frappe or ERPNext core is modified: everything is added through
   hooks, Custom Fields, Custom DocPerms and `doc_events`.
 
+## Screenshots
+
+All screenshots use the sample SJDM project data. Every dashboard shares one theme and one date range
+(1 month, 3 months, 6 months or overall), set from the page menu. Tickets that wait on the client are
+shown separately from tickets with us on every screen.
+
+**Project Hub** is the starting point. It lists the projects you can access; opening one shows only that project's tickets, sprints, releases and time.
+
+![Project Hub](docs/screenshots/01-project-hub.png)
+
+**Project overview** shows one project's ticket counts, the "Waiting on client" panel, active sprint and recent work.
+
+![Project overview](docs/screenshots/02-project-overview.png)
+
+**Project Health** is the client-facing view: open vs closed, created vs resolved, spent vs billable hours, ageing, and open tickets split into with us and waiting on client.
+
+![Project Health](docs/screenshots/03-project-health.png)
+
+**Portfolio** compares every project you can see: health (on track, at risk, off track), overdue share, budget burn, billable share and client-waiting tickets.
+
+![Portfolio](docs/screenshots/04-portfolio.png)
+
+**My Work** is a personal page: your open tickets by due date, what blocks you, tickets waiting on the client, your hours this week and your sprints.
+
+![My Work](docs/screenshots/05-my-work.png)
+
+**Quality** tracks bugs: opened vs fixed, critical bugs, time to fix by priority, reopen rate and defects per 100 hours.
+
+![Quality dashboard](docs/screenshots/06-quality.png)
+
+**Client Status Report** is a client-ready report for any period that can be emailed, downloaded as PDF or sent weekly.
+
+![Client Status Report](docs/screenshots/07-client-status-report.png)
+
+**Client Dependencies** is the drill-down report listing every open ticket waiting on the client, for how long and what is needed.
+
+![Client Dependencies report](docs/screenshots/08-client-dependencies-report.png)
+
 ## Install
 
 ```bash
