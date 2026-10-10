@@ -232,7 +232,7 @@ def before_uninstall() -> None:
 		("Workspace Sidebar", "Auri PMS"),
 		("Desktop Icon", "Tracker"),
 		("Desktop Icon", "Auri PMS"),
-		("Desktop Icon", "Auri PMS"),
+		("Desktop Icon", "Auriga Track"),
 	):
 		frappe.db.delete(doctype, {"name": name})
 	frappe.clear_cache()

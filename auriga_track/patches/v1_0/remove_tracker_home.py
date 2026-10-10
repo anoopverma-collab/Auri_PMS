@@ -20,6 +20,6 @@ def execute() -> None:
 						doctype, name, "is_standard", 0
 					)  # standard documents refuse deletion outside developer mode
 				frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
-	if frappe.db.exists("Desktop Icon", "Auri PMS") and not frappe.db.exists("Desktop Icon", "Tracker"):
-		frappe.rename_doc("Desktop Icon", "Auri PMS", "Tracker", force=True)
+	if frappe.db.exists("Desktop Icon", "Auriga Track") and not frappe.db.exists("Desktop Icon", "Tracker"):
+		frappe.rename_doc("Desktop Icon", "Auriga Track", "Tracker", force=True)
 		frappe.db.set_value("Desktop Icon", "Tracker", "label", "Tracker")
