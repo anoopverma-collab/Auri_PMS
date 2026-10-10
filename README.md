@@ -2,7 +2,7 @@
 
 **Project Management System** &middot; *Plan. Track. Deliver.*
 
-[![CI](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml)
+[![CI](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml)
 
 A centralized platform for project planning, task management, timelines, effort tracking, team collaboration and delivery monitoring, built for **ERPNext v16**. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals and management dashboards. Log, assign, track and close work items (bugs, features, tasks, support requests) against ERPNext Projects, plan them into sprints and releases, log time against them and report progress to clients. One screen to create an item, one list to work from, and no configuration beyond adding project members.
 
@@ -98,7 +98,7 @@ Every Soft UI theme has a matching dark version that follows Frappe's light/dark
 ## Install
 
 ```bash
-bench get-app https://github.com/anoopverma-collab/Auriga_Track
+bench get-app https://github.com/anoopverma-collab/Auri_PMS
 bench --site <site> install-app auriga_track
 bench --site <site> migrate
 ```
