@@ -2,7 +2,7 @@
 
 import frappe
 
-from auriga_track.tracking.tests.utils import DEV, MGR, REP, TrackerTestCase
+from auriga_track.tracking.tests.utils import DEV, MGR, REP, TrackerTestCase, ensure_company
 
 
 class TestRelations(TrackerTestCase):
@@ -64,6 +64,7 @@ class TestRelations(TrackerTestCase):
 		private = frappe.get_doc(
 			{
 				"doctype": "Project",
+				"company": ensure_company(),
 				"project_name": "Private",
 				"tracker_identifier": "PRV",
 				"tracker_members": [{"user": MGR, "project_role": "Manager"}],

@@ -5,7 +5,7 @@ import time
 import frappe
 from frappe.utils import now
 
-from auriga_track.tracking.tests.utils import DEV, MGR, TrackerTestCase
+from auriga_track.tracking.tests.utils import DEV, MGR, TrackerTestCase, ensure_company
 
 WORK_ITEM_INDEXES = ("project", "status", "assigned_to", "parent_work_item", "release", "is_closed")
 TIME_ENTRY_INDEXES = ("work_item", "user", "date")
@@ -26,6 +26,7 @@ class TestPerformance(TrackerTestCase):
 			doc = frappe.get_doc(
 				{
 					"doctype": "Project",
+					"company": ensure_company(),
 					"project_name": f"Perf {number}",
 					"tracker_identifier": f"PF{number}",
 					"tracker_members": [

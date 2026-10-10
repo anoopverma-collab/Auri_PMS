@@ -2,7 +2,7 @@
 
 import frappe
 
-from auriga_track.tracking.tests.utils import DEV, MGR, OUT, TrackerTestCase, make_user
+from auriga_track.tracking.tests.utils import DEV, MGR, OUT, TrackerTestCase, ensure_company, make_user
 
 
 class TestProject(TrackerTestCase):
@@ -10,6 +10,7 @@ class TestProject(TrackerTestCase):
 		return frappe.get_doc(
 			{
 				"doctype": "Project",
+				"company": ensure_company(),
 				"project_name": name,
 				"tracker_identifier": identifier,
 				"tracker_members": [{"user": u, "project_role": r} for u, r in (members or [])],

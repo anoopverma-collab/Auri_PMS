@@ -44,6 +44,25 @@ def make_user(email: str, roles: tuple[str, ...]) -> None:
 	).insert(ignore_permissions=True)
 
 
+def ensure_company(force_create: bool = False) -> str:
+	"""A Company for the Projects the tests create (ERPNext requires one; a fresh CI site has none)."""
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if company and not force_create:
+		frappe.defaults.set_global_default("company", company)
+		return company
+	company = frappe.get_doc(
+		{
+			"doctype": "Company",
+			"company_name": "Auri PMS Test Company",
+			"abbr": "ATTC",
+			"default_currency": "INR",
+			"country": "India",
+		}
+	).insert(ignore_permissions=True)
+	frappe.defaults.set_global_default("company", company.name)
+	return company.name
+
+
 def make_project(
 	name: str,
 	identifier: str | None,
@@ -55,6 +74,7 @@ def make_project(
 	doc = frappe.get_doc(
 		{
 			"doctype": "Project",
+			"company": ensure_company(),
 			"project_name": name,
 			"tracker_identifier": identifier,
 			"is_public": 1 if public else 0,

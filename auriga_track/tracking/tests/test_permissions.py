@@ -6,7 +6,16 @@ import frappe
 from frappe.desk.query_report import run as run_report
 from frappe.desk.search import search_link
 
-from auriga_track.tracking.tests.utils import DEV, MGR, OUT, REP, TM, TrackerTestCase, days_ago
+from auriga_track.tracking.tests.utils import (
+	DEV,
+	MGR,
+	OUT,
+	REP,
+	TM,
+	TrackerTestCase,
+	days_ago,
+	ensure_company,
+)
 
 
 class TestPermissions(TrackerTestCase):
@@ -78,6 +87,7 @@ class TestPermissions(TrackerTestCase):
 		parent = frappe.get_doc(
 			{
 				"doctype": "Project",
+				"company": ensure_company(),
 				"project_name": "Parent",
 				"tracker_identifier": "PAR",
 				"tracker_members": [
@@ -89,6 +99,7 @@ class TestPermissions(TrackerTestCase):
 		child = frappe.get_doc(
 			{
 				"doctype": "Project",
+				"company": ensure_company(),
 				"project_name": "Child",
 				"tracker_identifier": "CHD",
 				"parent_project": parent.name,
