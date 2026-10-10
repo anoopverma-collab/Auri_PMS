@@ -1,0 +1,147 @@
+{
+	"actions": [],
+	"autoname": "format:{project_identifier}-{release_name}",
+	"creation": "2026-10-10 10:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"release_name",
+		"project",
+		"project_identifier",
+		"status",
+		"due_date",
+		"description",
+		"total_items",
+		"closed_items",
+		"estimated_hours",
+		"spent_hours",
+		"percent_complete"
+	],
+	"fields": [
+		{
+			"fieldname": "release_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Release",
+			"reqd": 1
+		},
+		{
+			"fieldname": "project",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Project",
+			"options": "Project",
+			"reqd": 1,
+			"search_index": 1,
+			"set_only_once": 1
+		},
+		{
+			"fetch_from": "project.tracker_identifier",
+			"fieldname": "project_identifier",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "Project Identifier",
+			"read_only": 1
+		},
+		{
+			"default": "Open",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Open\nLocked\nClosed",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "due_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Due Date"
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Text Editor",
+			"label": "Description"
+		},
+		{
+			"fieldname": "total_items",
+			"fieldtype": "Int",
+			"label": "Total Items",
+			"read_only": 1
+		},
+		{
+			"fieldname": "closed_items",
+			"fieldtype": "Int",
+			"label": "Closed Items",
+			"read_only": 1
+		},
+		{
+			"fieldname": "estimated_hours",
+			"fieldtype": "Float",
+			"label": "Estimated Hours",
+			"read_only": 1
+		},
+		{
+			"fieldname": "spent_hours",
+			"fieldtype": "Float",
+			"label": "Spent Hours",
+			"read_only": 1
+		},
+		{
+			"fieldname": "percent_complete",
+			"fieldtype": "Percent",
+			"in_list_view": 1,
+			"label": "% Complete",
+			"read_only": 1
+		}
+	],
+	"issingle": 0,
+	"istable": 0,
+	"modified": "2026-10-10 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Tracking",
+	"name": "Release",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker User",
+			"write": 1
+		}
+	],
+	"search_fields": "release_name,project,status",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "release_name",
+	"track_changes": 1
+}

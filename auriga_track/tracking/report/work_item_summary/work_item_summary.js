@@ -1,0 +1,13 @@
+// Copyright (c) 2026, Auriga IT and contributors
+// For license information, please see license.txt
+
+frappe.query_reports["Work Item Summary"] = {
+	filters: [
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
+		{fieldname: "tracker", label: __("Tracker"), fieldtype: "Link", options: "Tracker"},
+		{fieldname: "release", label: __("Release"), fieldtype: "Link", options: "Release",
+			get_query: () => ({filters: frappe.query_report.get_filter_value("project") ? {project: frappe.query_report.get_filter_value("project")} : {}})},
+		{fieldname: "from_date", label: __("Closed From"), fieldtype: "Date", default: frappe.datetime.add_days(frappe.datetime.get_today(), -30)},
+		{fieldname: "to_date", label: __("Closed To"), fieldtype: "Date", default: frappe.datetime.get_today()},
+	],
+};

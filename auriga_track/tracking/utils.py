@@ -1,0 +1,365 @@
+"""Shared helpers for Auri PMS: capability lookup, hierarchy walking, rollups and progress."""
+
+from __future__ import annotations
+
+import re
+
+import frappe
+from frappe.utils import cint, flt
+
+CAPABILITY_FIELDS: tuple[str, ...] = (
+	"can_create_items",
+	"can_edit_any_item",
+	"can_delete_items",
+	"can_manage_releases",
+	"can_manage_categories",
+	"can_log_time",
+	"can_edit_others_time",
+	"can_manage_members",
+	"can_be_assigned",
+)
+MANAGER_ROLES = frozenset({"Tracker Manager", "System Manager"})
+# ERPNext roles that already have their own view of every Project; Project visibility is not narrowed for them.
+ERPNEXT_PROJECT_ROLES = frozenset({"Projects Manager", "Projects User"})
+
+
+# --------------------------------------------------------------------------- request cache
+def _cache() -> dict:
+	"""Return the per-request cache dict kept on ``frappe.local``."""
+	if not hasattr(frappe.local, "track_cache"):
+		frappe.local.track_cache = {}
+	return frappe.local.track_cache
+
+
+def clear_cache(doc=None, method: str | None = None) -> None:
+	"""Drop the per-request capability cache. Usable directly or as a doc_events hook."""
+	frappe.local.track_cache = {}
+
+
+# --------------------------------------------------------------------------- users and roles
+def is_manager(user: str | None = None) -> bool:
+	"""Return True for Administrator, Tracker Manager and System Manager."""
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return True
+	return bool(MANAGER_ROLES & set(frappe.get_roles(user)))
+
+
+def is_user_enabled(user: str) -> bool:
+	"""Return True if the User exists and is enabled."""
+	if user == "Administrator":
+		return True
+	key = ("enabled", user)
+	cache = _cache()
+	if key not in cache:
+		cache[key] = bool(cint(frappe.db.get_value("User", user, "enabled")))
+	return cache[key]
+
+
+def has_unrestricted_project_view(user: str) -> bool:
+	"""True if the user sees every Project (tracker/system managers and ERPNext project roles)."""
+	return is_manager(user) or bool((ERPNEXT_PROJECT_ROLES) & set(frappe.get_roles(user)))
+
+
+# --------------------------------------------------------------------------- settings
+def get_settings():
+	"""Return the cached Tracker Settings document."""
+	return frappe.get_cached_doc("Tracker Settings")
+
+
+# --------------------------------------------------------------------------- capabilities
+def _role_flags(role: str | None) -> dict:
+	"""Return the capability flags of a Project Role (all False when the role is missing)."""
+	if not role:
+		return dict.fromkeys(CAPABILITY_FIELDS, False)
+	key = ("role_flags", role)
+	cache = _cache()
+	if key not in cache:
+		row = frappe.db.get_value("Project Role", role, list(CAPABILITY_FIELDS), as_dict=True) or {}
+		cache[key] = {f: bool(cint(row.get(f))) for f in CAPABILITY_FIELDS}
+	return dict(cache[key])
+
+
+def get_member_role(project: str, user: str) -> str | None:
+	"""Return the Project Role of ``user`` as a member of ``project`` (None if not a member)."""
+	key = ("member_role", project, user)
+	cache = _cache()
+	if key not in cache:
+		cache[key] = frappe.db.get_value(
+			"Project Member", {"parent": project, "parenttype": "Project", "user": user}, "project_role"
+		)
+	return cache[key]
+
+
+def get_project_role(project: str, user: str | None = None) -> str | None:
+	"""Return the effective Project Role: member role, else the public role on a public project, else None."""
+	user = user or frappe.session.user
+	role = get_member_role(project, user)
+	if role:
+		return role
+	if cint(frappe.db.get_value("Project", project, "is_public")):
+		return get_settings().public_project_role
+	return None
+
+
+def get_capabilities(project: str, user: str | None = None, members_only: bool = False) -> dict:
+	"""Return the Project Role flags for ``user`` on ``project``.
+
+	Tracker/System Manager -> all True. Member -> their role's flags.
+	Non-member on public project -> Tracker Settings.public_project_role flags.
+	Otherwise -> all False. Disabled users always get all False. Cached per request.
+
+	With ``members_only`` the manager shortcut and the public-project fallback are skipped, so only
+	real members are reported (used to decide who may be assigned work).
+	"""
+	user = user or frappe.session.user
+	key = ("caps", project, user, members_only)
+	cache = _cache()
+	if key in cache:
+		return dict(cache[key])
+
+	if not project or not is_user_enabled(user):
+		caps = dict.fromkeys(CAPABILITY_FIELDS, False)
+	elif not members_only and is_manager(user):
+		caps = dict.fromkeys(CAPABILITY_FIELDS, True)
+	else:
+		role = get_member_role(project, user)
+		if not role and not members_only and cint(frappe.db.get_value("Project", project, "is_public")):
+			role = get_settings().public_project_role
+		caps = _role_flags(role)
+
+	cache[key] = caps
+	return dict(caps)
+
+
+def has_capability(project: str, capability: str, user: str | None = None) -> bool:
+	"""Shortcut for ``get_capabilities(project, user)[capability]``."""
+	return bool(get_capabilities(project, user).get(capability))
+
+
+# --------------------------------------------------------------------------- hierarchy
+def get_ancestors(work_item: str | None) -> list[str]:
+	"""Return the ancestor chain of ``work_item``, nearest parent first (cycle safe)."""
+	chain: list[str] = []
+	seen = {work_item}
+	parent = work_item
+	while parent:
+		parent = frappe.db.get_value("Work Item", parent, "parent_work_item")
+		if not parent or parent in seen:
+			break
+		chain.append(parent)
+		seen.add(parent)
+	return chain
+
+
+def get_children(work_item: str) -> list[str]:
+	"""Return the names of the direct children of ``work_item``."""
+	return frappe.get_all("Work Item", filters={"parent_work_item": work_item}, pluck="name")
+
+
+def get_subtree_height(work_item: str) -> int:
+	"""Return how many levels exist below ``work_item`` (0 for a leaf)."""
+	height = 0
+	level = [work_item]
+	seen = {work_item}
+	while level:
+		children = frappe.get_all("Work Item", filters={"parent_work_item": ["in", level]}, pluck="name")
+		level = [c for c in children if c not in seen]
+		seen.update(level)
+		if level:
+			height += 1
+	return height
+
+
+def get_descendants(work_item: str) -> list[str]:
+	"""Return every descendant of ``work_item``."""
+	found: list[str] = []
+	level = [work_item]
+	seen = {work_item}
+	while level:
+		children = frappe.get_all("Work Item", filters={"parent_work_item": ["in", level]}, pluck="name")
+		level = [c for c in children if c not in seen]
+		seen.update(level)
+		found.extend(level)
+	return found
+
+
+# --------------------------------------------------------------------------- progress (R-32)
+def compute_progress(items: list[dict]) -> float:
+	"""Progress of a set of items (R-32).
+
+	Each item counts 100 if closed, else its ``done_percent``. If every item has ``hours`` > 0 the
+	average is weighted by hours, otherwise it is a simple average. An empty set is 0.
+	"""
+	if not items:
+		return 0.0
+	values = [100.0 if cint(i.get("is_closed")) else flt(i.get("done_percent")) for i in items]
+	weights = [flt(i.get("hours")) for i in items]
+	if all(w > 0 for w in weights):
+		return flt(sum(v * w for v, w in zip(values, weights, strict=True)) / sum(weights), 2)
+	return flt(sum(values) / len(values), 2)
+
+
+# --------------------------------------------------------------------------- rollups (R-28 .. R-33)
+def recalc_work_item(name: str) -> None:
+	"""Recompute spent/estimated totals and (for parents) % done of one Work Item (R-28, R-29, R-31)."""
+	if not name or not frappe.db.exists("Work Item", name):
+		return
+	own_spent = flt(
+		frappe.db.sql("select coalesce(sum(hours), 0) from `tabTime Entry` where work_item = %s", name)[0][0]
+	)
+	own_est = flt(frappe.db.get_value("Work Item", name, "estimated_hours"))
+	children = frappe.get_all(
+		"Work Item",
+		filters={"parent_work_item": name},
+		fields=["is_closed", "done_percent", "estimated_hours", "total_estimated_hours", "total_spent_hours"],
+	)
+	values = {
+		"spent_hours": own_spent,
+		"total_spent_hours": own_spent + sum(flt(c.total_spent_hours) for c in children),
+		"total_estimated_hours": own_est + sum(flt(c.total_estimated_hours) for c in children),
+	}
+	if children:
+		values["done_percent"] = compute_progress(
+			[
+				{
+					"is_closed": c.is_closed,
+					"done_percent": c.done_percent,
+					"hours": c.total_estimated_hours,
+				}
+				for c in children
+			]
+		)
+	frappe.db.set_value("Work Item", name, values, update_modified=False)
+
+
+def recalc_chain(name: str | None) -> None:
+	"""Recompute ``name`` and every ancestor, bottom-up (R-30)."""
+	if not name:
+		return
+	for item in [name, *get_ancestors(name)]:
+		recalc_work_item(item)
+
+
+def recalc_release(release: str | None) -> None:
+	"""Recompute the roll-up fields of a Release (R-33)."""
+	if not release or not frappe.db.exists("Release", release):
+		return
+	items = frappe.get_all(
+		"Work Item",
+		filters={"release": release},
+		fields=["is_closed", "done_percent", "estimated_hours", "spent_hours", "tracker"],
+	)
+	roadmap = {
+		t.name: cint(t.show_in_roadmap) for t in frappe.get_all("Tracker", fields=["name", "show_in_roadmap"])
+	}
+	progress_items = [
+		{"is_closed": i.is_closed, "done_percent": i.done_percent, "hours": i.estimated_hours}
+		for i in items
+		if roadmap.get(i.tracker, 1)
+	]
+	frappe.db.set_value(
+		"Release",
+		release,
+		{
+			"total_items": len(items),
+			"closed_items": sum(1 for i in items if cint(i.is_closed)),
+			"estimated_hours": sum(flt(i.estimated_hours) for i in items),
+			"spent_hours": sum(flt(i.spent_hours) for i in items),
+			"percent_complete": compute_progress(progress_items),
+		},
+		update_modified=False,
+	)
+
+
+# --------------------------------------------------------------------------- workflow (R-17, R-18)
+def transition_allowed(
+	tracker: str, from_status: str, to_status: str, project: str, user: str | None = None
+) -> bool:
+	"""Return True if ``user`` may move an item of ``tracker`` from one status to another on ``project``.
+
+	An empty transition table allows every move; Tracker/System Managers bypass the table.
+	"""
+	user = user or frappe.session.user
+	if from_status == to_status or is_manager(user):
+		return True
+	rows = frappe.get_all(
+		"Tracker Transition",
+		filters={"parent": tracker, "parenttype": "Tracker", "parentfield": "transitions"},
+		fields=["from_status", "to_status", "project_role"],
+	)
+	if not rows:
+		return True
+	role = get_project_role(project, user)
+	return any(
+		r.from_status == from_status
+		and r.to_status == to_status
+		and (not r.project_role or r.project_role == role)
+		for r in rows
+	)
+
+
+def get_enabled_trackers(project: str) -> list[str]:
+	"""Return the trackers enabled on ``project``; an empty list on the project means all active trackers."""
+	enabled = frappe.get_all(
+		"Project Tracker",
+		filters={"parent": project, "parenttype": "Project", "parentfield": "enabled_trackers"},
+		pluck="tracker",
+	)
+	if enabled:
+		return enabled
+	return frappe.get_all("Tracker", filters={"is_active": 1}, pluck="name")
+
+
+def follow_work_item(work_item: str, user: str | None) -> None:
+	"""Make ``user`` a watcher (Document Follow) of ``work_item``; idempotent."""
+	if not user or user in ("Administrator", "Guest") or not is_user_enabled(user):
+		return
+	filters = {"ref_doctype": "Work Item", "ref_docname": work_item, "user": user}
+	if not frappe.db.exists("Document Follow", filters):
+		frappe.get_doc({"doctype": "Document Follow", **filters}).insert(ignore_permissions=True)
+
+
+def safe_sendmail(**kwargs) -> bool:
+	"""Queue an email without ever blocking the caller; failures are logged. Returns True if queued.
+
+	``frappe.sendmail`` reports a missing outgoing account with ``frappe.throw``, which also pushes a popup
+	message for the user. That message is dropped here, because a status change must not look like it failed.
+	"""
+	message_count = len(getattr(frappe.local, "message_log", None) or [])
+	try:
+		frappe.sendmail(**kwargs)
+		return True
+	except Exception:
+		del frappe.local.message_log[message_count:]
+		frappe.log_error(title="Auri PMS: email could not be queued")
+		return False
+
+
+# --------------------------------------------------------------------------- status colours
+INDICATOR_PALETTE = {
+	"blue": "#2490ef",
+	"cyan": "#00b8d9",
+	"green": "#22c55e",
+	"orange": "#ff9f1c",
+	"yellow": "#facc15",
+	"red": "#e24c4c",
+	"purple": "#8b5cf6",
+	"pink": "#ec4899",
+	"gray": "#8d99a6",
+}
+
+
+def nearest_indicator(hex_color: str | None) -> str:
+	"""Map a status colour (hex) to the nearest Desk indicator colour name; gray when unset or invalid."""
+	if not hex_color or not re.fullmatch(r"#[0-9a-fA-F]{6}", hex_color):
+		return "gray"
+
+	def rgb(value: str) -> tuple[int, ...]:
+		return tuple(int(value[i : i + 2], 16) for i in (1, 3, 5))
+
+	target = rgb(hex_color)
+	return min(
+		INDICATOR_PALETTE,
+		key=lambda name: sum((a - b) ** 2 for a, b in zip(rgb(INDICATOR_PALETTE[name]), target, strict=True)),
+	)

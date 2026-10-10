@@ -1,0 +1,127 @@
+{
+	"actions": [],
+	"creation": "2026-10-10 10:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"default_status",
+		"default_priority",
+		"public_project_role",
+		"require_children_closed",
+		"require_blockers_closed",
+		"allow_time_on_closed_items",
+		"time_entry_lock_days",
+		"max_hours_per_entry",
+		"max_hours_per_day",
+		"due_reminder_days",
+		"max_subtask_depth"
+	],
+	"fields": [
+		{
+			"description": "Used when a tracker has no default",
+			"fieldname": "default_status",
+			"fieldtype": "Link",
+			"label": "Default Status",
+			"options": "Work Item Status",
+			"reqd": 1
+		},
+		{
+			"default": "Normal",
+			"fieldname": "default_priority",
+			"fieldtype": "Select",
+			"label": "Default Priority",
+			"options": "Low\nNormal\nHigh\nUrgent\nImmediate",
+			"reqd": 1
+		},
+		{
+			"description": "Capabilities for non-members on public projects",
+			"fieldname": "public_project_role",
+			"fieldtype": "Link",
+			"label": "Role on Public Projects",
+			"options": "Project Role",
+			"reqd": 1
+		},
+		{
+			"default": "1",
+			"fieldname": "require_children_closed",
+			"fieldtype": "Check",
+			"label": "Parent Closes Only After Children"
+		},
+		{
+			"default": "1",
+			"fieldname": "require_blockers_closed",
+			"fieldtype": "Check",
+			"label": "Item Closes Only After Blockers"
+		},
+		{
+			"default": "0",
+			"fieldname": "allow_time_on_closed_items",
+			"fieldtype": "Check",
+			"label": "Allow Time on Closed Items"
+		},
+		{
+			"default": "0",
+			"description": "0 = no lock; Tracker Manager bypasses",
+			"fieldname": "time_entry_lock_days",
+			"fieldtype": "Int",
+			"label": "Lock Time Entries Older Than (Days)"
+		},
+		{
+			"default": "24",
+			"fieldname": "max_hours_per_entry",
+			"fieldtype": "Float",
+			"label": "Max Hours per Entry"
+		},
+		{
+			"default": "24",
+			"fieldname": "max_hours_per_day",
+			"fieldtype": "Float",
+			"label": "Max Hours per User per Day"
+		},
+		{
+			"default": "1",
+			"description": "Daily scheduler",
+			"fieldname": "due_reminder_days",
+			"fieldtype": "Int",
+			"label": "Due Reminder (Days Before)"
+		},
+		{
+			"default": "5",
+			"fieldname": "max_subtask_depth",
+			"fieldtype": "Int",
+			"label": "Max Subtask Depth"
+		}
+	],
+	"issingle": 1,
+	"istable": 0,
+	"modified": "2026-10-10 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Tracking",
+	"name": "Tracker Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Tracker Manager",
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Tracker User"
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

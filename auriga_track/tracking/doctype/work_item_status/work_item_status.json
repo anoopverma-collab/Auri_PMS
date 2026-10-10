@@ -1,0 +1,106 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "field:status_name",
+	"creation": "2026-10-10 10:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"status_name",
+		"sequence",
+		"color",
+		"is_closed",
+		"default_done_percent",
+		"is_active"
+	],
+	"fields": [
+		{
+			"fieldname": "status_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Status",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"default": "10",
+			"description": "Order in Kanban and dropdowns",
+			"fieldname": "sequence",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Sequence",
+			"reqd": 1
+		},
+		{
+			"description": "Indicator colour in list view",
+			"fieldname": "color",
+			"fieldtype": "Color",
+			"label": "Color"
+		},
+		{
+			"default": "0",
+			"description": "Drives all open/closed logic",
+			"fieldname": "is_closed",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Is Closed"
+		},
+		{
+			"description": "If set, applied when item moves to this status",
+			"fieldname": "default_done_percent",
+			"fieldtype": "Int",
+			"label": "Default % Done"
+		},
+		{
+			"default": "1",
+			"description": "Inactive statuses hidden for new transitions",
+			"fieldname": "is_active",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Active"
+		}
+	],
+	"issingle": 0,
+	"istable": 0,
+	"modified": "2026-10-10 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Tracking",
+	"name": "Work Item Status",
+	"naming_rule": "By fieldname",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Tracker User"
+		}
+	],
+	"search_fields": "status_name,sequence",
+	"sort_field": "sequence",
+	"sort_order": "ASC",
+	"states": [],
+	"title_field": "status_name"
+}
