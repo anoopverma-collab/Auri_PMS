@@ -251,7 +251,8 @@ def recalc_release(release: str | None) -> None:
 		fields=["is_closed", "done_percent", "estimated_hours", "spent_hours", "tracker"],
 	)
 	roadmap = {
-		t.name: cint(t.show_in_roadmap) for t in frappe.get_all("Tracker", fields=["name", "show_in_roadmap"])
+		t.name: cint(t.show_in_roadmap)
+		for t in frappe.get_all("Ticket Type", fields=["name", "show_in_roadmap"])
 	}
 	progress_items = [
 		{"is_closed": i.is_closed, "done_percent": i.done_percent, "hours": i.estimated_hours}
@@ -284,8 +285,8 @@ def transition_allowed(
 	if from_status == to_status or is_manager(user):
 		return True
 	rows = frappe.get_all(
-		"Tracker Transition",
-		filters={"parent": tracker, "parenttype": "Tracker", "parentfield": "transitions"},
+		"Ticket Type Transition",
+		filters={"parent": tracker, "parenttype": "Ticket Type", "parentfield": "transitions"},
 		fields=["from_status", "to_status", "project_role"],
 	)
 	if not rows:
@@ -302,13 +303,13 @@ def transition_allowed(
 def get_enabled_trackers(project: str) -> list[str]:
 	"""Return the trackers enabled on ``project``; an empty list on the project means all active trackers."""
 	enabled = frappe.get_all(
-		"Project Tracker",
+		"Project Ticket Type",
 		filters={"parent": project, "parenttype": "Project", "parentfield": "enabled_trackers"},
 		pluck="tracker",
 	)
 	if enabled:
 		return enabled
-	return frappe.get_all("Tracker", filters={"is_active": 1}, pluck="name")
+	return frappe.get_all("Ticket Type", filters={"is_active": 1}, pluck="name")
 
 
 def follow_work_item(work_item: str, user: str | None) -> None:

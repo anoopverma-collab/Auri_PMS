@@ -1,7 +1,7 @@
 {
 	"actions": [],
 	"allow_import": 1,
-	"creation": "2026-10-10 10:00:00.000000",
+	"creation": "2026-10-10 10:00:00",
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
@@ -15,6 +15,9 @@
 		"release",
 		"sprint",
 		"parent_work_item",
+		"dependent_on_client",
+		"client_dependency_note",
+		"client_dependency_since",
 		"author",
 		"column_break_1",
 		"start_date",
@@ -60,8 +63,8 @@
 			"fieldname": "tracker",
 			"fieldtype": "Link",
 			"in_standard_filter": 1,
-			"label": "Tracker",
-			"options": "Tracker",
+			"label": "Ticket Type",
+			"options": "Ticket Type",
 			"reqd": 1
 		},
 		{
@@ -120,6 +123,29 @@
 			"label": "Parent Item",
 			"options": "Work Item",
 			"search_index": 1
+		},
+		{
+			"default": "0",
+			"description": "Work is blocked until the client provides something",
+			"fieldname": "dependent_on_client",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Dependent on Client",
+			"search_index": 1
+		},
+		{
+			"depends_on": "dependent_on_client",
+			"fieldname": "client_dependency_note",
+			"fieldtype": "Small Text",
+			"label": "What We Need From the Client"
+		},
+		{
+			"depends_on": "dependent_on_client",
+			"fieldname": "client_dependency_since",
+			"fieldtype": "Date",
+			"label": "Waiting Since",
+			"no_copy": 1,
+			"read_only": 1
 		},
 		{
 			"fieldname": "author",
@@ -206,6 +232,7 @@
 			"label": "Status Details"
 		},
 		{
+			"default": "0",
 			"fetch_from": "status.is_closed",
 			"fieldname": "is_closed",
 			"fieldtype": "Check",
@@ -246,8 +273,6 @@
 		}
 	],
 	"is_calendar_and_gantt": 1,
-	"issingle": 0,
-	"istable": 0,
 	"links": [
 		{
 			"group": "Subtasks",
@@ -260,7 +285,7 @@
 			"link_fieldname": "work_item"
 		}
 	],
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-10 20:20:08.195092",
 	"modified_by": "Administrator",
 	"module": "Tracking",
 	"name": "Work Item",
@@ -303,6 +328,7 @@
 		}
 	],
 	"quick_entry": 1,
+	"row_format": "Dynamic",
 	"search_fields": "subject,project,assigned_to,status",
 	"show_title_field_in_link": 1,
 	"sort_field": "modified",

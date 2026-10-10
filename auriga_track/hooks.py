@@ -287,6 +287,7 @@ permission_query_conditions = {
 	"Work Item": "auriga_track.permissions.work_item_query",
 	"Release": "auriga_track.permissions.release_query",
 	"Sprint": "auriga_track.permissions.sprint_query",
+	"Project Status Report": "auriga_track.permissions.status_report_query",
 	"Time Entry": "auriga_track.permissions.time_entry_query",
 	"Work Item Category": "auriga_track.permissions.category_query",
 }
@@ -296,13 +297,19 @@ has_permission = {
 	"Work Item": "auriga_track.permissions.work_item_has_permission",
 	"Release": "auriga_track.permissions.release_has_permission",
 	"Sprint": "auriga_track.permissions.sprint_has_permission",
+	"Project Status Report": "auriga_track.permissions.status_report_has_permission",
 	"Time Entry": "auriga_track.permissions.time_entry_has_permission",
 	"Work Item Category": "auriga_track.permissions.category_has_permission",
 }
 
 override_doctype_dashboards = {"Project": ["auriga_track.tracking.project_hooks.get_dashboard_data"]}
 
-scheduler_events = {"daily": ["auriga_track.tracking.tasks.send_due_digests"]}
+scheduler_events = {
+	"daily": [
+		"auriga_track.tracking.tasks.send_due_digests",
+		"auriga_track.tracking.status_report.send_scheduled_reports",
+	]
+}
 
 global_search_doctypes = {"Default": [{"doctype": "Work Item", "index": 30}]}
 

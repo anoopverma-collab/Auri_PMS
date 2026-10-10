@@ -35,6 +35,7 @@ frappe.ui.form.on("Work Item", {
 
 	refresh(frm) {
 		frm.trigger("set_indicator");
+		frm.trigger("client_headline");
 		frm.trigger("lock_done_percent");
 		if (frm.is_new()) return;
 		frm.add_custom_button(__("Log Time"), () => wi_log_time(frm));
@@ -70,6 +71,17 @@ frappe.ui.form.on("Work Item", {
 		}
 	},
 
+	client_headline(frm) {
+		if (!cint(frm.doc.dependent_on_client) || cint(frm.doc.is_closed) || frm.is_new()) return;
+		const since = frm.doc.client_dependency_since ? frappe.datetime.str_to_user(frm.doc.client_dependency_since) : "";
+		const note = frm.doc.client_dependency_note ? ` - ${frappe.utils.escape_html(frm.doc.client_dependency_note)}` : "";
+		frm.dashboard.set_headline_alert(`<span>${__("Waiting on the client")}${since ? ` ${__("since {0}", [since])}` : ""}${note}</span>`, "orange");
+	},
+
+	dependent_on_client(frm) {
+		if (!cint(frm.doc.dependent_on_client)) frm.set_value("client_dependency_note", null);
+	},
+
 	lock_done_percent(frm) {
 		const has_children = frm.doc.__onload && frm.doc.__onload.has_children;
 		frm.set_df_property("done_percent", "read_only", has_children ? 1 : 0);
@@ -77,7 +89,7 @@ frappe.ui.form.on("Work Item", {
 
 	tracker(frm) {
 		if (!frm.is_new() || !frm.doc.tracker) return;
-		frappe.db.get_value("Tracker", frm.doc.tracker, "default_status").then((r) => {
+		frappe.db.get_value("Ticket Type", frm.doc.tracker, "default_status").then((r) => {
 			if (r.message && r.message.default_status) frm.set_value("status", r.message.default_status);
 		});
 	},

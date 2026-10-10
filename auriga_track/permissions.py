@@ -76,6 +76,11 @@ def sprint_query(user: str | None = None, doctype: str | None = None) -> str:
 	return _project_scope(user or frappe.session.user, "`tabSprint`.project")
 
 
+def status_report_query(user: str | None = None, doctype: str | None = None) -> str:
+	"""permission_query_conditions for Project Status Report."""
+	return _project_scope(user or frappe.session.user, "`tabProject Status Report`.project")
+
+
 def category_query(user: str | None = None, doctype: str | None = None) -> str:
 	"""permission_query_conditions for Work Item Category."""
 	return _project_scope(user or frappe.session.user, "`tabWork Item Category`.project")
@@ -131,4 +136,9 @@ def category_has_permission(doc, ptype: str | None = None, user: str | None = No
 
 def sprint_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Sprint."""
+	return _has_project_permission(doc, ptype, user)
+
+
+def status_report_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
+	"""has_permission hook for Project Status Report."""
 	return _has_project_permission(doc, ptype, user)

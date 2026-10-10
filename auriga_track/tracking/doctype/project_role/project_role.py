@@ -26,7 +26,7 @@ class ProjectRole(Document):
 			frappe.throw(
 				_("Project Role {0} is used in Tracker Settings and cannot be deleted").format(self.name)
 			)
-		if frappe.db.exists("Tracker Transition", {"project_role": self.name}):
+		if frappe.db.exists("Ticket Type Transition", {"project_role": self.name}):
 			frappe.throw(
 				_("Project Role {0} is used in a tracker workflow and cannot be deleted").format(self.name)
 			)

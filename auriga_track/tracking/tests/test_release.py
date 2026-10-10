@@ -42,7 +42,7 @@ class TestRelease(TrackerTestCase):
 
 	def test_t083_roadmap_flag(self):
 		"""T-083: a tracker with show_in_roadmap = 0 does not count towards % complete."""
-		frappe.db.set_value("Tracker", "Support", "show_in_roadmap", 0)
+		frappe.db.set_value("Ticket Type", "Support", "show_in_roadmap", 0)
 		v1 = self.world.releases["v1"]
 		self.new_item(MGR, tracker="Bug", release=v1)
 		support = self.new_item(MGR, tracker="Support", release=v1)

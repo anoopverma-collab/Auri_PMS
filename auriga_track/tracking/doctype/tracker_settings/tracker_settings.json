@@ -13,6 +13,7 @@
 		"time_entry_lock_days",
 		"max_hours_per_entry",
 		"max_hours_per_day",
+		"weekly_capacity_hours",
 		"due_reminder_days",
 		"max_subtask_depth"
 	],
@@ -77,6 +78,13 @@
 			"fieldname": "max_hours_per_day",
 			"fieldtype": "Float",
 			"label": "Max Hours per User per Day"
+		},
+		{
+			"default": "40",
+			"description": "Working hours per person per week; used by My Work to compare logged hours",
+			"fieldname": "weekly_capacity_hours",
+			"fieldtype": "Float",
+			"label": "Weekly Capacity (Hours)"
 		},
 		{
 			"default": "1",

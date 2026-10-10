@@ -77,12 +77,18 @@ def create_default_data() -> None:
 	for role, flags in PROJECT_ROLES.items():
 		insert_if_missing("Project Role", role, {"role_name": role, **dict.fromkeys(flags, 1)})
 	for tracker, colour in TRACKERS.items():
-		values = {"tracker_name": tracker, "color": colour, "default_status": "New", "is_active": 1}
+		values = {
+			"tracker_name": tracker,
+			"color": colour,
+			"default_status": "New",
+			"is_active": 1,
+			"is_defect": int(tracker == "Bug"),
+		}
 		if tracker == "Bug":
 			values["transitions"] = [
 				{"from_status": f, "to_status": t, "project_role": r} for f, t, r in BUG_WORKFLOW
 			]
-		insert_if_missing("Tracker", tracker, values)
+		insert_if_missing("Ticket Type", tracker, values)
 	for activity in ACTIVITY_TYPES:
 		insert_if_missing("Activity Type", activity, {"activity_type": activity})
 	settings = frappe.get_doc("Tracker Settings")
@@ -212,6 +218,7 @@ def before_uninstall() -> None:
 	for doctype, name in (
 		("Workspace", "Tracker"),
 		("Workspace Sidebar", "Tracker"),
+		("Desktop Icon", "Tracker"),
 		("Desktop Icon", "Auri PMS"),
 	):
 		frappe.db.delete(doctype, {"name": name})

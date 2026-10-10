@@ -26,6 +26,7 @@ def get_columns() -> list[dict]:
 		{"fieldname": "open", "label": _("Open"), "fieldtype": "Int", "width": 90},
 		{"fieldname": "overdue", "label": _("Overdue"), "fieldtype": "Int", "width": 90},
 		{"fieldname": "unassigned", "label": _("Unassigned"), "fieldtype": "Int", "width": 110},
+		{"fieldname": "client_waiting", "label": _("Waiting on Client"), "fieldtype": "Int", "width": 140},
 		{"fieldname": "closed_in_period", "label": _("Closed in Period"), "fieldtype": "Int", "width": 130},
 		{"fieldname": "total", "label": _("Total"), "fieldtype": "Int", "width": 90},
 	]
@@ -37,7 +38,7 @@ def get_data(filters: frappe._dict) -> list[dict]:
 	items = frappe.get_list(
 		"Work Item",
 		filters=item_filters,
-		fields=["project", "is_closed", "assigned_to", "due_date", "closed_on"],
+		fields=["project", "is_closed", "assigned_to", "due_date", "closed_on", "dependent_on_client"],
 		limit_page_length=0,
 	)
 	start = getdate(filters.from_date) if filters.get("from_date") else None
@@ -51,6 +52,7 @@ def get_data(filters: frappe._dict) -> list[dict]:
 				"open": 0,
 				"overdue": 0,
 				"unassigned": 0,
+				"client_waiting": 0,
 				"closed_in_period": 0,
 				"total": 0,
 			},
@@ -67,6 +69,7 @@ def get_data(filters: frappe._dict) -> list[dict]:
 		row["open"] += 1
 		row["overdue"] += int(bool(item.due_date and getdate(item.due_date) < getdate(today())))
 		row["unassigned"] += int(not item.assigned_to)
+		row["client_waiting"] += int(bool(cint(item.dependent_on_client)))
 	return sorted(by_project.values(), key=lambda r: r["project"])
 
 

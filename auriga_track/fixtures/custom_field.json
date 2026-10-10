@@ -93,10 +93,10 @@
 		"fieldtype": "Table MultiSelect",
 		"insert_after": "tracker_members",
 		"is_system_generated": 0,
-		"label": "Enabled Trackers",
+		"label": "Enabled Ticket Types",
 		"module": "Tracking",
 		"name": "Project-enabled_trackers",
-		"options": "Project Tracker"
+		"options": "Project Ticket Type"
 	},
 	{
 		"depends_on": "eval:doc.enable_incoming",
@@ -130,9 +130,46 @@
 		"fieldtype": "Link",
 		"insert_after": "tracker_project",
 		"is_system_generated": 0,
-		"label": "Tracker Default Tracker",
+		"label": "Default Ticket Type",
 		"module": "Tracking",
 		"name": "Email Account-tracker_default_tracker",
-		"options": "Tracker"
+		"options": "Ticket Type"
+	},
+	{
+		"collapsible": 1,
+		"doctype": "Custom Field",
+		"dt": "Project",
+		"fieldname": "tracker_sec_report",
+		"fieldtype": "Section Break",
+		"insert_after": "enabled_trackers",
+		"is_system_generated": 0,
+		"label": "Client Status Report",
+		"module": "Tracking",
+		"name": "Project-tracker_sec_report"
+	},
+	{
+		"description": "Email addresses (comma or new line) that receive the weekly status report",
+		"doctype": "Custom Field",
+		"dt": "Project",
+		"fieldname": "tracker_report_recipients",
+		"fieldtype": "Small Text",
+		"insert_after": "tracker_sec_report",
+		"is_system_generated": 0,
+		"label": "Report Recipients",
+		"module": "Tracking",
+		"name": "Project-tracker_report_recipients"
+	},
+	{
+		"description": "Leave blank to send reports manually only",
+		"doctype": "Custom Field",
+		"dt": "Project",
+		"fieldname": "tracker_report_weekday",
+		"fieldtype": "Select",
+		"insert_after": "tracker_report_recipients",
+		"is_system_generated": 0,
+		"label": "Send Weekly On",
+		"module": "Tracking",
+		"name": "Project-tracker_report_weekday",
+		"options": "\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
 	}
 ]

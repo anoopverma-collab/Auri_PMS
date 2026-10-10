@@ -30,12 +30,12 @@ class WorkItemStatus(Document):
 		self.validate_open_and_closed_exist(exclude_self=True)
 
 	def validate_not_in_use(self) -> None:
-		"""A status used on any Work Item or Tracker cannot be deleted."""
+		"""A status used on any Work Item or Ticket Type cannot be deleted."""
 		usage = (
 			("Work Item", {"status": self.name}),
-			("Tracker", {"default_status": self.name}),
-			("Tracker Transition", {"from_status": self.name}),
-			("Tracker Transition", {"to_status": self.name}),
+			("Ticket Type", {"default_status": self.name}),
+			("Ticket Type Transition", {"from_status": self.name}),
+			("Ticket Type Transition", {"to_status": self.name}),
 		)
 		for doctype, filters in usage:
 			if frappe.db.exists(doctype, filters):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
@@ -93,6 +94,7 @@ def get_health(project: str, period: str = "3m") -> frappe._dict:
 		fields=[
 			"name",
 			"tracker",
+			"status",
 			"priority",
 			"assigned_to",
 			"is_closed",
@@ -103,6 +105,8 @@ def get_health(project: str, period: str = "3m") -> frappe._dict:
 			"spent_hours",
 			"done_percent",
 			"sprint",
+			"dependent_on_client",
+			"client_dependency_since",
 		],
 		limit_page_length=0,
 	)
@@ -172,15 +176,30 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 		)
 
 	trend = [open_at(buckets.end(start)) for start in starts]
-	ages = defaultdict(int)
+	ages: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 	for item in open_items:
 		age = (today_ - as_date(item.creation)).days
-		ages[next(text for limit, text in AGE_BUCKETS if age <= limit)] += 1
+		ages[next(text for limit, text in AGE_BUCKETS if age <= limit)][0] += 1
+		ages[next(text for limit, text in AGE_BUCKETS if age <= limit)][1] += cint(item.dependent_on_client)
 	durations = [(as_date(i.closed_on) - as_date(i.creation)).days for i in closed_items if i.closed_on]
 	overdue = sum(1 for i in open_items if i.due_date and getdate(i.due_date) < today_)
-	by_tracker: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+	client_open = [i for i in open_items if cint(i.dependent_on_client)]
+	overdue_client = sum(1 for i in client_open if i.due_date and getdate(i.due_date) < today_)
+	waits = [
+		(today_ - as_date(i.client_dependency_since)).days for i in client_open if i.client_dependency_since
+	]
+	by_tracker: dict[str, list[int]] = defaultdict(
+		lambda: [0, 0, 0]
+	)  # open with us, closed, open waiting on client
 	for item in items:
-		by_tracker[item.tracker][1 if cint(item.is_closed) else 0] += 1
+		if cint(item.is_closed):
+			by_tracker[item.tracker][1] += 1
+		elif cint(item.dependent_on_client):
+			by_tracker[item.tracker][2] += 1
+		else:
+			by_tracker[item.tracker][0] += 1
+	first_day = buckets.first_day
+	client_trend = client_wait_trend(items, buckets)
 	est_open = sum(flt(i.estimated_hours) for i in open_items)
 	est_closed = sum(flt(i.estimated_hours) for i in closed_items)
 	last_28 = today_ - timedelta(days=28)
@@ -193,26 +212,108 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 		"completion_pct": flt(len(closed_items) * 100 / len(items), 1) if items else 0.0,
 		"overdue": overdue,
 		"overdue_pct": flt(overdue * 100 / len(open_items), 1) if open_items else 0.0,
+		# overdue work that is waiting on the client is not the delivery team's delay
+		"overdue_client": overdue_client,
+		"overdue_delivery": overdue - overdue_client,
+		"overdue_delivery_pct": flt((overdue - overdue_client) * 100 / len(open_items), 1)
+		if open_items
+		else 0.0,
+		"client_dependent": len(client_open),
+		"client_oldest_days": max(waits) if waits else None,
+		"client_avg_days": flt(sum(waits) / len(waits), 1) if waits else None,
 		"avg_resolution_days": flt(sum(durations) / len(durations), 1) if durations else None,
 		"created": [created_by_week.get(w, 0) for w in starts],
 		"resolved": [resolved_by_week.get(w, 0) for w in starts],
 		"open_trend": trend,
 		"created_total": sum(created_by_week.get(w, 0) for w in starts),
 		"resolved_total": sum(resolved_by_week.get(w, 0) for w in starts),
-		"aging": [{"label": text, "count": ages.get(text, 0)} for _limit, text in AGE_BUCKETS],
+		"aging": [
+			{"label": text, "count": ages[text][0], "client": ages[text][1]}
+			if text in ages
+			else {"label": text, "count": 0, "client": 0}
+			for _limit, text in AGE_BUCKETS
+		],
 		"open_by_priority": count_by(open_items, "priority"),
-		"by_tracker": [{"label": k, "open": v[0], "closed": v[1]} for k, v in sorted(by_tracker.items())],
+		"open_by_status": count_by(open_items, "status", ordered_by_status=True),
+		"by_tracker": [
+			{"label": k, "open": v[0], "closed": v[1], "client": v[2]} for k, v in sorted(by_tracker.items())
+		],
+		# the part of the numbers that waits on the client
+		"client_trend": client_trend,
+		"created_waiting": sum(
+			1 for i in open_items if cint(i.dependent_on_client) and as_date(i.creation) >= first_day
+		),
 		"estimated_open_hours": flt(est_open, 2),
 		"estimated_closed_hours": flt(est_closed, 2),
 	}
 
 
-def count_by(rows: list, field: str) -> list[dict]:
-	"""[{label, count}] sorted by count for ``field``."""
-	counts: dict[str, int] = defaultdict(int)
+def count_by(rows: list, field: str, ordered_by_status: bool = False) -> list[dict]:
+	"""[{label, count, client}] for ``field``: ``count`` open tickets of which ``client`` wait on the client."""
+	counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 	for row in rows:
-		counts[row.get(field) or _("(none)")] += 1
-	return [{"label": k, "count": v} for k, v in sorted(counts.items(), key=lambda kv: -kv[1])]
+		key = row.get(field) or _("(none)")
+		counts[key][0] += 1
+		counts[key][1] += cint(row.get("dependent_on_client"))
+	if ordered_by_status:
+		sequence = {
+			s.name: s.sequence for s in frappe.get_all("Work Item Status", fields=["name", "sequence"])
+		}
+		ordered = sorted(counts.items(), key=lambda kv: (sequence.get(kv[0], 10**6), kv[0]))
+	else:
+		ordered = sorted(counts.items(), key=lambda kv: -kv[1][0])
+	return [{"label": k, "count": v[0], "client": v[1]} for k, v in ordered]
+
+
+def client_wait_trend(items: list, buckets: Buckets) -> list[int]:
+	"""Open tickets that were waiting on the client at the end of every bucket (rebuilt from the change history)."""
+	flagged = {i.name: i for i in items}
+	events: dict[str, list[tuple[date, int]]] = defaultdict(list)
+	names = list(flagged)
+	for start in range(0, len(names), 500):
+		rows = frappe.get_all(
+			"Version",
+			filters={
+				"ref_doctype": "Work Item",
+				"docname": ["in", names[start : start + 500]],
+				"data": ["like", "%dependent_on_client%"],
+			},
+			fields=["docname", "data", "creation"],
+			order_by="creation asc",
+		)
+		for row in rows:
+			try:
+				changes = json.loads(row.data or "{}").get("changed", [])
+			except ValueError:
+				continue
+			for change in changes:
+				if change[0] == "dependent_on_client":
+					events[row.docname].append((as_date(row.creation), cint(change[2])))
+	intervals: list[tuple[date, date | None]] = []
+	for name, item in flagged.items():
+		created = as_date(item.creation)
+		closed = as_date(item.closed_on) if cint(item.is_closed) and item.closed_on else None
+		begin: date | None = None
+		for when, value in events.get(name, []):
+			if value and begin is None:
+				begin = when
+			elif not value:
+				intervals.append((begin or created, min(when, closed) if closed else when))
+				begin = None
+		if begin is None and cint(item.dependent_on_client) and not events.get(name):
+			begin = as_date(item.client_dependency_since) or created  # ticked when the ticket was created
+		if begin is None and cint(item.dependent_on_client) and events.get(name) and events[name][0][1] == 0:
+			begin = as_date(item.client_dependency_since) or created
+		if begin is not None and cint(item.dependent_on_client):
+			intervals.append((begin, closed))
+	return [
+		sum(
+			1
+			for begin, end in intervals
+			if begin <= buckets.end(start) and (end is None or end > buckets.end(start))
+		)
+		for start in buckets.starts
+	]
 
 
 def time_summary(entries: list, items: list, buckets: Buckets) -> dict:
@@ -341,10 +442,20 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 
 	if not flow["total"]:
 		return {"level": "none", "label": _("No data yet"), "score": None, "reasons": []}
-	if flow["overdue_pct"] > 25:
-		add("red", _("{0}% of open tickets are overdue ({1})").format(flow["overdue_pct"], flow["overdue"]))
-	elif flow["overdue_pct"] > 10:
-		add("amber", _("{0}% of open tickets are overdue ({1})").format(flow["overdue_pct"], flow["overdue"]))
+	if flow["overdue_delivery_pct"] > 25:
+		add(
+			"red",
+			_("{0}% of open tickets are overdue ({1})").format(
+				flow["overdue_delivery_pct"], flow["overdue_delivery"]
+			),
+		)
+	elif flow["overdue_delivery_pct"] > 10:
+		add(
+			"amber",
+			_("{0}% of open tickets are overdue ({1})").format(
+				flow["overdue_delivery_pct"], flow["overdue_delivery"]
+			),
+		)
 	sprint = frappe.db.get_value("Sprint", {"project": project, "status": "Active"}, "name")
 	if sprint:
 		rows = [r for r in get_burndown(sprint)["rows"] if r["actual"] is not None]
@@ -383,7 +494,20 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 			)
 	if flow["created_4w"] > flow["resolved_4w"] * 1.5 and flow["created_4w"] >= 4:
 		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"))
-	level = "red" if any(r["level"] == "red" for r in reasons) else "amber" if reasons else "green"
+	if flow["client_dependent"]:  # informational: shown, but neither the level nor the score changes
+		add(
+			"info",
+			_("{0} tickets are waiting on the client (oldest {1} days)").format(
+				flow["client_dependent"], flow["client_oldest_days"] or 0
+			),
+		)
+	level = (
+		"red"
+		if any(r["level"] == "red" for r in reasons)
+		else "amber"
+		if any(r["level"] == "amber" for r in reasons)
+		else "green"
+	)
 	score = max(
 		0,
 		100

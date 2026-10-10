@@ -30,8 +30,8 @@ class TestUiApi(TrackerTestCase):
 	def test_tracker_query_respects_enabled_trackers(self):
 		"""Only trackers enabled on the project are offered; empty list means all active ones."""
 		with self.as_user(MGR):
-			bet = {r[0] for r in api.tracker_query("Tracker", "", "name", 0, 20, {"project": self.BET})}
-			alp = {r[0] for r in api.tracker_query("Tracker", "", "name", 0, 20, {"project": self.ALP})}
+			bet = {r[0] for r in api.tracker_query("Ticket Type", "", "name", 0, 20, {"project": self.BET})}
+			alp = {r[0] for r in api.tracker_query("Ticket Type", "", "name", 0, 20, {"project": self.ALP})}
 		self.assertEqual(bet, {"Bug", "Task"})
 		self.assertEqual(alp, {"Bug", "Feature", "Task", "Support"})
 

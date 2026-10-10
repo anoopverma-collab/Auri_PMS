@@ -56,9 +56,9 @@ def create_work_item(doc, project: str, tracker: str | None):
 
 def default_intake_tracker() -> str | None:
 	"""Support if it exists, else the first active tracker."""
-	if frappe.db.get_value("Tracker", "Support", "is_active"):
+	if frappe.db.get_value("Ticket Type", "Support", "is_active"):
 		return "Support"
-	return frappe.db.get_value("Tracker", {"is_active": 1}, "name", order_by="name asc")
+	return frappe.db.get_value("Ticket Type", {"is_active": 1}, "name", order_by="name asc")
 
 
 def link_communication(doc, work_item: str) -> None:

@@ -7,7 +7,7 @@ from frappe import _
 from frappe.desk.form import assign_to
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from frappe.utils import cint, flt, now_datetime
+from frappe.utils import cint, flt, now_datetime, today
 
 from auriga_track.tracking.utils import (
 	compute_progress,
@@ -79,6 +79,7 @@ class WorkItem(Document):
 		self.validate_category_and_release()
 		self.validate_sprint()
 		self.validate_parent()
+		self.sync_client_dependency()
 		self.validate_status_change()
 		self.validate_relations()
 		self.apply_children_progress()
@@ -100,7 +101,8 @@ class WorkItem(Document):
 			self.author = self.flags.get("author") or frappe.session.user
 			if not self.status:
 				self.status = (
-					frappe.db.get_value("Tracker", self.tracker, "default_status") or settings.default_status
+					frappe.db.get_value("Ticket Type", self.tracker, "default_status")
+					or settings.default_status
 				)
 			if cint(frappe.db.get_value("Work Item Status", self.status, "is_closed")):
 				frappe.throw(_("A new work item cannot start in a closed status"))
@@ -114,9 +116,11 @@ class WorkItem(Document):
 		if not self.is_new() and self.old.tracker == self.tracker:
 			return
 		if self.tracker not in get_enabled_trackers(self.project) or not cint(
-			frappe.db.get_value("Tracker", self.tracker, "is_active")
+			frappe.db.get_value("Ticket Type", self.tracker, "is_active")
 		):
-			frappe.throw(_("Tracker {0} is not enabled on Project {1}").format(self.tracker, self.project))
+			frappe.throw(
+				_("Ticket Type {0} is not enabled on Project {1}").format(self.tracker, self.project)
+			)
 
 	def validate_dates_and_numbers(self) -> None:
 		"""R-09, R-10."""
@@ -164,6 +168,15 @@ class WorkItem(Document):
 					self.sprint, status
 				)
 			)
+
+	def sync_client_dependency(self) -> None:
+		"""Stamp "waiting since" when a ticket becomes dependent on the client; clear it (and the note) when it stops."""
+		if cint(self.dependent_on_client):
+			if self.is_new() or not cint(self.old.dependent_on_client) or not self.client_dependency_since:
+				self.client_dependency_since = today()
+		else:
+			self.client_dependency_since = None
+			self.client_dependency_note = None
 
 	def validate_parent(self) -> None:
 		"""R-14: same project, no cycles, depth limit."""

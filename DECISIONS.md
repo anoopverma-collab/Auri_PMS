@@ -124,8 +124,8 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     that isolation, which is why emails are queued per recipient. Tests also cope with existing data on the site.
 38. **Frappe skips Version rows in tests** unless `ignore_version=False`; the test helper saves with it so the
     history checks (UAT-04, T-076) are real.
-39. **92 spec tests + `test_e2e.py` + 64 additional tests (22 for sprints, 6 for the Project Hub, 18 for project health)** (UI API, global search, performance and indexes, lifecycle,
-    the missing outgoing mail account, ERPNext permissions): 157 in total.
+39. **92 spec tests + `test_e2e.py` + 78 additional tests (22 sprints, 6 hub, 18 health, 6 portfolio, 10 my work, 13 quality, 14 status report, 10 client dependency)** (UI API, global search, performance and indexes, lifecycle,
+    the missing outgoing mail account, ERPNext permissions): 210 in total.
 40. **UAT-01..08** are scripted in `test_e2e.py`. UAT-09..14 are covered by automated tests (T-050/T-064, T-119,
     T-084, T-096/T-097, T-120..T-125) and the Desk was exercised with a headless browser for the workspace, list,
     quick entry, form buttons, Log Time, Close/Reopen, Kanban, Gantt, Calendar, the four reports, the Project Tracker
@@ -189,6 +189,39 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     panels (tickets and hours by person) always show.
 56. **Sample data:** the SJDM sample tickets were back-dated (creation and closing dates spread over the project timeline) and
     meetings/support time marked non-billable so the dashboard has a history to show.
+
+## Dashboards, client dependency and navigation
+
+57. **No home screen.** The old Tracker workspace (number cards and charts) was removed with a patch; its content now lives in
+    My Work (personal numbers) and the Portfolio (overview). The sidebar starts with the Project Hub and the app icon is
+    called *Tracker*, so searching "tracker" in the Awesome Bar lists *Open Tracker* first and Enter opens the Project Hub
+    (a *Tracker* and a *Tracker Project Hub* command are also registered).
+57a. **Tracker is now called Ticket Type.** The DocType *Tracker* (Bug, Feature, Task, Support) was renamed to *Ticket Type*, its
+    children to *Ticket Type Transition* and *Project Ticket Type*; labels, messages and the sidebar follow. The specification
+    calls it Tracker, so field names stay (`tracker` on Work Item and Project Ticket Type, `enabled_trackers`,
+    `tracker_identifier`, `tracker_members`) to avoid renaming database columns; only DocType names and visible labels
+    changed. The roles *Tracker Manager* / *Tracker User*, *Tracker Settings* and the app name *Tracker* are unchanged. A
+    pre-sync patch renames the DocTypes on existing sites (data, Link fields and custom-field options follow).
+58. **Shared UI kit.** Themes, styles and helpers live in `auriga_hub.bundle.js`, loaded on demand by the five dashboard pages
+    (Project Hub, Portfolio, My Work, Quality, Status Report). One saved theme and one saved range apply to all of them.
+    ERPNext/Frappe screens and the app's own forms and lists keep the standard look (a global skin was tried and removed).
+59. **Portfolio** covers projects with an identifier that the user can see (at most 200), computed with the same functions as the
+    project health dashboard, so numbers agree. Sorted red first, weakest score first within a level.
+60. **My Work** counts only open tickets assigned to the user; weekly capacity comes from Tracker Settings (default 40 h). A
+    ticket is *blocked* when it has a "Blocked by" relation to an open ticket.
+61. **Quality** treats ticket types with *Counts as Defect* as bugs (the shipped Bug tracker is flagged by a patch). A bug is
+    *reopened* when its status moved from a closed to an open status in Frappe's change history; reopen rate = reopened bugs /
+    bugs ever closed. Defect density = bugs opened in the range per 100 hours logged in the range. Status: critical (Urgent or
+    Immediate) bug open more than a week = red, any critical bug = amber, reopen rate >15% amber / >30% red (from 5 closed
+    bugs), more bugs opened than fixed over 4 weeks = amber, >5 bugs per 100 hours = amber.
+62. **Client status report.** One email-safe HTML (inline styles, every value escaped) feeds the preview, the email and the PDF
+    (wkhtmltopdf). Sending needs `can_manage_releases`, checks that an outgoing Email Account exists first (Frappe would
+    otherwise queue silently), and writes a *Project Status Report* log with the exact HTML. The weekly job runs daily, sends
+    for projects whose weekday matches (covering the previous 7 days) and at most once a day per project.
+63. **Dependent on Client.** `dependent_on_client`, `client_dependency_note` and `client_dependency_since` (stamped on ticking,
+    cleared with the note on unticking). Counts are derived live from the checkbox, so they cannot drift. Only open tickets
+    count. Overdue tickets that wait on the client are excluded from the delivery "overdue" rule and from the report's overdue
+    list; the status gets an informational reason (shown, but it changes neither the level nor the score).
 
 ## Uninstall
 

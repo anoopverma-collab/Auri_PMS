@@ -1,0 +1,161 @@
+{
+	"actions": [],
+	"autoname": "SR-.YYYY.-.#####",
+	"creation": "2026-10-10 10:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"subject",
+		"project",
+		"from_date",
+		"to_date",
+		"column_break_1",
+		"status_level",
+		"sent_on",
+		"sent_by",
+		"scheduled",
+		"section_to",
+		"sent_to",
+		"section_body",
+		"body"
+	],
+	"fields": [
+		{
+			"fieldname": "subject",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Subject",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "project",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Project",
+			"options": "Project",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "from_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "From",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "to_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "To",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "status_level",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Project Status",
+			"options": "\ngreen\namber\nred\nnone",
+			"read_only": 1
+		},
+		{
+			"fieldname": "sent_on",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Sent On",
+			"read_only": 1
+		},
+		{
+			"fieldname": "sent_by",
+			"fieldtype": "Link",
+			"label": "Sent By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"fieldname": "scheduled",
+			"fieldtype": "Check",
+			"label": "Sent by Schedule",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_to",
+			"fieldtype": "Section Break",
+			"label": "Recipients"
+		},
+		{
+			"fieldname": "sent_to",
+			"fieldtype": "Small Text",
+			"label": "Sent To",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_body",
+			"fieldtype": "Section Break",
+			"label": "Report"
+		},
+		{
+			"fieldname": "body",
+			"fieldtype": "Long Text",
+			"label": "Report (HTML)",
+			"read_only": 1
+		}
+	],
+	"issingle": 0,
+	"istable": 0,
+	"modified": "2026-10-10 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Tracking",
+	"name": "Project Status Report",
+	"naming_rule": "Expression (old style)",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker User",
+			"share": 1
+		}
+	],
+	"search_fields": "subject,project",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "subject"
+}

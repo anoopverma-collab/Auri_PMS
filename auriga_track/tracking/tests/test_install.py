@@ -8,7 +8,13 @@ from auriga_track import install
 
 class TestInstall(IntegrationTestCase):
 	def counts(self) -> dict:
-		doctypes = ("Work Item Status", "Project Role", "Tracker", "Tracker Transition", "Activity Type")
+		doctypes = (
+			"Work Item Status",
+			"Project Role",
+			"Ticket Type",
+			"Ticket Type Transition",
+			"Activity Type",
+		)
 		result = {d: frappe.db.count(d) for d in doctypes}
 		result["columns"] = len(frappe.get_doc("Kanban Board", install.BOARD_NAME).columns)
 		return result
@@ -44,7 +50,12 @@ class TestInstall(IntegrationTestCase):
 			self.assertTrue(frappe.db.exists("Custom Field", f"Project-{fieldname}"), fieldname)
 		for fieldname in ("tracker_project", "tracker_default_tracker"):
 			self.assertTrue(frappe.db.exists("Custom Field", f"Email Account-{fieldname}"), fieldname)
-		self.assertTrue(frappe.db.exists("Workspace", "Tracker"))
+		# the app has no home workspace: the sidebar starts with the Project Hub and the icon is called Tracker
+		self.assertFalse(frappe.db.exists("Workspace", "Tracker"))
+		sidebar = frappe.get_doc("Workspace Sidebar", "Tracker")
+		self.assertEqual(sidebar.items[0].link_to, "project-hub")
+		self.assertNotIn("Home", [i.label for i in sidebar.items])
+		self.assertTrue(frappe.db.exists("Desktop Icon", "Tracker"))
 		board = frappe.get_doc("Kanban Board", install.BOARD_NAME)
 		self.assertEqual([c.column_name for c in board.columns], [s[0] for s in install.STATUSES])
 

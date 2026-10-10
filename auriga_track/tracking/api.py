@@ -68,12 +68,12 @@ def tracker_query(doctype, txt, searchfield, start, page_len, filters):
 	names = (
 		get_enabled_trackers(project)
 		if project
-		else frappe.get_all("Tracker", {"is_active": 1}, pluck="name")
+		else frappe.get_all("Ticket Type", {"is_active": 1}, pluck="name")
 	)
 	return [
 		[n]
 		for n in frappe.get_all(
-			"Tracker",
+			"Ticket Type",
 			filters={"name": ["in", names or [""]], "is_active": 1, "tracker_name": ["like", _like(txt)]},
 			pluck="name",
 			order_by="name asc",
@@ -296,6 +296,8 @@ def get_project_hub(project: str) -> dict:
 			"modified",
 			"sprint",
 			"done_percent",
+			"dependent_on_client",
+			"client_dependency_since",
 		],
 		order_by="modified desc",
 		limit_page_length=0,
@@ -311,17 +313,22 @@ def get_project_hub(project: str) -> dict:
 		"closed": len(items) - len(open_items),
 		"overdue": sum(1 for i in open_items if i.due_date and getdate(i.due_date) < today_),
 		"unassigned": sum(1 for i in open_items if not i.assigned_to),
+		"client_dependent": sum(1 for i in open_items if cint(i.dependent_on_client)),
+		"client_oldest_days": max(
+			[
+				(today_ - getdate(i.client_dependency_since)).days
+				for i in open_items
+				if cint(i.dependent_on_client) and i.client_dependency_since
+			],
+			default=None,
+		),
 		"mine": sum(1 for i in open_items if i.assigned_to == user),
 		"hours_total": flt(sum(flt(h.hours) for h in hours), 2),
 		"hours_week": flt(sum(flt(h.hours) for h in hours if getdate(h.date) >= week_start), 2),
 		"hours_mine": flt(sum(flt(h.hours) for h in hours if h.user == user), 2),
 	}
 
-	def count_by(field: str) -> list[dict]:
-		counts: dict[str, int] = {}
-		for item in open_items:
-			counts[item.get(field) or _("(none)")] = counts.get(item.get(field) or _("(none)"), 0) + 1
-		return [{"label": k, "count": v} for k, v in sorted(counts.items(), key=lambda kv: -kv[1])]
+	from auriga_track.tracking.health import count_by
 
 	sprints = frappe.get_list(
 		"Sprint",
@@ -368,15 +375,16 @@ def get_project_hub(project: str) -> dict:
 		project=info,
 		capabilities=caps,
 		numbers=numbers,
-		by_status=count_by("status"),
-		by_tracker=count_by("tracker"),
-		by_priority=count_by("priority"),
+		by_status=count_by(open_items, "status", ordered_by_status=True),
+		by_tracker=count_by(open_items, "tracker"),
+		by_priority=count_by(open_items, "priority"),
 		active_sprint=active,
 		sprints=sprints,
 		releases=releases,
 		members=members,
 		recent_items=items[:10],
 		backlog_items=sum(1 for i in open_items if not i.sprint),
+		backlog_client=sum(1 for i in open_items if not i.sprint and cint(i.dependent_on_client)),
 	)
 
 
@@ -389,3 +397,83 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 	if not frappe.db.exists("Project", project) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
 	return get_health(project, period)
+
+
+# --------------------------------------------------------------------------- dashboards
+@frappe.whitelist()
+def get_portfolio(period: str = "3m") -> dict:
+	"""Portfolio dashboard: health and delivery numbers of every project the user can see."""
+	from auriga_track.tracking.dashboards import get_portfolio_data
+
+	return get_portfolio_data(period)
+
+
+@frappe.whitelist()
+def get_my_work() -> dict:
+	"""My Work dashboard for the current user."""
+	from auriga_track.tracking.dashboards import get_my_work_data
+
+	return get_my_work_data()
+
+
+@frappe.whitelist()
+def get_quality(project: str | None = None, period: str = "3m") -> dict:
+	"""Quality dashboard for all visible projects or one project."""
+	from auriga_track.permissions import can_see_project
+	from auriga_track.tracking.dashboards import get_quality_data
+
+	if project and (not frappe.db.exists("Project", project) or not can_see_project(project)):
+		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	return get_quality_data(project or None, period)
+
+
+@frappe.whitelist()
+def get_status_report_html(project: str, from_date: str, to_date: str, note: str | None = None) -> dict:
+	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
+	from auriga_track.tracking.status_report import build_report, default_subject, render_html
+
+	report = build_report(project, from_date, to_date)
+	return {
+		"html": render_html(report, note),
+		"subject": default_subject(report),
+		"status": report.status,
+		"recipients": frappe.db.get_value("Project", project, "tracker_report_recipients") or "",
+		"can_send": bool(get_capabilities(project)["can_manage_releases"]),
+	}
+
+
+@frappe.whitelist()
+def email_status_report(
+	project: str,
+	from_date: str,
+	to_date: str,
+	recipients: str,
+	subject: str | None = None,
+	note: str | None = None,
+) -> str:
+	"""Email the status report to ``recipients`` and log it; returns the Project Status Report name."""
+	from auriga_track.tracking.status_report import send_report
+
+	return send_report(project, from_date, to_date, recipients, subject, note)
+
+
+@frappe.whitelist()
+def status_report_pdf(project: str, from_date: str, to_date: str, note: str | None = None) -> None:
+	"""Download the status report as a PDF."""
+	from auriga_track.tracking.status_report import get_pdf_bytes
+
+	frappe.local.response.filename = f"status-report-{project}-{from_date}-{to_date}.pdf"
+	frappe.local.response.filecontent = get_pdf_bytes(project, from_date, to_date, note)
+	frappe.local.response.type = "pdf"
+
+
+@frappe.whitelist()
+def get_status_report_history(project: str) -> list[dict]:
+	"""Recently sent status reports of a project."""
+	return frappe.get_list(
+		"Project Status Report",
+		filters={"project": project},
+		fields=["name", "subject", "from_date", "to_date", "sent_on", "sent_to", "status_level", "scheduled"],
+		order_by="sent_on desc",
+		limit_page_length=10,
+	)

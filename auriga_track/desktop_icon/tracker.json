@@ -1,0 +1,28 @@
+{
+ "app": "auriga_track",
+ "creation": "2026-10-10 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "project",
+ "icon_type": "Link",
+ "idx": 50,
+ "label": "Tracker",
+ "link_to": "Tracker",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-10-10 20:07:37.000000",
+ "modified_by": "Administrator",
+ "name": "Tracker",
+ "owner": "Administrator",
+ "parent_icon": "",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "Tracker User"
+  },
+  {
+   "role": "Tracker Manager"
+  }
+ ],
+ "standard": 1
+}
