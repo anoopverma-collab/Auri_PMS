@@ -1,4 +1,4 @@
-"""Tracker Settings (Single, spec 3.1)."""
+"""PMS Settings (Single, spec 3.1)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, flt
 
 
-class TrackerSettings(Document):
+class PMSSettings(Document):
 	"""Global defaults and limits of Auri PMS."""
 
 	def validate(self) -> None:

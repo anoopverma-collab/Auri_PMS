@@ -123,7 +123,7 @@ bench --site <site> migrate
 
 `install-app` loads all fixtures (roles, custom fields on Project and Email Account, workspace,
 number cards, charts, reports) and creates the default data **once**: 6 statuses, 3 project roles,
-4 ticket types (Bug has a workflow), activity types, Tracker Settings and the Kanban board
+4 ticket types (Bug has a workflow), activity types, PMS Settings and the Kanban board
 "Work Items by Status". A later `migrate` never overwrites changes you made to that data.
 
 Uninstall: `bench --site <site> uninstall-app auri_pms` (removes the Project and Email Account
@@ -134,14 +134,14 @@ Activity Types are left alone).
 
 | Where | What |
 |---|---|
-| **Tracker Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth |
+| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
 | **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
 | **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
-| **Tracker Settings > Weekly Capacity** | working hours per person per week, used by My Work |
+| **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the

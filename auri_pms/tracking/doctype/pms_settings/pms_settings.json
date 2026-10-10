@@ -19,7 +19,7 @@
 	],
 	"fields": [
 		{
-			"description": "Used when a tracker has no default",
+			"description": "Used when a ticket type has no default",
 			"fieldname": "default_status",
 			"fieldtype": "Link",
 			"label": "Default Status",
@@ -102,10 +102,10 @@
 	],
 	"issingle": 1,
 	"istable": 0,
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-11 17:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Tracking",
-	"name": "Tracker Settings",
+	"name": "PMS Settings",
 	"owner": "Administrator",
 	"permissions": [
 		{

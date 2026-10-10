@@ -85,7 +85,7 @@ class TestWorkflow(TrackerTestCase):
 
 	def test_t049_children_rule_can_be_disabled(self):
 		"""T-049: with require_children_closed = 0 the parent closes."""
-		settings = frappe.get_doc("Tracker Settings")
+		settings = frappe.get_doc("PMS Settings")
 		settings.require_children_closed = 0
 		settings.save()
 		parent = self.new_item(MGR, tracker="Task")

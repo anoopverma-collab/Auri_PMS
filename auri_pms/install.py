@@ -102,7 +102,7 @@ def create_default_data() -> None:
 		insert_if_missing("Ticket Type", tracker, values)
 	for activity in ACTIVITY_TYPES:
 		insert_if_missing("Activity Type", activity, {"activity_type": activity})
-	settings = frappe.get_doc("Tracker Settings")
+	settings = frappe.get_doc("PMS Settings")
 	if not settings.default_status:
 		settings.update(
 			{"default_status": "New", "default_priority": "Normal", "public_project_role": "Reporter"}

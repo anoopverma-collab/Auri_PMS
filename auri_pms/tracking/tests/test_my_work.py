@@ -64,7 +64,7 @@ class TestMyWork(TrackerTestCase):
 
 	def test_hours_this_week_and_capacity(self):
 		"""Hours per weekday split into billable/non-billable, compared to the weekly capacity."""
-		settings = frappe.get_doc("Tracker Settings")
+		settings = frappe.get_doc("PMS Settings")
 		settings.weekly_capacity_hours = 20
 		settings.save()
 		item = self.new_item(MGR, assigned_to=DEV)

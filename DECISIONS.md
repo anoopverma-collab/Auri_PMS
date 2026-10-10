@@ -113,7 +113,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 34. **Column order in the Time Entry list** follows the form field order (work item first); the spec's order
     (date first) can be set per user in List View Settings.
 35. `tracker_default_tracker` and `tracker_project` live in their own *Auri PMS* section of Email Account.
-36. **Default data** that Frappe would validate before `after_install` runs (Tracker Settings link defaults) is set in
+36. **Default data** that Frappe would validate before `after_install` runs (PMS Settings link defaults) is set in
     `after_install`, not as field defaults.
 
 ## Testing
@@ -199,14 +199,14 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     children to *Ticket Type Transition* and *Project Ticket Type*; labels, messages and the sidebar follow. The specification
     calls it Tracker, so field names stay (`tracker` on Work Item and Project Ticket Type, `enabled_trackers`,
     `tracker_identifier`, `tracker_members`) to avoid renaming database columns; only DocType names and visible labels
-    changed. The roles *Tracker Manager* / *Tracker User*, *Tracker Settings* and the app name *Tracker* are unchanged. A
+    changed. The roles *Tracker Manager* / *Tracker User* are unchanged; the settings DocType is now *PMS Settings* (was *Tracker Settings*) and the app is called *Auri PMS* (was *Tracker*). A
     pre-sync patch renames the DocTypes on existing sites (data, Link fields and custom-field options follow).
 58. **Shared UI kit.** Themes, styles and helpers live in `auri_hub.bundle.js`, loaded on demand by the five dashboard pages
     (Project Hub, Portfolio, My Work, Quality, Status Report). One saved theme and one saved range apply to all of them.
     ERPNext/Frappe screens and the app's own forms and lists keep the standard look (a global skin was tried and removed).
 59. **Portfolio** covers projects with an identifier that the user can see (at most 200), computed with the same functions as the
     project health dashboard, so numbers agree. Sorted red first, weakest score first within a level.
-60. **My Work** counts only open tickets assigned to the user; weekly capacity comes from Tracker Settings (default 40 h). A
+60. **My Work** counts only open tickets assigned to the user; weekly capacity comes from PMS Settings (default 40 h). A
     ticket is *blocked* when it has a "Blocked by" relation to an open ticket.
 61. **Quality** treats ticket types with *Counts as Defect* as bugs (the shipped Bug tracker is flagged by a patch). A bug is
     *reopened* when its status moved from a closed to an open status in Frappe's change history; reopen rate = reopened bugs /

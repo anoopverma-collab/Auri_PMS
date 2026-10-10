@@ -63,8 +63,8 @@ def has_unrestricted_project_view(user: str) -> bool:
 
 # --------------------------------------------------------------------------- settings
 def get_settings():
-	"""Return the cached Tracker Settings document."""
-	return frappe.get_cached_doc("Tracker Settings")
+	"""Return the cached PMS Settings document."""
+	return frappe.get_cached_doc("PMS Settings")
 
 
 # --------------------------------------------------------------------------- capabilities
@@ -106,7 +106,7 @@ def get_capabilities(project: str, user: str | None = None, members_only: bool =
 	"""Return the Project Role flags for ``user`` on ``project``.
 
 	Tracker/System Manager -> all True. Member -> their role's flags.
-	Non-member on public project -> Tracker Settings.public_project_role flags.
+	Non-member on public project -> PMS Settings.public_project_role flags.
 	Otherwise -> all False. Disabled users always get all False. Cached per request.
 
 	With ``members_only`` the manager shortcut and the public-project fallback are skipped, so only

@@ -8,7 +8,7 @@ from auri_pms.tracking.tests.utils import DEV, MGR, REP, TM, TrackerTestCase, da
 
 class TestTimeEntry(TrackerTestCase):
 	def setting(self, **values):
-		settings = frappe.get_doc("Tracker Settings")
+		settings = frappe.get_doc("PMS Settings")
 		settings.update(values)
 		settings.save()
 

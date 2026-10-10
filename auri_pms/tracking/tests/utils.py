@@ -130,7 +130,7 @@ def build_world() -> frappe._dict:
 			doc.status = status
 			doc.save(ignore_permissions=True)
 		releases[name] = doc.name
-	frappe.db.set_single_value("Tracker Settings", "max_hours_per_day", 12)
+	frappe.db.set_single_value("PMS Settings", "max_hours_per_day", 12)
 	frappe.get_doc("User", GONE).update({"enabled": 0}).save(ignore_permissions=True)
 	clear_cache()
 	return frappe._dict(alp=alp, bet=bet, gam=gam, releases=releases)
