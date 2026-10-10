@@ -1,11 +1,10 @@
 # Auri PMS
 
+**Project Management System** &middot; *Plan. Track. Deliver.*
+
 [![CI](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml)
 
-A simple issue tracker for **ERPNext v16**. Log, assign, track and close work items
-(bugs, features, tasks, support requests) against ERPNext Projects, plan them into Releases and log
-time against them. One screen to create an item, one list to work from, and no configuration beyond
-adding project members.
+A centralized platform for project planning, task management, timelines, effort tracking, team collaboration and delivery monitoring, built for **ERPNext v16**. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals and management dashboards. Log, assign, track and close work items (bugs, features, tasks, support requests) against ERPNext Projects, plan them into sprints and releases, log time against them and report progress to clients. One screen to create an item, one list to work from, and no configuration beyond adding project members.
 
 * Frappe v16 + ERPNext v16 (required app), standard Desk UI only, Frappe Cloud compatible
   (no OS packages, no custom bench commands at runtime).
@@ -121,8 +120,8 @@ Activity Types are left alone).
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
-| **Project > Tracker tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
+| **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
+| **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **Tracker Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |
@@ -133,7 +132,7 @@ decides what they can do.
 
 ## 10-minute quick start
 
-The app opens on the **Project Hub** (there is no home screen; the sidebar and the *Tracker* app icon start there). It lists the projects you are a member of (plus public ones). Open a project to see its tickets, overdue and unassigned counts, the active sprint with burndown, releases, team and time, and to create tickets, sprints and releases already scoped to that project. Views (list, board, Gantt, calendar) and reports open filtered to the project.
+The app opens on the **Project Hub** (there is no home screen; the sidebar and the *Auri PMS* app icon start there). It lists the projects you are a member of (plus public ones). Open a project to see its tickets, overdue and unassigned counts, the active sprint with burndown, releases, team and time, and to create tickets, sprints and releases already scoped to that project. Views (list, board, Gantt, calendar) and reports open filtered to the project.
 
 Dashboards (all share one theme choice, 8 themes in light and dark, and the *Range* menu: 1 month, 3 months, 6 months, Overall):
 
@@ -144,7 +143,7 @@ Dashboards (all share one theme choice, 8 themes in light and dark, and the *Ran
 | **My Work** | everyone | my tickets by due date (overdue / today / this week / later), blocked and client-waiting badges, my sprints, hours this week against the weekly capacity, one-click *Log time* |
 | **Quality Dashboard** | QA, project manager | bugs opened vs fixed, critical bugs, time to fix by priority, reopen rate, defects per 100 hours, bugs by category and project (ticket types marked *Counts as Defect*) |
 | **Client Dependencies** (report) | project manager | every open ticket waiting on the client, how long, and what is needed; opened from the *Waiting on client* tiles |
-| **Client Status Report** | project manager | a client-ready report for any period: status, delivered, in progress, coming up, risks, *Waiting on you*, plan and hours; email it (logged as *Project Status Report*), download a PDF, or let it go out weekly (Project > Tracker tab: *Report Recipients*, *Send Weekly On*) |
+| **Client Status Report** | project manager | a client-ready report for any period: status, delivered, in progress, coming up, risks, *Waiting on you*, plan and hours; email it (logged as *Project Status Report*), download a PDF, or let it go out weekly (Project > Auri PMS tab: *Report Recipients*, *Send Weekly On*) |
 
 Tick **Dependent on Client** on a ticket (and say what you need): it records *Waiting since*, shows a banner on the ticket and is counted live in the hub, health dashboard, portfolio, My Work and the client report (where the ticket is listed under *Waiting on you*). Tickets waiting on the client are not counted as delivery delays in the project's status.
 

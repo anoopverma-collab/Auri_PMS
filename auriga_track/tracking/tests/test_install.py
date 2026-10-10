@@ -52,10 +52,10 @@ class TestInstall(IntegrationTestCase):
 			self.assertTrue(frappe.db.exists("Custom Field", f"Email Account-{fieldname}"), fieldname)
 		# the app has no home workspace: the sidebar starts with the Project Hub and the icon is called Tracker
 		self.assertFalse(frappe.db.exists("Workspace", "Tracker"))
-		sidebar = frappe.get_doc("Workspace Sidebar", "Tracker")
+		sidebar = frappe.get_doc("Workspace Sidebar", "Auri PMS")
 		self.assertEqual(sidebar.items[0].link_to, "project-hub")
 		self.assertNotIn("Home", [i.label for i in sidebar.items])
-		self.assertTrue(frappe.db.exists("Desktop Icon", "Tracker"))
+		self.assertTrue(frappe.db.exists("Desktop Icon", "Auri PMS"))
 		board = frappe.get_doc("Kanban Board", install.BOARD_NAME)
 		self.assertEqual([c.column_name for c in board.columns], [s[0] for s in install.STATUSES])
 

@@ -77,7 +77,7 @@ class TestUiApi(TrackerTestCase):
 		"""The Project dashboard gets a Tracker group with Work Items, Releases and Time Entries."""
 		data = get_dashboard_data({"fieldname": "project", "transactions": []})
 		self.assertIn(
-			{"label": "Tracker", "items": ["Work Item", "Release", "Time Entry"]}, data["transactions"]
+			{"label": "Auri PMS", "items": ["Work Item", "Release", "Time Entry"]}, data["transactions"]
 		)
 		hooked = frappe.get_hooks("override_doctype_dashboards")["Project"]
 		self.assertIn("auriga_track.tracking.project_hooks.get_dashboard_data", hooked)

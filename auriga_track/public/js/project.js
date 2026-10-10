@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
-// Tracker tab UX on the ERPNext Project form. Rules are enforced on the server.
+// Auri PMS tab UX on the ERPNext Project form. Rules are enforced on the server.
 frappe.ui.form.on("Project", {
 	setup(frm) {
 		frm.set_query("parent_project", () => ({ filters: { name: ["!=", frm.doc.name] } }));

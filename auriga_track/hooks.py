@@ -1,7 +1,7 @@
 app_name = "auriga_track"
 app_title = "Auri PMS"
 app_publisher = "Anoop Verma"
-app_description = "Issue tracker for ERPNext"
+app_description = "Auri PMS (Project Management System). Plan. Track. Deliver. A centralized platform for project planning, task management, timelines, effort tracking, team collaboration, and delivery monitoring. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals, and management dashboards."
 app_email = "anoop.verma@aurigait.com"
 app_license = "mit"
 

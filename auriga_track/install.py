@@ -60,8 +60,8 @@ def ensure_workspace_docs() -> None:
 	from frappe.modules.import_file import import_file_by_path
 
 	for folder, doctype in (("workspace_sidebar", "Workspace Sidebar"), ("desktop_icon", "Desktop Icon")):
-		path = frappe.get_app_path("auriga_track", folder, "tracker.json")
-		if not frappe.db.exists(doctype, "Tracker"):
+		path = frappe.get_app_path("auriga_track", folder, "auri_pms.json")
+		if not frappe.db.exists(doctype, "Auri PMS"):
 			import_file_by_path(path, force=True, ignore_version=True)
 
 
@@ -229,7 +229,9 @@ def before_uninstall() -> None:
 	for doctype, name in (
 		("Workspace", "Tracker"),
 		("Workspace Sidebar", "Tracker"),
+		("Workspace Sidebar", "Auri PMS"),
 		("Desktop Icon", "Tracker"),
+		("Desktop Icon", "Auri PMS"),
 		("Desktop Icon", "Auri PMS"),
 	):
 		frappe.db.delete(doctype, {"name": name})

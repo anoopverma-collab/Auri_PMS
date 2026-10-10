@@ -6,7 +6,7 @@
   "fieldtype": "Tab Break",
   "insert_after": "connections_tab",
   "is_system_generated": 0,
-  "label": "Tracker",
+  "label": "Auri PMS",
   "module": "Tracking",
   "name": "Project-tab_tracker"
  },

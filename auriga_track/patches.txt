@@ -6,4 +6,5 @@ auriga_track.patches.v1_0.rename_tracker_to_ticket_type
 [post_model_sync]
 auriga_track.patches.v1_0.set_defect_tracker
 auriga_track.patches.v1_0.remove_tracker_home
+auriga_track.patches.v1_0.rename_tracker_sidebar_to_auri_pms
 # Patches added in this section will be executed after doctypes are migrated
