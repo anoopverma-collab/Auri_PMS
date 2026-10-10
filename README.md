@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" alt="Auri PMS logo" width="140"></p>
+
 # Auri PMS
 
 **Project Management System** &middot; *Plan. Track. Deliver.*
