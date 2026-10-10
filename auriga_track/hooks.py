@@ -286,6 +286,7 @@ permission_query_conditions = {
 	"Project": "auriga_track.permissions.project_query",
 	"Work Item": "auriga_track.permissions.work_item_query",
 	"Release": "auriga_track.permissions.release_query",
+	"Sprint": "auriga_track.permissions.sprint_query",
 	"Time Entry": "auriga_track.permissions.time_entry_query",
 	"Work Item Category": "auriga_track.permissions.category_query",
 }
@@ -294,6 +295,7 @@ has_permission = {
 	"Project": "auriga_track.permissions.project_has_permission",
 	"Work Item": "auriga_track.permissions.work_item_has_permission",
 	"Release": "auriga_track.permissions.release_has_permission",
+	"Sprint": "auriga_track.permissions.sprint_has_permission",
 	"Time Entry": "auriga_track.permissions.time_entry_has_permission",
 	"Work Item Category": "auriga_track.permissions.category_has_permission",
 }

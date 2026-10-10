@@ -124,12 +124,32 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     that isolation, which is why emails are queued per recipient. Tests also cope with existing data on the site.
 38. **Frappe skips Version rows in tests** unless `ignore_version=False`; the test helper saves with it so the
     history checks (UAT-04, T-076) are real.
-39. **92 spec tests + `test_e2e.py` + 18 additional tests** (UI API, global search, performance and indexes, lifecycle,
-    the missing outgoing mail account, ERPNext permissions): 111 in total.
+39. **92 spec tests + `test_e2e.py` + 40 additional tests (22 for sprints)** (UI API, global search, performance and indexes, lifecycle,
+    the missing outgoing mail account, ERPNext permissions): 133 in total.
 40. **UAT-01..08** are scripted in `test_e2e.py`. UAT-09..14 are covered by automated tests (T-050/T-064, T-119,
     T-084, T-096/T-097, T-120..T-125) and the Desk was exercised with a headless browser for the workspace, list,
     quick entry, form buttons, Log Time, Close/Reopen, Kanban, Gantt, Calendar, the four reports, the Project Tracker
     tab and the outsider's view; a consultant should still run the 14 scenarios by hand before go-live.
+
+## Sprints
+
+42. **One project per sprint; a sprint is separate from a Release** (a release can span several sprints). A ticket has
+    one Release and one Sprint field.
+43. **Rules:** end date not before start date; sprints of a project may not overlap; lifecycle Planned -> Active ->
+    Completed (no skipping, no going back); one Active sprint per project; Completed sprints keep their dates and
+    goal; a ticket joins a sprint of its own project and only Planned/Active sprints accept tickets (existing members
+    stay). Creating, editing and deleting sprints needs `can_manage_releases` (no new capability flag).
+44. **Completing a sprint** moves unfinished tickets to the chosen Planned/Active sprint, or back to the backlog when
+    none is chosen. The completed sprint therefore keeps only finished work, which is its velocity.
+45. **Burndown** measures the tickets currently in the sprint in estimated hours (item count when nothing is
+    estimated); a ticket burns on the day it was closed. Scope changes during the sprint are not replayed. The chart
+    stops at today because Frappe draws missing values as zero; the table lists every day.
+46. **Parent and child tickets** may sit in different sprints; each counts on its own.
+47. **Bulk planning:** `move_to_sprint` saves every ticket through the normal rules; a failing ticket is rolled back
+    alone and reported in the result. The Sprint Board button uses a URL filter because the Kanban view ignores route
+    options.
+48. **Standard files:** `delete_doc` in developer mode deletes a standard document's JSON file, so uninstall removes the
+    Workspace, Workspace Sidebar and Desktop Icon rows with `frappe.db.delete` only.
 
 ## Uninstall
 

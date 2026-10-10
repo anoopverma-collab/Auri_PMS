@@ -208,11 +208,11 @@ def before_uninstall() -> None:
 				frappe.delete_doc("Custom DocPerm", name, force=True, ignore_permissions=True)
 	if frappe.db.exists("Kanban Board", BOARD_NAME):
 		frappe.delete_doc("Kanban Board", BOARD_NAME, force=True, ignore_permissions=True)
+	# Database rows only: delete_doc would also delete the standard JSON files from the app in developer mode.
 	for doctype, name in (
 		("Workspace", "Tracker"),
 		("Workspace Sidebar", "Tracker"),
 		("Desktop Icon", "Auri PMS"),
 	):
-		if frappe.db.exists(doctype, name):
-			frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+		frappe.db.delete(doctype, {"name": name})
 	frappe.clear_cache()

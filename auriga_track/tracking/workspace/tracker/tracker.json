@@ -14,7 +14,7 @@
    "label": "Hours by Project, last 30 days"
   }
  ],
- "content": "[{\"id\": \"trk01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My work</b></span>\", \"col\": 12}}, {\"id\": \"trk02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Overdue Items\", \"col\": 3}}, {\"id\": \"trk04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Opened This Week\", \"col\": 3}}, {\"id\": \"trk05\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Hours This Week\", \"col\": 3}}, {\"id\": \"trk06\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Status\", \"col\": 6}}, {\"id\": \"trk07\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Priority\", \"col\": 6}}, {\"id\": \"trk08\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Hours by Project, last 30 days\", \"col\": 12}}, {\"id\": \"trk09\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"trk10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Work Item\", \"col\": 3}}, {\"id\": \"trk11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kanban\", \"col\": 3}}, {\"id\": \"trk13\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Gantt\", \"col\": 3}}, {\"id\": \"trk14\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Log Time\", \"col\": 3}}, {\"id\": \"trk15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Releases\", \"col\": 3}}, {\"id\": \"trk16\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projects\", \"col\": 3}}, {\"id\": \"trk30\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"trk31\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"trk32\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"trk01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My work</b></span>\", \"col\": 12}}, {\"id\": \"trk02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Overdue Items\", \"col\": 3}}, {\"id\": \"trk04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Opened This Week\", \"col\": 3}}, {\"id\": \"trk05\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Hours This Week\", \"col\": 3}}, {\"id\": \"trk06\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Status\", \"col\": 6}}, {\"id\": \"trk07\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Open Items by Priority\", \"col\": 6}}, {\"id\": \"trk08\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Hours by Project, last 30 days\", \"col\": 12}}, {\"id\": \"trk09\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"trk10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Work Item\", \"col\": 3}}, {\"id\": \"trk11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"My Open Items\", \"col\": 3}}, {\"id\": \"trk12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kanban\", \"col\": 3}}, {\"id\": \"trk40\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sprints\", \"col\": 3}}, {\"id\": \"trk13\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Gantt\", \"col\": 3}}, {\"id\": \"trk14\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Log Time\", \"col\": 3}}, {\"id\": \"trk15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Releases\", \"col\": 3}}, {\"id\": \"trk16\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projects\", \"col\": 3}}, {\"id\": \"trk30\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"trk41\", \"type\": \"card\", \"data\": {\"card_name\": \"Planning\", \"col\": 4}}, {\"id\": \"trk31\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"trk32\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-10-10 10:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -92,6 +92,36 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Planning",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sprint",
+   "link_count": 0,
+   "link_to": "Sprint",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Release",
+   "link_count": 0,
+   "link_to": "Release",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Reports",
    "link_count": 0,
    "onboard": 0,
@@ -144,9 +174,33 @@
    "onboard": 0,
    "report_ref_doctype": "Work Item",
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Sprint Summary",
+   "link_count": 0,
+   "link_to": "Sprint Summary",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Sprint",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Sprint Burndown",
+   "link_count": 0,
+   "link_to": "Sprint Burndown",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Sprint",
+   "type": "Link"
   }
  ],
- "modified": "2026-10-10 10:00:00.000000",
+ "modified": "2026-10-10 18:36:47.000000",
  "modified_by": "Administrator",
  "module": "Tracking",
  "name": "Tracker",
@@ -205,6 +259,13 @@
    "kanban_board": "Work Items by Status",
    "label": "Kanban",
    "link_to": "Work Item",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Sprints",
+   "link_to": "Sprint",
    "type": "DocType"
   },
   {

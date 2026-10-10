@@ -13,6 +13,7 @@
 		"assigned_to",
 		"category",
 		"release",
+		"sprint",
 		"parent_work_item",
 		"author",
 		"column_break_1",
@@ -103,6 +104,14 @@
 			"in_standard_filter": 1,
 			"label": "Release",
 			"options": "Release",
+			"search_index": 1
+		},
+		{
+			"fieldname": "sprint",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Sprint",
+			"options": "Sprint",
 			"search_index": 1
 		},
 		{

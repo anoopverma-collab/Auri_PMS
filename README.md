@@ -36,6 +36,7 @@ Activity Types are left alone).
 | **Tracker** | type of work item, default status, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
 | **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled trackers |
+| **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **Email Account** | optional: *Tracker Project* (+ default tracker) turns received mail into work items |
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
@@ -52,7 +53,7 @@ decides what they can do.
    item is named `WEB-00001`; the assignee gets a ToDo and a notification, the assignee and author follow it.
 4. Work it: the **Status** dropdown only offers valid next statuses; use **Log Time**, **Add Subtask**,
    **Close** / **Reopen**, relations (Blocks / Blocked by ...), comments and attachments.
-5. Plan work into a **Release** (Releases list); progress is computed automatically.
+5. Plan work into a **Release** (delivery milestone) and into **Sprints** (time-boxed: start/end dates, goal, Planned -> Active -> Completed). Add tickets from the ticket's Sprint field or in bulk from the list (*Actions > Move to Sprint*); *Complete Sprint* carries unfinished tickets to the next sprint or the backlog. Parent and child tickets use *Add Subtask*. Progress and burndown (*Sprint Burndown*, *Sprint Summary* reports) are computed automatically.
 6. Use the views: List (default filter: open items), **Kanban** (Work Items by Status), **Gantt** and
    Calendar, plus the reports *Work Item Summary*, *Time Log Summary*, *Release Progress* and
    *Overdue Work Items*.

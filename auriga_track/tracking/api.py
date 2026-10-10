@@ -186,3 +186,26 @@ def get_status_indicators() -> dict[str, str]:
 		s.name: nearest_indicator(s.color)
 		for s in frappe.get_all("Work Item Status", fields=["name", "color"], limit_page_length=0)
 	}
+
+
+@frappe.whitelist()
+def move_to_sprint(work_items: str | list, sprint: str | None = None) -> dict:
+	"""Move work items to ``sprint`` (or back to the backlog when blank); every item is saved with all rules.
+
+	Returns ``{"moved": n, "failed": [{"name", "error"}]}``. A failing item is rolled back on its own.
+	"""
+	names = frappe.parse_json(work_items) if isinstance(work_items, str) else work_items
+	moved, failed = 0, []
+	for name in names:
+		message_count = len(getattr(frappe.local, "message_log", None) or [])
+		frappe.db.savepoint("move_to_sprint")
+		try:
+			doc = frappe.get_doc("Work Item", name)
+			doc.sprint = sprint or None
+			doc.save()
+			moved += 1
+		except (frappe.ValidationError, frappe.PermissionError) as exc:
+			frappe.db.rollback(save_point="move_to_sprint")
+			del frappe.local.message_log[message_count:]  # reported in the result, not as popups
+			failed.append({"name": name, "error": frappe.utils.strip_html(str(exc))})
+	return {"moved": moved, "failed": failed}

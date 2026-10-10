@@ -24,6 +24,9 @@ frappe.ui.form.on("Work Item", {
 		}));
 		frm.set_query("category", () => ({ filters: { project: frm.doc.project } }));
 		frm.set_query("release", () => ({ filters: { project: frm.doc.project, status: "Open" } }));
+		frm.set_query("sprint", () => ({
+			filters: { project: frm.doc.project, status: ["in", ["Planned", "Active"]] },
+		}));
 		frm.set_query("parent_work_item", () => ({
 			query: `${WI_API}.parent_query`,
 			filters: { project: frm.doc.project, work_item: frm.is_new() ? "" : frm.doc.name },
@@ -81,7 +84,7 @@ frappe.ui.form.on("Work Item", {
 
 	project(frm) {
 		if (!frm.is_new()) return;
-		["tracker", "assigned_to", "category", "release", "parent_work_item"].forEach((f) => {
+		["tracker", "assigned_to", "category", "release", "sprint", "parent_work_item"].forEach((f) => {
 			if (frm.doc[f] && f !== "parent_work_item") frm.set_value(f, null);
 		});
 	},

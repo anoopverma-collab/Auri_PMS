@@ -13,6 +13,7 @@ from auriga_track.tracking.utils import (
 	is_manager,
 	recalc_chain,
 	recalc_release,
+	recalc_sprint,
 )
 
 
@@ -126,9 +127,13 @@ def check_lock(dates: list) -> None:
 
 def rollup_items(work_items: set[str | None]) -> None:
 	"""Recalculate totals for work items (and ancestors), then their releases."""
-	releases = set()
+	releases, sprints = set(), set()
 	for item in filter(None, work_items):
 		recalc_chain(item)
-		releases.add(frappe.db.get_value("Work Item", item, "release"))
+		release, sprint = frappe.db.get_value("Work Item", item, ["release", "sprint"])
+		releases.add(release)
+		sprints.add(sprint)
 	for release in releases:
 		recalc_release(release)
+	for sprint in sprints:
+		recalc_sprint(sprint)

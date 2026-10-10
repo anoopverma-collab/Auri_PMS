@@ -21,6 +21,7 @@ from auriga_track.tracking.utils import (
 	get_subtree_height,
 	recalc_chain,
 	recalc_release,
+	recalc_sprint,
 	safe_sendmail,
 	transition_allowed,
 )
@@ -76,6 +77,7 @@ class WorkItem(Document):
 		self.validate_dates_and_numbers()
 		self.validate_assignee()
 		self.validate_category_and_release()
+		self.validate_sprint()
 		self.validate_parent()
 		self.validate_status_change()
 		self.validate_relations()
@@ -148,6 +150,20 @@ class WorkItem(Document):
 				frappe.throw(
 					_("Release {0} is {1}; only Open releases accept work items").format(self.release, status)
 				)
+
+	def validate_sprint(self) -> None:
+		"""Sprint must belong to the same project; only Planned or Active sprints accept (new) items."""
+		if not self.sprint:
+			return
+		project, status = frappe.db.get_value("Sprint", self.sprint, ["project", "status"])
+		if project != self.project:
+			frappe.throw(_("{0} does not belong to Project {1}").format(self.sprint, self.project))
+		if (self.is_new() or self.old.sprint != self.sprint) and status == "Completed":
+			frappe.throw(
+				_("Sprint {0} is {1}; only Planned or Active sprints accept work items").format(
+					self.sprint, status
+				)
+			)
 
 	def validate_parent(self) -> None:
 		"""R-14: same project, no cycles, depth limit."""
@@ -367,6 +383,8 @@ class WorkItem(Document):
 			recalc_chain(old.parent_work_item)
 		for release in {self.release, old.release if old else None}:
 			recalc_release(release)
+		for sprint in {self.sprint, old.sprint if old else None}:
+			recalc_sprint(sprint)
 		values = frappe.db.get_value("Work Item", self.name, [*ROLLUP_FIELDS, "modified"], as_dict=True)
 		self.update(values)  # keep the in-memory document in step with the DB (assign_to bumps modified)
 
@@ -410,6 +428,7 @@ class WorkItem(Document):
 		"""Recalculate the former parent chain and release."""
 		recalc_chain(self.parent_work_item)
 		recalc_release(self.release)
+		recalc_sprint(self.sprint)
 
 
 def close_todos(work_item: str, user: str) -> None:

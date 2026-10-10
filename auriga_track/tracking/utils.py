@@ -336,6 +336,77 @@ def safe_sendmail(**kwargs) -> bool:
 		return False
 
 
+# --------------------------------------------------------------------------- sprints
+def recalc_sprint(sprint: str | None) -> None:
+	"""Recompute the roll-up fields of a Sprint from the items currently in it."""
+	if not sprint or not frappe.db.exists("Sprint", sprint):
+		return
+	items = frappe.get_all(
+		"Work Item",
+		filters={"sprint": sprint},
+		fields=["is_closed", "done_percent", "estimated_hours", "spent_hours"],
+	)
+	frappe.db.set_value(
+		"Sprint",
+		sprint,
+		{
+			"total_items": len(items),
+			"closed_items": sum(1 for i in items if cint(i.is_closed)),
+			"estimated_hours": sum(flt(i.estimated_hours) for i in items),
+			"spent_hours": sum(flt(i.spent_hours) for i in items),
+			"percent_complete": compute_progress(
+				[
+					{"is_closed": i.is_closed, "done_percent": i.done_percent, "hours": i.estimated_hours}
+					for i in items
+				]
+			),
+		},
+		update_modified=False,
+	)
+
+
+def get_burndown(sprint: str, as_of: str | None = None) -> dict:
+	"""Remaining work per day of a sprint against the ideal line.
+
+	Scope is the items currently in the sprint, measured in estimated hours (or item count when nothing
+	is estimated). An item counts as burned on the day it was closed. ``actual`` stops at ``as_of``/today.
+	"""
+	from frappe.utils import add_days, date_diff, getdate, today
+
+	sprint_doc = frappe.db.get_value("Sprint", sprint, ["start_date", "end_date", "status"], as_dict=True)
+	start, end = getdate(sprint_doc.start_date), getdate(sprint_doc.end_date)
+	items = frappe.get_all(
+		"Work Item",
+		filters={"sprint": sprint},
+		fields=["estimated_hours", "is_closed", "closed_on"],
+	)
+	use_hours = any(flt(i.estimated_hours) > 0 for i in items)
+	weight = lambda item: flt(item.estimated_hours) if use_hours else 1  # noqa: E731
+	total = sum(weight(i) for i in items)
+	cutoff = getdate(as_of) if as_of else getdate(today())
+	if sprint_doc.status == "Completed":
+		cutoff = end
+	days = date_diff(end, start)
+	rows = []
+	for offset in range(days + 1):
+		day = getdate(add_days(start, offset))
+		burned_today = sum(
+			weight(i) for i in items if cint(i.is_closed) and i.closed_on and getdate(i.closed_on) == day
+		)
+		burned_by_day = sum(
+			weight(i) for i in items if cint(i.is_closed) and i.closed_on and getdate(i.closed_on) <= day
+		)
+		rows.append(
+			{
+				"date": day,
+				"ideal": flt(total - total * offset / days, 2) if days else 0.0,
+				"actual": flt(total - burned_by_day, 2) if day <= cutoff else None,
+				"completed": flt(burned_today, 2),
+			}
+		)
+	return {"unit": "hours" if use_hours else "items", "total": flt(total, 2), "rows": rows}
+
+
 # --------------------------------------------------------------------------- status colours
 INDICATOR_PALETTE = {
 	"blue": "#2490ef",
