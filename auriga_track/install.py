@@ -52,6 +52,17 @@ def after_install() -> None:
 	create_default_data()
 	ensure_kanban_board()
 	ensure_project_permissions()
+	ensure_workspace_docs()
+
+
+def ensure_workspace_docs() -> None:
+	"""Make sure the sidebar and the app icon exist right after install (a missing one is imported, never overwritten)."""
+	from frappe.modules.import_file import import_file_by_path
+
+	for folder, doctype in (("workspace_sidebar", "Workspace Sidebar"), ("desktop_icon", "Desktop Icon")):
+		path = frappe.get_app_path("auriga_track", folder, "tracker.json")
+		if not frappe.db.exists(doctype, "Tracker"):
+			import_file_by_path(path, force=True, ignore_version=True)
 
 
 def after_migrate() -> None:

@@ -50,6 +50,9 @@ def ensure_company(force_create: bool = False) -> str:
 	if company and not force_create:
 		frappe.defaults.set_global_default("company", company)
 		return company
+	# a site that skipped the ERPNext setup wizard lacks this master, which Company creation links to
+	if not frappe.db.exists("Warehouse Type", "Transit"):
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert(ignore_permissions=True)
 	company = frappe.get_doc(
 		{
 			"doctype": "Company",
