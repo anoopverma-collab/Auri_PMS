@@ -296,6 +296,11 @@ ui.injectStyle = () => {
 			/* soft UI effects: every variant keeps the raised neumorphic base and adds its own surface effect */
 			.auri-hub[data-hub-theme="soft-convex"] :is(.hub-tile, .hub-card, .hub-panel, .hub-status) {
 				background: linear-gradient(145deg, color-mix(in srgb, var(--g-glass) 72%, #fff), color-mix(in srgb, var(--g-glass) 86%, #000)); }
+			/* dark mode: a much smaller lift, otherwise the white highlight washes the text out */
+			html[data-theme="dark"] .auri-hub[data-hub-theme="soft-convex"] :is(.hub-tile, .hub-card, .hub-panel, .hub-status) {
+				background: linear-gradient(145deg, color-mix(in srgb, var(--g-glass) 92%, #fff), color-mix(in srgb, var(--g-glass) 90%, #000)); }
+			html[data-theme="dark"] .auri-hub[data-hub-theme="soft-pearl"] :is(.hub-tile, .hub-card, .hub-panel, .hub-status) {
+				background: linear-gradient(160deg, color-mix(in srgb, var(--g-glass) 93%, #fff) 0%, var(--g-glass) 62%); }
 			.auri-hub[data-hub-theme="soft-pressed"] :is(.hub-card, .hub-panel, .hub-status) { box-shadow: var(--n-inset); }
 			.auri-hub[data-hub-theme="soft-pressed"] .hub-panel .hub-tile, .auri-hub[data-hub-theme="soft-pressed"] .hub-table { box-shadow: var(--n-raised); }
 			.auri-hub[data-hub-theme="soft-glow"] .hub-tile { box-shadow: var(--n-raised), 0 0 26px color-mix(in srgb, var(--acc) 32%, transparent); }

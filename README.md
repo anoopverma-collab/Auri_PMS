@@ -32,68 +32,84 @@ A centralized platform for project planning, task management, timelines, effort 
 
 ## Screenshots
 
-All screenshots use the sample SJDM project data. Every dashboard shares one theme and one date range
-(1 month, 3 months, 6 months or overall), set from the page menu. Tickets that wait on the client are
-shown separately from tickets with us on every screen.
+All screenshots use the sample SJDM Implementation project data. Every screen is shown in **light** and **dark** mode: the app follows Frappe's own light/dark setting (user menu, *Toggle Theme*), so nothing needs configuring.
 
-**Project Hub** is the starting point. It lists the projects you can access; opening one shows only that project's tickets, sprints, releases and time.
+### Project Hub
 
-![Project Hub](docs/screenshots/01-project-hub.png)
+The starting point. It lists only the projects you belong to (plus public ones); each card shows open, overdue, your own tickets, team size and the active sprint. Open a project to work inside it.
 
-**Project overview** shows one project's ticket counts, the "Waiting on client" panel, active sprint and recent work.
+<table><tr><td width="50%"><img src="docs/screenshots/light/01-project-hub.png" alt="Project Hub (light)"></td><td width="50%"><img src="docs/screenshots/dark/01-project-hub.png" alt="Project Hub (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-![Project overview](docs/screenshots/02-project-overview.png)
+### Project overview
 
-**Project Health** is the client-facing view: open vs closed, created vs resolved, spent vs billable hours, ageing, and open tickets split into with us and waiting on client.
+One project's workbench: open, overdue, assigned to me, unassigned, backlog, closed, waiting-on-client and hours; the active sprint with its burndown; open tickets by status and type; the tickets waiting on the client; sprints, releases, team and recent tickets. The *Views* and *Reports* menus open the list, Kanban, Gantt and reports already filtered to this project.
 
-![Project Health](docs/screenshots/03-project-health.png)
+<table><tr><td width="50%"><img src="docs/screenshots/light/02-project-overview.png" alt="Project overview (light)"></td><td width="50%"><img src="docs/screenshots/dark/02-project-overview.png" alt="Project overview (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-**Portfolio** compares every project you can see: health (On Track, At Risk, Off Track), overdue share, budget burn, billable share and client-waiting tickets.
+### Project Health
 
-![Portfolio](docs/screenshots/04-portfolio.png)
+The client-facing health view. The banner gives the status (On Track, At Risk or Off Track), a score and every reason behind it. Below it: complete %, open and closed tickets, overdue, waiting on the client, hours spent, billable hours, created vs resolved, backlog trend, ageing, sprint velocity and estimated vs spent hours. Use the *Range* menu for 1 month, 3 months, 6 months or overall.
 
-**My Work** is a personal page: your open tickets by due date, what blocks you, tickets waiting on the client, your hours this week and your sprints.
+<table><tr><td width="50%"><img src="docs/screenshots/light/03-project-health.png" alt="Project Health (light)"></td><td width="50%"><img src="docs/screenshots/dark/03-project-health.png" alt="Project Health (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-![My Work](docs/screenshots/05-my-work.png)
+### Portfolio
 
-**Quality** tracks bugs: opened vs fixed, critical bugs, time to fix by priority, reopen rate and defects per 100 hours.
+Every project you can see on one screen, for management. The banner summarises the health of the projects that have the Portfolio switch ticked, and the table compares open tickets, overdue %, done %, budget burn, billable % and client-waiting tickets. Click a project to open its health view.
 
-![Quality dashboard](docs/screenshots/06-quality.png)
+<table><tr><td width="50%"><img src="docs/screenshots/light/04-portfolio.png" alt="Portfolio (light)"></td><td width="50%"><img src="docs/screenshots/dark/04-portfolio.png" alt="Portfolio (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-**Client Status Report** is a client-ready report for any period that can be emailed, downloaded as PDF or sent weekly.
+### My Work
 
-![Client Status Report](docs/screenshots/07-client-status-report.png)
+A personal page for the signed-in user: open tickets grouped by due date (overdue, today, this week, later), what is blocked or waiting on the client, hours logged this week against the weekly capacity, active sprints, and one-click *Log time*.
 
-**Client Dependencies** is the drill-down report listing every open ticket waiting on the client, for how long and what is needed.
+<table><tr><td width="50%"><img src="docs/screenshots/light/05-my-work.png" alt="My Work (light)"></td><td width="50%"><img src="docs/screenshots/dark/05-my-work.png" alt="My Work (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-![Client Dependencies report](docs/screenshots/08-client-dependencies-report.png)
+### Quality dashboard
 
-**Kanban board** has one column per ticket status. Drag a card to move the ticket; a move the workflow does not allow is refused. Open it from the hub's *Views* menu to see only that project.
+Bug quality across projects: bugs opened vs fixed, critical open bugs, time to fix by priority, reopen rate, bugs per 100 hours, bugs by category and project, and the age of open bugs. A ticket type counts as a bug when *Counts as Defect* is ticked.
 
-![Kanban board](docs/screenshots/09-kanban-board.png)
+<table><tr><td width="50%"><img src="docs/screenshots/light/06-quality.png" alt="Quality Dashboard (light)"></td><td width="50%"><img src="docs/screenshots/dark/06-quality.png" alt="Quality Dashboard (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-**Gantt chart** draws each ticket from its start date to its due date, so you can see overlaps and slips. Zoom with the Quarter Day, Day, Week, Month and Year buttons.
+### Client Status Report
 
-![Gantt chart](docs/screenshots/10-gantt-chart.png)
+A client-ready report for any period, previewed exactly as it will be emailed or exported to PDF: status, delivered tickets, what is in progress, what is waiting on the client, hours, plan and risks. Email it, download the PDF, or let it go out weekly. Every send is logged.
 
-### Themes
+<table><tr><td width="50%"><img src="docs/screenshots/light/07-client-status-report.png" alt="Client Status Report (light)"></td><td width="50%"><img src="docs/screenshots/dark/07-client-status-report.png" alt="Client Status Report (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-Pick a theme from the *Theme* menu on any dashboard. It applies to all five dashboards, in light and dark, and is remembered per browser. There are eight: Glass + Soft, Soft UI (Neumorphism), Minimal Clean and Flat - Solid colour, plus four Soft UI variants that each add a surface effect:
+### Client Dependencies report
 
-| Theme | Effect | Best for |
-|---|---|---|
-| **Soft UI - Convex** | cards are slightly domed, with a light-to-dark gradient across the surface | a tactile, classic neumorphic look |
-| **Soft UI - Pressed** | panels are sunk into the page like trays, while tiles stay raised | a calm, layered look |
-| **Soft UI - Glow** | every tile glows in its own colour (blue, red, green...); strongest in dark mode | dark screens and wall displays |
-| **Soft UI - Pearl** | glossy cards with a bright top edge and a soft sheen | a clean, polished look |
+The drill-down behind every *Waiting on client* number: each open ticket that depends on the client, how long it has waited and what is needed. Tick *Dependent on Client* on a ticket to put it here.
 
-Every Soft UI theme has a matching dark version that follows Frappe's light/dark switch.
+<table><tr><td width="50%"><img src="docs/screenshots/light/08-client-dependencies-report.png" alt="Client Dependencies report (light)"></td><td width="50%"><img src="docs/screenshots/dark/08-client-dependencies-report.png" alt="Client Dependencies report (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
-![Soft UI - Convex](docs/screenshots/theme-soft-convex.png)
-![Soft UI - Pressed](docs/screenshots/theme-soft-pressed.png)
-![Soft UI - Glow](docs/screenshots/theme-soft-glow.png)
-![Soft UI - Glow, dark mode](docs/screenshots/theme-soft-glow-dark.png)
-![Soft UI - Pearl](docs/screenshots/theme-soft-pearl.png)
+### Kanban board
+
+One column per ticket status. Drag a card to change its status; a move the workflow does not allow is refused.
+
+<table><tr><td width="50%"><img src="docs/screenshots/light/09-kanban-board.png" alt="Kanban board (light)"></td><td width="50%"><img src="docs/screenshots/dark/09-kanban-board.png" alt="Kanban board (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
+
+### Gantt chart
+
+Each ticket drawn from its start date to its due date, so overlaps and slips are visible. Zoom with the Quarter Day, Day, Week, Month and Year buttons.
+
+<table><tr><td width="50%"><img src="docs/screenshots/light/10-gantt-chart.png" alt="Gantt chart (light)"></td><td width="50%"><img src="docs/screenshots/dark/10-gantt-chart.png" alt="Gantt chart (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
+
+## App themes
+
+The dashboards (Project Hub, Project Health, Portfolio, My Work, Quality and Client Status Report) share one theme. Pick it from the **Theme** menu at the top right of any dashboard; the choice applies to all of them and is remembered in your browser. The 1 month / 3 months / 6 months / Overall **Range** menu is shared the same way.
+
+Every theme has a light and a dark version. The version follows Frappe's own light/dark setting, so a user who switches Frappe to dark mode gets the dark version of the chosen theme. Forms, lists and the rest of Desk keep the standard Frappe look.
+
+| Theme | Look | Light | Dark |
+|---|---|---|---|
+| **Glass + Soft** | Frosted-glass cards over a soft colour gradient. The default theme. | <img src="docs/screenshots/light/theme-glass.png" width="260" alt="Glass + Soft light"> | <img src="docs/screenshots/dark/theme-glass.png" width="260" alt="Glass + Soft dark"> |
+| **Soft UI (Neumorphism)** | Cards that look raised out of the page with soft light and dark shadows on a single grey colour. | <img src="docs/screenshots/light/theme-soft.png" width="260" alt="Soft UI (Neumorphism) light"> | <img src="docs/screenshots/dark/theme-soft.png" width="260" alt="Soft UI (Neumorphism) dark"> |
+| **Soft UI - Convex** | Soft UI with slightly domed cards: a light-to-dark gradient across each surface for a tactile feel. | <img src="docs/screenshots/light/theme-soft-convex.png" width="260" alt="Soft UI - Convex light"> | <img src="docs/screenshots/dark/theme-soft-convex.png" width="260" alt="Soft UI - Convex dark"> |
+| **Soft UI - Pressed** | Soft UI where panels are sunk into the page like trays while the number tiles stay raised. | <img src="docs/screenshots/light/theme-soft-pressed.png" width="260" alt="Soft UI - Pressed light"> | <img src="docs/screenshots/dark/theme-soft-pressed.png" width="260" alt="Soft UI - Pressed dark"> |
+| **Soft UI - Glow** | Soft UI where every tile glows in its own colour; strongest in dark mode, good for wall displays. | <img src="docs/screenshots/light/theme-soft-glow.png" width="260" alt="Soft UI - Glow light"> | <img src="docs/screenshots/dark/theme-soft-glow.png" width="260" alt="Soft UI - Glow dark"> |
+| **Soft UI - Pearl** | Soft UI with a glossy sheen and a bright top edge for a clean, polished look. | <img src="docs/screenshots/light/theme-soft-pearl.png" width="260" alt="Soft UI - Pearl light"> | <img src="docs/screenshots/dark/theme-soft-pearl.png" width="260" alt="Soft UI - Pearl dark"> |
+| **Minimal Clean** | Plain white (or near-black) cards with thin borders and no effects. | <img src="docs/screenshots/light/theme-minimal.png" width="260" alt="Minimal Clean light"> | <img src="docs/screenshots/dark/theme-minimal.png" width="260" alt="Minimal Clean dark"> |
+| **Flat - Solid colour** | No shadows or gradients; every number tile is a solid block of colour. | <img src="docs/screenshots/light/theme-flat-solid.png" width="260" alt="Flat - Solid colour light"> | <img src="docs/screenshots/dark/theme-flat-solid.png" width="260" alt="Flat - Solid colour dark"> |
 
 ## Install
 
