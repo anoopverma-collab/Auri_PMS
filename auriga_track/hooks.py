@@ -1,6 +1,6 @@
 app_name = "auriga_track"
 app_title = "Auri PMS"
-app_publisher = "Auriga IT"
+app_publisher = "Anoop Verma"
 app_description = "Issue tracker for ERPNext"
 app_email = "anoop.verma@aurigait.com"
 app_license = "mit"

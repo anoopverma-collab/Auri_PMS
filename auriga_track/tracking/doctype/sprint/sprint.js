@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Auriga IT and contributors
+// Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on("Sprint", {

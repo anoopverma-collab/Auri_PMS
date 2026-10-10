@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Ruff
+        run: |
+          pip install ruff
+          ruff check .
+          ruff format --check .
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=5s --health-retries=10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    env:
+      SITE: test_site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: auriga_track
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install bench
+        run: |
+          pip install frappe-bench
+          sudo apt-get update && sudo apt-get install -y libmariadb-dev wkhtmltopdf
+      - name: Init bench with Frappe and ERPNext (version-16)
+        run: |
+          bench init --skip-redis-config-generation --frappe-branch version-16 --python "$(which python)" ~/frappe-bench
+          cd ~/frappe-bench
+          bench get-app --branch version-16 erpnext https://github.com/frappe/erpnext
+          bench get-app auriga_track "$GITHUB_WORKSPACE/auriga_track"
+          bench set-config -g db_host 127.0.0.1
+          bench set-config -g redis_cache redis://127.0.0.1:6379
+          bench set-config -g redis_queue redis://127.0.0.1:6379
+          bench set-config -g redis_socketio redis://127.0.0.1:6379
+      - name: Create site and install apps
+        run: |
+          cd ~/frappe-bench
+          bench new-site "$SITE" --db-root-password root --admin-password admin --mariadb-user-host-login-scope='%'
+          bench --site "$SITE" install-app erpnext
+          bench --site "$SITE" install-app auriga_track
+          bench --site "$SITE" set-config allow_tests true
+      - name: Run tests
+        run: |
+          cd ~/frappe-bench
+          bench --site "$SITE" run-tests --app auriga_track

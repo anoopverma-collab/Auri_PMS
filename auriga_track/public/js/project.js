@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Auriga IT and contributors
+// Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
 // Tracker tab UX on the ERPNext Project form. Rules are enforced on the server.

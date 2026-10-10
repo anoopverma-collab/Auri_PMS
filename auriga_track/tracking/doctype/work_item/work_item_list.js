@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Auriga IT and contributors
+// Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
 // Plain Tracker Users start on their open items; Frappe applies `filters` only when the user has no saved filters.

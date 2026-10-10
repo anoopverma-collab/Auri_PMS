@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Auriga IT and contributors
+// Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
 // Loaded on every desk page so the custom Quick Entry exists before the first Work Item form is opened.

@@ -1,7 +1,7 @@
 [project]
 name = "auriga_track"
 authors = [
-    { name = "Auriga IT", email = "anoop.verma@aurigait.com"}
+    { name = "Anoop Verma", email = "anoop.verma@aurigait.com"}
 ]
 description = "Issue tracker for ERPNext"
 requires-python = ">=3.14"

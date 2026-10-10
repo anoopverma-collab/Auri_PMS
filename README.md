@@ -1,5 +1,7 @@
 # Auri PMS
 
+[![CI](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auriga_Track/actions/workflows/ci.yml)
+
 A simple issue tracker for **ERPNext v16**. Log, assign, track and close work items
 (bugs, features, tasks, support requests) against ERPNext Projects, plan them into Releases and log
 time against them. One screen to create an item, one list to work from, and no configuration beyond
@@ -103,7 +105,7 @@ bench --site <site> migrate
 
 `install-app` loads all fixtures (roles, custom fields on Project and Email Account, workspace,
 number cards, charts, reports) and creates the default data **once**: 6 statuses, 3 project roles,
-4 trackers (Bug has a workflow), activity types, Tracker Settings and the Kanban board
+4 ticket types (Bug has a workflow), activity types, Tracker Settings and the Kanban board
 "Work Items by Status". A later `migrate` never overwrites changes you made to that data.
 
 Uninstall: `bench --site <site> uninstall-app auriga_track` (removes the Project and Email Account
@@ -118,10 +120,10 @@ Activity Types are left alone).
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled trackers |
+| **Project > Tracker tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **Tracker Settings > Weekly Capacity** | working hours per person per week, used by My Work |
-| **Email Account** | optional: *Tracker Project* (+ default tracker) turns received mail into work items |
+| **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
 projects they are a member of, plus public projects. Inside a project the member's **Project Role**
@@ -156,8 +158,7 @@ ruff check . && ruff format --check .                      # Python
 eslint --ext .js auriga_track                              # JS (default Frappe config)
 ```
 
-Tests live in `auriga_track/tracking/tests/`, one file per area (see spec ids T-001 ... T-127 in the
-docstrings); `utils.py` builds the shared fixture world once per class and isolates every test with a
+Tests live in `auriga_track/tracking/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
 database savepoint. Business rules live in the DocType controllers and `tracking/utils.py`; client
 scripts are UX only.
 
@@ -167,12 +168,17 @@ Design decisions made where the specification was silent are listed in [DECISION
 
 ```
 auriga_track/
-  hooks.py  install.py  permissions.py
+  hooks.py  install.py  permissions.py  patches/
   fixtures/                 custom fields, roles
-  public/js/project.js      Tracker tab UX on Project
+  public/js/                auriga_hub.bundle.js (shared dashboard UI and themes), auriga_track.bundle.js, project.js
+  workspace_sidebar/  desktop_icon/
   tracking/
     utils.py                capabilities, hierarchy, roll-ups, progress formula
-    api.py                  get_allowed_statuses, log_time, link queries
+    api.py                  hub, health, portfolio, My Work and quality endpoints, log_time, link queries
+    health.py  dashboards.py  status_report.py
     email_intake.py  tasks.py  project_hooks.py
-    doctype/ report/ workspace/ number_card/ dashboard_chart/ tests/
+    doctype/                Work Item, Sprint, Release, Time Entry, Ticket Type, Project Role, ...
+    page/                   project_hub, portfolio, my_work, quality_dashboard, status_report
+    report/                 work item, time log, release, sprint and client dependency reports
+    tests/
 ```
