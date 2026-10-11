@@ -69,14 +69,14 @@ class Portfolio {
 				<span class="text-muted">${__("{0} projects", [k.projects])} · ${__(ui.PERIOD_NOTE[d.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span></div>
 			${banner}
 			<div class="hub-tiles">
-				${tile(k.projects, __("Projects"), "hub-blue", this.show_health ? `${k.red} ${__("Off Track")} · ${k.amber} ${__("At Risk")} · ${k.green} ${__("On Track")}` : "")}
-				${tile(k.open, __("Open tickets"), "hub-purple", k.client_dependent ? `${k.client_dependent} ${__("waiting on client")}` : "")}
-				${tile(k.closed, __("Closed tickets"), "hub-green")}
-				${tile(k.overdue, __("Overdue"), k.overdue ? "hub-orange" : "hub-teal")}
-				${tile(k.client_dependent, __("Waiting on client"), "hub-cyan")}
-				${tile(k.hours_period, __("Hours in range"), "hub-teal", `${k.hours_spent} ${__("h in total")}`)}
-				${tile(`${k.billable_pct}%`, __("Billable"), "hub-green")}
-				${tile(burn_text, __("Budget burn"), k.burn_pct > 100 ? "hub-red" : "hub-blue", __("hours spent / estimated"))}
+				${tile(k.projects, __("Projects"), "hub-blue", this.show_health ? `${k.red} ${__("Off Track")} · ${k.amber} ${__("At Risk")} · ${k.green} ${__("On Track")}` : "", ui.go("Project", { tracker_identifier: ["is", "set"] }))}
+				${tile(k.open, __("Open tickets"), "hub-purple", k.client_dependent ? `${k.client_dependent} ${__("waiting on client")}` : "", ui.go("Work Item", { is_closed: 0 }))}
+				${tile(k.closed, __("Closed tickets"), "hub-green", "", ui.go("Work Item", { is_closed: 1 }))}
+				${tile(k.overdue, __("Overdue"), k.overdue ? "hub-orange" : "hub-teal", "", ui.go("Work Item", { is_closed: 0, due_date: ["<", frappe.datetime.get_today()] }))}
+				${tile(k.client_dependent, __("Waiting on client"), "hub-cyan", "", ui.goReport("Client Dependencies"))}
+				${tile(k.hours_period, __("Hours in range"), "hub-teal", `${k.hours_spent} ${__("h in total")}`, ui.go("Time Entry", { date: [">=", d.range_start] }))}
+				${tile(`${k.billable_pct}%`, __("Billable"), "hub-green", "", ui.go("Time Entry", { is_billable: 1 }))}
+				${tile(burn_text, __("Budget burn"), k.burn_pct > 100 ? "hub-red" : "hub-blue", __("hours spent / estimated"), ui.go("Time Entry"))}
 			</div>
 			<div class="hub-panel"><h6>${__("Projects")}</h6>
 				<div class="hub-toolbar"><div class="hub-search"><input type="text" class="form-control" placeholder="${__("Search projects")}" value="${ui.esc(this.query)}"></div></div>
@@ -95,6 +95,7 @@ class Portfolio {
 					${panel(__("Hours: billable vs non-billable"), `<div class="hub-chart" id="pf-time"></div>`)}
 				</div>
 			</div>`);
+		ui.bindTiles(this.$body);
 		this.$body.find(".hub-tile[data-route='red']").on("click", () => this.set_filter("red"));
 		this.$body.find(".hub-search input").on("input", (e) => {
 			this.query = $(e.target).val();

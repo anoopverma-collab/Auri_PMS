@@ -67,6 +67,7 @@ class QualityDashboard {
 			return;
 		}
 		const t = d.tiles;
+		const bugs = (filters) => ui.go("Work Item", { tracker: ["in", d.defect_trackers], ...(this.project ? { project: this.project } : {}), ...filters });
 		const per = d.bucket === "month" ? __("monthly") : __("weekly");
 		const dash = (v, suffix) => (v === null || v === undefined ? "-" : `${v}${suffix || ""}`);
 		const critical = table(d.critical, [__("Bug"), __("Summary"), __("Priority"), __("Age"), __("Owner")], (b) =>
@@ -79,14 +80,14 @@ class QualityDashboard {
 			<div class="hub-title"><h4>${__("Quality")}</h4><span class="text-muted">${scope} · ${__(ui.PERIOD_NOTE[d.period])} · ${__("defect ticket types: {0}", [esc(d.defect_trackers.join(", "))])}</span></div>
 			${ui.statusBanner(d.status, __("quality"))}
 			<div class="hub-tiles">
-				${tile(t.open, __("Open bugs"), "hub-blue", `${t.client_open ? `${t.client_open} ${__("waiting on client")} · ` : ""}${t.closed} ${__("fixed so far")}`)}
-				${tile(t.critical_open, __("Critical open"), t.critical_open ? "hub-red" : "hub-teal")}
-				${tile(t.opened_period, __("Opened in range"), "hub-orange")}
-				${tile(t.fixed_period, __("Fixed in range"), "hub-green")}
-				${tile(dash(t.avg_fix_days), __("Avg days to fix"), "hub-purple")}
-				${tile(`${t.bug_share_pct}%`, __("Bugs among new tickets"), "hub-cyan")}
-				${tile(dash(t.density), __("Bugs per 100 hours"), "hub-teal")}
-				${tile(`${t.reopen_rate}%`, __("Reopen rate"), t.reopen_rate > 15 ? "hub-red" : "hub-green", __("{0} reopened", [t.reopened]))}
+				${tile(t.open, __("Open bugs"), "hub-blue", `${t.client_open ? `${t.client_open} ${__("waiting on client")} · ` : ""}${t.closed} ${__("fixed so far")}`, bugs({ is_closed: 0 }))}
+				${tile(t.critical_open, __("Critical open"), t.critical_open ? "hub-red" : "hub-teal", "", bugs({ is_closed: 0, priority: ["in", ["Urgent", "Immediate"]] }))}
+				${tile(t.opened_period, __("Opened in range"), "hub-orange", "", bugs({ creation: [">=", d.range_start] }))}
+				${tile(t.fixed_period, __("Fixed in range"), "hub-green", "", bugs({ is_closed: 1, closed_on: [">=", d.range_start] }))}
+				${tile(dash(t.avg_fix_days), __("Avg days to fix"), "hub-purple", "", bugs({ is_closed: 1 }))}
+				${tile(`${t.bug_share_pct}%`, __("Bugs among new tickets"), "hub-cyan", "", ui.go("Work Item", { ...(this.project ? { project: this.project } : {}), creation: [">=", d.range_start] }))}
+				${tile(dash(t.density), __("Bugs per 100 hours"), "hub-teal", "", ui.go("Time Entry", this.project ? { project: this.project, date: [">=", d.range_start] } : { date: [">=", d.range_start] }))}
+				${tile(`${t.reopen_rate}%`, __("Reopen rate"), t.reopen_rate > 15 ? "hub-red" : "hub-green", __("{0} reopened", [t.reopened]), ui.go("Work Item", { name: ["in", t.reopened_names.length ? t.reopened_names : ["-"]] }))}
 			</div>
 			<div class="hub-cols hub-cols-even">
 				<div class="hub-col">
@@ -104,6 +105,7 @@ class QualityDashboard {
 					${panel(__("Critical bugs still open"), critical)}
 				</div>
 			</div>`);
+		ui.bindTiles(this.$body);
 		this.$body.find("tr[data-project]").on("click", (e) => this.project_field.set_value($(e.currentTarget).data("project")));
 		const p = ui.PALETTE;
 		ui.chart(this.$body, "#q-flow", { type: "bar", data: { labels: d.labels, datasets: [{ name: __("Opened"), values: d.flow.opened }, { name: __("Fixed"), values: d.flow.fixed }] }, colors: [p.orange, p.green] });

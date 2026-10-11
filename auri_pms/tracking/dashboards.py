@@ -213,6 +213,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 	return deep_dict(
 		{
 			"period": period,
+			"range_start": str(buckets.first_day),
 			"bucket": buckets.kind,
 			"labels": buckets.labels(),
 			"kpis": kpis,
@@ -544,6 +545,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 		{
 			"has_data": bool(bugs),
 			"period": period,
+			"range_start": str(buckets.first_day),
 			"bucket": buckets.kind,
 			"labels": buckets.labels(),
 			"defect_trackers": defect_trackers,
@@ -562,6 +564,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 				"density": flt(len(opened_period) * 100 / hours_period, 1) if hours_period else None,
 				"reopen_rate": reopen["rate"],
 				"reopened": reopen["reopened"],
+				"reopened_names": reopen["names"],
 			},
 			"flow": {
 				"opened": flow["created"],
@@ -643,6 +646,7 @@ def reopen_stats(bugs: list, buckets) -> dict:
 	ever_closed = {b.name for b in bugs if cint(b.is_closed)} | reopened
 	return {
 		"reopened": len(reopened),
+		"names": sorted(reopened),
 		"ever_closed": len(ever_closed),
 		"rate": flt(len(reopened) * 100 / len(ever_closed), 1) if ever_closed else 0.0,
 		"by_bucket": [by_bucket.get(s, 0) for s in buckets.starts],

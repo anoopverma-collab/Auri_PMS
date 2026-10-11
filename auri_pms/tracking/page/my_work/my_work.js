@@ -85,6 +85,9 @@ class MyWork {
 		const d = this.data;
 		const t = d.tiles;
 		const { tile, panel } = ui;
+		const mine = (filters) => ui.go("Work Item", { assigned_to: frappe.session.user, ...filters });
+		const week_end = frappe.datetime.add_days(d.week_start, 6);
+		const blocked = Object.values(d.groups).flat().filter((i) => i.blocked_by.length).map((i) => i.name);
 		const groups = MW_GROUPS.filter(([key]) => d.groups[key].length)
 			.map(
 				([key, label, open], index) =>
@@ -111,14 +114,14 @@ class MyWork {
 		this.$body.html(`
 			<div class="hub-title"><h4>${__("My Work")}</h4><span class="text-muted">${ui.esc(frappe.user.full_name())} · ${frappe.datetime.str_to_user(d.today)}</span></div>
 			<div class="hub-tiles">
-				${tile(t.open, __("Open tickets"), "hub-blue")}
-				${tile(t.overdue, __("Overdue"), t.overdue ? "hub-red" : "hub-teal")}
-				${tile(t.today, __("Due today"), "hub-orange")}
-				${tile(t.week, __("Due this week"), "hub-purple")}
-				${tile(t.client_waiting, __("Waiting on client"), "hub-cyan")}
-				${tile(t.blocked, __("Blocked"), t.blocked ? "hub-red" : "hub-teal")}
-				${tile(t.hours_week, __("Hours this week"), "hub-green", __("{0}% of {1} h", [t.capacity_pct, t.capacity]))}
-				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal")}
+				${tile(t.open, __("Open tickets"), "hub-blue", "", mine({ is_closed: 0 }))}
+				${tile(t.overdue, __("Overdue"), t.overdue ? "hub-red" : "hub-teal", "", mine({ is_closed: 0, due_date: ["<", d.today] }))}
+				${tile(t.today, __("Due today"), "hub-orange", "", mine({ is_closed: 0, due_date: d.today }))}
+				${tile(t.week, __("Due this week"), "hub-purple", "", mine({ is_closed: 0, due_date: ["between", [d.today, week_end]] }))}
+				${tile(t.client_waiting, __("Waiting on client"), "hub-cyan", "", mine({ is_closed: 0, dependent_on_client: 1 }))}
+				${tile(t.blocked, __("Blocked"), t.blocked ? "hub-red" : "hub-teal", "", ui.go("Work Item", { name: ["in", blocked.length ? blocked : ["-"]] }))}
+				${tile(t.hours_week, __("Hours this week"), "hub-green", __("{0}% of {1} h", [t.capacity_pct, t.capacity]), ui.go("Time Entry", { user: frappe.session.user, date: ["between", [d.week_start, week_end]] }))}
+				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal", "", mine({ is_closed: 1, closed_on: [">=", frappe.datetime.add_days(d.today, -28)] }))}
 			</div>
 			<div class="hub-row hub-row-one">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 			<div class="hub-row hub-row-even">
@@ -134,6 +137,7 @@ class MyWork {
 				${panel(__("Tickets I closed (last 4 weeks)"), `<div class="hub-chart" id="mw-closed"></div>`)}
 			</div>
 			`);
+		ui.bindTiles(this.$body);
 		this.$body.find("[data-log]").on("click", (e) => this.log_time($(e.currentTarget).data("log"), $(e.currentTarget).data("subject")));
 		const palette = ui.PALETTE;
 		ui.chart(this.$body, "#mw-hours", { type: "bar", height: 200, data: { labels: d.hours.days, datasets: [{ name: __("Billable"), values: d.hours.billable }, { name: __("Non-billable"), values: d.hours.non_billable }] }, colors: [palette.green, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.4 } });

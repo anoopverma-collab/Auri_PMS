@@ -213,7 +213,7 @@ class ProjectHub {
 				${tile(n.mine, __("Assigned to me"), "hub-purple", "mine")}${tile(n.unassigned, __("Unassigned"), "hub-orange", "unassigned")}
 				${tile(d.backlog_items, __("Backlog (no sprint)"), "hub-cyan", "backlog", waiting_text(d.backlog_client))}${tile(n.closed, __("Closed"), "hub-green", "closed")}
 				${tile(n.client_dependent, __("Waiting on client"), n.client_dependent ? "hub-orange" : "hub-teal", "client", n.client_oldest_days === null || n.client_oldest_days === undefined ? "" : __("oldest {0} days", [n.client_oldest_days]))}
-				${tile(n.hours_total, __("Hours logged"), "hub-teal", null, __("{0} h this week", [n.hours_week]))}
+				${tile(n.hours_total, __("Hours logged"), "hub-teal", ui.go("Time Entry", { project: this.project }), __("{0} h this week", [n.hours_week]))}
 			</div>
 			<div class="hub-row">
 				${sprint_html}
@@ -231,6 +231,7 @@ class ProjectHub {
 			<div class="hub-panel"><h6>${__("Recent work items")}</h6>${recent}</div>`);
 		this.$body.find(".hub-tile[data-route]").on("click", (e) => this.open_tile($(e.currentTarget).data("route")));
 		this.bind_risk_links();
+		ui.bindTiles(this.$body);
 		this.$body.find("[data-open-report]").on("click", (e) => {
 			e.preventDefault();
 			this.open_tile("client");
@@ -313,8 +314,9 @@ class ProjectHub {
 				? `${ui.riskLevelCounts(rk.by_level)}${rk.overdue ? `<div class="hub-sub" style="margin-bottom:8px">${__("{0} past the mitigation date", [rk.overdue])}</div>` : ""}<div class="hub-risk-split"><div>${ui.heatmap(rk.matrix)}</div><div>${ui.riskTable(rk.top.map((r) => ({ ...r, project_label: "" })))}</div></div>`
 				: `<div class="text-muted small">${__("No risks have been registered for this project.")}</div>`
 		);
-		const tile = (value, label, cls, sub) =>
-			`<div class="hub-tile ${cls || ""}"><b>${value}</b><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div>`;
+		const items = (filters) => ui.go("Work Item", { project: this.project, ...filters });
+		const entries = (filters) => ui.go("Time Entry", { project: this.project, ...filters });
+		const tile = (value, label, cls, sub, route) => ui.tile(value, label, cls, sub, route);
 		const risk_badge = (r) => `<span class="hub-badge hub-risk-${r.risk}">${r.risk === "late" ? __("Late") : r.risk === "risk" ? __("At Risk") : __("On Track")}</span>`;
 		const releases = h.releases.length
 			? `<table class="table table-sm hub-table"><thead><tr><th>${__("Release")}</th><th>${__("Due")}</th><th>${__("Days left")}</th><th>${__("Progress")}</th><th></th></tr></thead><tbody>${h.releases
@@ -354,14 +356,14 @@ class ProjectHub {
 				<span class="text-muted">${__("Project health")} · ${__(ui.PERIOD_NOTE[h.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span></div>
 			${st ? ui.statusBanner(st) : ""}
 			<div class="hub-tiles">
-				${tile(`${f.completion_pct}%`, __("Complete"), "hub-green", __("{0} of {1} tickets", [f.closed, f.total]))}
-				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`)}
-				${tile(f.closed, __("Closed tickets"), "hub-green", __("{0} h estimated", [f.estimated_closed_hours]))}
-				${tile(`${f.overdue_pct}%`, __("Open & overdue"), f.overdue ? "hub-red" : "hub-teal", __("{0} tickets", [f.overdue]))}
-				${tile(f.client_dependent, __("Waiting on client"), f.client_dependent ? "hub-orange" : "hub-teal", f.client_oldest_days === null ? "" : __("oldest {0} days", [f.client_oldest_days]))}
-				${tile(t.spent, __("Hours spent"), "hub-cyan", t.burn_pct === null ? "" : __("{0}% of estimate", [t.burn_pct]))}
-				${tile(t.billable, __("Billable hours"), "hub-teal", __("{0}% of spent", [t.billable_pct]))}
-				${tile(t.non_billable, __("Non-billable hours"), "hub-orange")}
+				${tile(`${f.completion_pct}%`, __("Complete"), "hub-green", __("{0} of {1} tickets", [f.closed, f.total]), items())}
+				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`, items({ is_closed: 0 }))}
+				${tile(f.closed, __("Closed tickets"), "hub-green", __("{0} h estimated", [f.estimated_closed_hours]), items({ is_closed: 1 }))}
+				${tile(`${f.overdue_pct}%`, __("Open & overdue"), f.overdue ? "hub-red" : "hub-teal", __("{0} tickets", [f.overdue]), items({ is_closed: 0, due_date: ["<", frappe.datetime.get_today()] }))}
+				${tile(f.client_dependent, __("Waiting on client"), f.client_dependent ? "hub-orange" : "hub-teal", f.client_oldest_days === null ? "" : __("oldest {0} days", [f.client_oldest_days]), ui.goReport("Client Dependencies", { project: this.project }))}
+				${tile(t.spent, __("Hours spent"), "hub-cyan", t.burn_pct === null ? "" : __("{0}% of estimate", [t.burn_pct]), entries())}
+				${tile(t.billable, __("Billable hours"), "hub-teal", __("{0}% of spent", [t.billable_pct]), entries({ is_billable: 1 }))}
+				${tile(t.non_billable, __("Non-billable hours"), "hub-orange", "", entries({ is_billable: 0 }))}
 			</div>
 			${row(p_flow, p_trend)}
 			${row(p_type, module_panel)}
@@ -374,6 +376,7 @@ class ProjectHub {
 			${row(p_rel)}`);
 
 		this.bind_risk_links();
+		ui.bindTiles(this.$body);
 		this.$body.find("[data-open-report]").on("click", (e) => {
 			e.preventDefault();
 			this.open_tile("client");

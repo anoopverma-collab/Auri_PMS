@@ -150,8 +150,32 @@ ui.addPeriodMenu = (page, onChange) => {
 };
 
 // ---- small HTML helpers shared by the dashboards
-ui.tile = (value, label, cls, sub, route) =>
-	`<div class="hub-tile ${cls || ""}" ${route ? `data-route='${route}'` : ""}><b>${value}</b><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div>`;
+ui.tile = (value, label, cls, sub, route) => {
+	// route: a string (Project Hub's own handler) or ui.go(...) = open a list or report with filters
+	let attr = "";
+	if (route && typeof route === "object") attr = `data-go="${frappe.utils.escape_html(JSON.stringify(route))}" tabindex="0" role="link"`;
+	else if (route) attr = `data-route='${route}'`;
+	return `<div class="hub-tile ${cls || ""}" ${attr}><b>${value}</b><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div>`;
+};
+
+// where a tile leads: a Desk list (ui.go("Work Item", {is_closed: 0})) or a query report (ui.goReport("Client Dependencies", {...}))
+ui.go = (doctype, filters) => ({ route: ["List", doctype, "List"], filters: filters && Object.keys(filters).length ? filters : { docstatus: ["<", 2] } });
+ui.goReport = (report, filters) => ({ route: ["query-report", report], filters: filters || {} });
+ui.bindTiles = ($body) => {
+	const open = (el) => {
+		const target = JSON.parse(el.getAttribute("data-go"));
+		// a list reopens with its last saved filters unless they are cleared, which would mix an old filter into the tile's
+		if (target.route[0] === "List") frappe.model.user_settings.save(target.route[1], "filters", []);
+		frappe.route_options = target.filters;
+		frappe.set_route(...target.route);
+	};
+	$body.find(".hub-tile[data-go]").on("click", (e) => open(e.currentTarget)).on("keydown", (e) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			open(e.currentTarget);
+		}
+	});
+};
 
 ui.panel = (title, body, cls) => `<div class="hub-panel ${cls || ""}"><h6>${title}</h6>${body}</div>`;
 
@@ -280,8 +304,8 @@ ui.injectStyle = () => {
 				box-shadow: var(--n-raised); position: relative; transition: transform .15s ease; }
 			.hub-tile::before { content: ""; position: absolute; left: 18px; top: 0; width: 34px; height: 4px; border-radius: 0 0 6px 6px; background: var(--acc); box-shadow: 0 2px calc(var(--bm) * 4px) var(--acc); }
 			.hub-tile b { display: block; margin-top: 4px; font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--acc); }
-			.hub-tile[data-route] { cursor: pointer; } .hub-tile[data-route]:hover { transform: translateY(-2px); }
-			.hub-tile[data-route]:active { transform: none; box-shadow: var(--n-inset); }
+			.hub-tile[data-route], .hub-tile[data-go] { cursor: pointer; } .hub-tile[data-route]:hover, .hub-tile[data-go]:hover { transform: translateY(-2px); }
+			.hub-tile[data-route]:active, .hub-tile[data-go]:active { transform: none; box-shadow: var(--n-inset); }
 			.hub-blue { --acc: #3b82f6; } .hub-red { --acc: #ef4444; } .hub-purple { --acc: #8b5cf6; } .hub-orange { --acc: #f59e0b; }
 			.hub-cyan { --acc: #06b6d4; } .hub-green { --acc: #10b981; } .hub-teal { --acc: #14b8a6; }
 			.auri-hub[data-hub-theme="mono"] .hub-tile { --acc: var(--g-text); }
