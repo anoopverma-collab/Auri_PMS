@@ -3,7 +3,7 @@ name = "auri_pms"
 authors = [
     { name = "Anoop Verma", email = "anoop.verma@aurigait.com"}
 ]
-description = "Auri PMS (Project Management System). Plan. Track. Deliver. A centralized platform for project planning, task management, timelines, effort tracking, team collaboration, and delivery monitoring. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals, and management dashboards."
+description = "Auri PMS (Project Management System). A centralized platform for project planning, task management, timelines, effort tracking, team collaboration, and delivery monitoring. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals, and management dashboards."
 requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]

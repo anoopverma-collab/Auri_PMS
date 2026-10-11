@@ -26,7 +26,7 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 - Dashboards use aligned layouts: columns end on the same line, project cards have equal height, the project overview and
   Project Health are built from rows of paired panels, and every screen shows 8 tiles in two rows of four.
 - Soft UI theme variants (Convex, Pressed, Glow, Pearl) replace the earlier colour variants.
-- The sidebar header shows *Auri PMS* with the tagline *Plan. Track. Deliver.*
+- The sidebar header shows *Auri PMS*.
 
 ### Fixed
 - The Auri PMS sidebar is shown on pages that take a project in their address (Project Hub, Client Status Report), also after a
