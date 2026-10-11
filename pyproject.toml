@@ -11,6 +11,13 @@ dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
 ]
 
+[project.urls]
+Homepage = "https://github.com/anoopverma-collab/Auri_PMS"
+Repository = "https://github.com/anoopverma-collab/Auri_PMS"
+Documentation = "https://github.com/anoopverma-collab/Auri_PMS#readme"
+Issues = "https://github.com/anoopverma-collab/Auri_PMS/issues"
+Changelog = "https://github.com/anoopverma-collab/Auri_PMS/blob/main/CHANGELOG.md"
+
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
