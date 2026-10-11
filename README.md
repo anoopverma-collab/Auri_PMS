@@ -2,7 +2,7 @@
 
 # Auri PMS
 
-**Project Management System** &middot; *Plan. Track. Deliver.*
+**Project Management System**
 
 [![CI](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml)
 
