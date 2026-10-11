@@ -50,7 +50,9 @@ def _like(txt: str | None) -> str:
 
 
 @frappe.whitelist()
-def status_query(doctype, txt, searchfield, start, page_len, filters):
+def status_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
 	"""Link query for Work Item.status: the current status plus the allowed next statuses."""
 	filters = frappe._dict(filters or {})
 	if filters.work_item and frappe.db.exists("Work Item", filters.work_item):
@@ -62,7 +64,9 @@ def status_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def tracker_query(doctype, txt, searchfield, start, page_len, filters):
+def tracker_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
 	"""Link query for Work Item.tracker: active trackers enabled on the project."""
 	project = (filters or {}).get("project")
 	names = (
@@ -84,7 +88,9 @@ def tracker_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def assignee_query(doctype, txt, searchfield, start, page_len, filters):
+def assignee_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
 	"""Link query for Work Item.assigned_to: enabled members whose role has can_be_assigned."""
 	project = (filters or {}).get("project")
 	if not project or not can_see_project(project):
@@ -105,7 +111,9 @@ def assignee_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def parent_query(doctype, txt, searchfield, start, page_len, filters):
+def parent_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
 	"""Link query for Work Item.parent_work_item: same project, not self, not a descendant."""
 	filters = frappe._dict(filters or {})
 	if not filters.project:
@@ -124,7 +132,9 @@ def parent_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def project_create_query(doctype, txt, searchfield, start, page_len, filters):
+def project_create_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
 	"""Link query for Work Item.project: projects (with an identifier) the user may create items in."""
 	candidates = frappe.get_list(
 		"Project",
