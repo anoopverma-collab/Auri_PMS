@@ -6,6 +6,8 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Added
+- **Monthly client status report:** a project can email its status report *Monthly* (on a chosen day, 1-28, covering the
+  previous calendar month) as well as weekly; set it in the *Client Status Report* section of the Project's Auri PMS tab.
 - **Risk Register** DocType: probability x impact scoring (Low, Medium, High, Critical), owner, status, mitigation and
   contingency plan, mitigation due date, related ticket and a *Show in Client Status Report* switch. Risks are numbered per
   project (`AURI-RISK-0001`).

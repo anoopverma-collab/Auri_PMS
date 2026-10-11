@@ -399,27 +399,47 @@ def get_pdf_bytes(project: str, from_date, to_date, note: str | None = None) -> 
 
 
 def send_scheduled_reports() -> None:
-	"""Daily job: send the weekly report of every project whose chosen weekday is today (once a day)."""
+	"""Daily job: send the weekly report on the chosen weekday and the monthly report on the chosen day (once a day)."""
 	today_ = getdate(today())
-	projects = frappe.get_all(
-		"Project",
-		filters={"tracker_report_weekday": today_.strftime("%A"), "tracker_report_recipients": ["is", "set"]},
-		fields=["name", "tracker_report_recipients"],
-	)
-	for project in projects:
-		already = frappe.db.exists(
-			"Project Status Report",
-			{"project": project.name, "scheduled": 1, "sent_on": [">=", get_datetime(f"{today_} 00:00:00")]},
+	first_of_month = today_.replace(day=1)
+	last_month_end = add_days(first_of_month, -1)
+	due = [
+		# weekly (also projects saved before the frequency existed): the previous 7 days
+		(
+			{
+				"tracker_report_frequency": ["!=", "Monthly"],
+				"tracker_report_weekday": today_.strftime("%A"),
+			},
+			add_days(today_, -7),
+			add_days(today_, -1),
+		),
+		# monthly: the previous calendar month
+		(
+			{"tracker_report_frequency": "Monthly", "tracker_report_month_day": str(today_.day)},
+			last_month_end.replace(day=1),
+			last_month_end,
+		),
+	]
+	for filters, from_date, to_date in due:
+		projects = frappe.get_all(
+			"Project",
+			filters={**filters, "tracker_report_recipients": ["is", "set"]},
+			fields=["name", "tracker_report_recipients"],
 		)
-		if already:
-			continue
-		try:
-			send_report(
-				project.name,
-				add_days(today_, -7),
-				add_days(today_, -1),
-				project.tracker_report_recipients,
-				scheduled=True,
+		for project in projects:
+			already = frappe.db.exists(
+				"Project Status Report",
+				{
+					"project": project.name,
+					"scheduled": 1,
+					"sent_on": [">=", get_datetime(f"{today_} 00:00:00")],
+				},
 			)
-		except Exception:
-			frappe.log_error(title=f"Auri PMS: scheduled status report failed for {project.name}")
+			if already:
+				continue
+			try:
+				send_report(
+					project.name, from_date, to_date, project.tracker_report_recipients, scheduled=True
+				)
+			except Exception:
+				frappe.log_error(title=f"Auri PMS: scheduled status report failed for {project.name}")

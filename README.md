@@ -148,7 +148,7 @@ Activity Types are left alone).
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
+| **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types, client status report recipients and weekly/monthly schedule |
 | **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Project Module** | the modules of a project (name, optional lead); project managers maintain them and tickets pick one in the *Module* field |
 | **Risk Register** | project, risk, category, owner, probability and impact (1-5 each; the score is the product), status (Identified, Mitigating, Monitoring, Occurred, Closed), mitigation due date, mitigation and contingency plan, related ticket, and *Show in Client Status Report*; anyone who can create tickets in the project can raise and edit risks, project managers delete them |
@@ -160,12 +160,16 @@ Activity Types are left alone).
 
 Both sections are on the **Auri PMS tab of the Project** form.
 
-**Client Status Report** - who gets the weekly report and when.
+**Client Status Report** - who gets the report and when.
 
 | Field | What it does |
 |---|---|
-| **Report Recipients** | Email addresses (comma or new line) that receive the weekly status report. Several people can be listed, for example the client contact and your manager. |
-| **Send Weekly On** | The weekday the report is emailed automatically (a daily job sends it once on that day, covering the previous 7 days). Leave it blank to send reports manually only, from the *Client Status Report* screen. |
+| **Report Recipients** | Email addresses (comma or new line) that receive the status report. Several people can be listed, for example the client contact and your manager. |
+| **Send** | *Weekly* (default) or *Monthly*. |
+| **Send Weekly On** | (Weekly) the weekday the report is emailed automatically; it covers the previous 7 days. Leave it blank to send reports manually only, from the *Client Status Report* screen. |
+| **Send Monthly On Day** | (Monthly) the day of the month, 1-28, the report is emailed automatically; it covers the previous calendar month. Leave it blank to send reports manually only. |
+
+A daily job does the sending, once per project per day.
 
 Every report that is sent is logged as a **Project Status Report**, so you can see what went out and when.
 
