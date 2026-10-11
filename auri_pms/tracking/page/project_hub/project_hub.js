@@ -74,7 +74,7 @@ class ProjectHub {
 			const sprint = p.active_sprint
 				? `<div class="hub-sprint"><span>${frappe.utils.escape_html(p.active_sprint.name)}</span>
 					<div class="progress"><div class="progress-bar" style="width:${flt(p.active_sprint.percent_complete)}%"></div></div></div>`
-				: `<div class="text-muted small">${__("No active sprint")}</div>`;
+				: `<div class="text-muted small hub-nosprint">${__("No active sprint")}</div>`;
 			const ident = p.tracker_identifier
 				? `<span class="hub-ident">${frappe.utils.escape_html(p.tracker_identifier)}</span>`
 				: `<span class="hub-ident hub-warn">${__("No identifier")}</span>`;

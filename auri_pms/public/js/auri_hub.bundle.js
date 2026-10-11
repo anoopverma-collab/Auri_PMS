@@ -182,11 +182,10 @@ ui.riskLevelCounts = (by_level) =>
 ui.riskTable = (rows, with_project) =>
 	ui.table(
 		rows,
-		[__("Risk"), __("Level"), with_project ? __("Project") : __("Owner"), __("Due")],
+		[__("Risk"), __("Level"), __("Due")],
 		(r) =>
-			`<tr><td>${ui.link("Risk Register", r.name, r.title)}${r.overdue ? ` <span class="hub-badge hub-badge-bad">${__("Overdue")}</span>` : ""}<div class="hub-sub">${ui.esc(__(r.status))}</div></td>
+			`<tr><td>${ui.link("Risk Register", r.name, r.title)}${r.overdue ? ` <span class="hub-badge hub-badge-bad">${__("Overdue")}</span>` : ""}<div class="hub-sub">${ui.esc(__(r.status))}${with_project ? ` · ${ui.esc(r.project_label)}` : r.owner ? ` · ${ui.esc(r.owner)}` : ""}</div></td>
 			<td style="white-space:nowrap">${ui.riskBadge(r.risk_level, r.risk_score)}</td>
-			<td>${ui.esc(with_project ? r.project_label : r.owner)}</td>
 			<td style="white-space:nowrap" class="${r.overdue ? "text-danger" : ""}">${r.mitigation_due ? frappe.datetime.str_to_user(r.mitigation_due) : ""}</td></tr>`
 	);
 
@@ -256,8 +255,9 @@ ui.injectStyle = () => {
 				-webkit-backdrop-filter: blur(var(--blur)) saturate(160%); backdrop-filter: blur(var(--blur)) saturate(160%);
 				box-shadow: var(--n-raised);
 			}
-			.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
-			.hub-card { padding: 18px 20px; cursor: pointer; transition: transform .18s ease; }
+			.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; grid-auto-rows: 1fr; }
+			.hub-card { padding: 18px 20px; cursor: pointer; transition: transform .18s ease; display: flex; flex-direction: column; }
+			.hub-card .hub-stats { margin-bottom: auto; } .hub-card .hub-sprint, .hub-card .hub-nosprint { margin-top: 14px; min-height: 40px; }
 			.hub-card:hover, .hub-card:focus { transform: translateY(-3px); outline: none; }
 			.hub-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 15px; }
 			.hub-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; margin-bottom: 14px; }
@@ -277,7 +277,11 @@ ui.injectStyle = () => {
 			.auri-hub[data-hub-theme="mono"] .hub-tile { --acc: var(--g-text); }
 			.auri-hub[data-hub-theme="mono"] .hub-tile.hub-red b { text-decoration: underline; }
 
-			.hub-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 22px; }
+			.hub-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 22px; align-items: stretch; }
+			/* both columns end on the same line: the last panel of the shorter column grows to fill the gap */
+			.hub-col { display: flex; flex-direction: column; min-width: 0; }
+			.hub-col > .hub-panel:last-child { flex: 1 1 auto; }
+			.hub-col > .hub-panel { flex: 0 0 auto; } .hub-col > .hub-panel:last-child { margin-bottom: 0; }
 			@media (max-width: 992px) { .hub-cols { grid-template-columns: 1fr; } .auri-hub { padding: 18px 14px 26px; } }
 			.hub-panel { padding: 18px 20px; margin-bottom: 22px; } .hub-panel h6 { margin: 0 0 12px; font-weight: 700; letter-spacing: .02em; color: var(--g-text); }
 
