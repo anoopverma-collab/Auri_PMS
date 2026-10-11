@@ -291,6 +291,7 @@ ui.injectStyle = () => {
 			/* overview rows: panels side by side share one height, so nothing drifts further down than its neighbour */
 			.hub-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 22px; align-items: stretch; margin-bottom: 22px; }
 			.hub-row > .hub-panel { margin-bottom: 0; height: 100%; }
+			.hub-row-even { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-risk-split { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 28px; align-items: start; } @media (max-width: 992px) { .hub-risk-split { grid-template-columns: 1fr; } }
 			.hub-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hub-row-one { grid-template-columns: minmax(0, 1fr); }
 			@media (max-width: 992px) { .hub-row, .hub-row-3 { grid-template-columns: 1fr; } }
 			/* both columns end on the same line: the last panel of the shorter column grows to fill the gap */
