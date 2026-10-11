@@ -87,8 +87,8 @@ class MyWork {
 		const { tile, panel } = ui;
 		const groups = MW_GROUPS.filter(([key]) => d.groups[key].length)
 			.map(
-				([key, label, open]) =>
-					`<details class="hub-group" ${open ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})</summary>${this.ticket_table(d.groups[key])}</details>`
+				([key, label, open], index) =>
+					`<details class="hub-group" ${open || index === 0 ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})</summary>${this.ticket_table(d.groups[key])}</details>`
 			)
 			.join("");
 		const sprints = d.sprints.length
@@ -120,17 +120,20 @@ class MyWork {
 				${tile(t.hours_week, __("Hours this week"), "hub-green", __("{0}% of {1} h", [t.capacity_pct, t.capacity]))}
 				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal")}
 			</div>
-			<div class="hub-cols">
-				<div class="hub-col">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
-				<div class="hub-col">
-					${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
-					${panel(`${__("Risks I own")} (${d.risks.length})`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
-					${panel(`${__("Waiting on the client")} (${mine_waiting.length})`, waiting)}
-					${panel(__("My active sprints"), sprints)}
-					${panel(__("I raised, others are working on"), raised)}
-					${panel(__("Tickets I closed (last 4 weeks)"), `<div class="hub-chart" id="mw-closed"></div>`)}
-				</div>
-			</div>`);
+			<div class="hub-row hub-row-one">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
+			<div class="hub-row hub-row-even">
+				${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
+				${panel(`${__("Risks I own")} (${d.risks.length})`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
+			</div>
+			<div class="hub-row hub-row-even">
+				${panel(`${__("Waiting on the client")} (${mine_waiting.length})`, waiting)}
+				${panel(__("My active sprints"), sprints)}
+			</div>
+			<div class="hub-row hub-row-even">
+				${panel(__("I raised, others are working on"), raised)}
+				${panel(__("Tickets I closed (last 4 weeks)"), `<div class="hub-chart" id="mw-closed"></div>`)}
+			</div>
+			`);
 		this.$body.find("[data-log]").on("click", (e) => this.log_time($(e.currentTarget).data("log"), $(e.currentTarget).data("subject")));
 		const palette = ui.PALETTE;
 		ui.chart(this.$body, "#mw-hours", { type: "bar", height: 200, data: { labels: d.hours.days, datasets: [{ name: __("Billable"), values: d.hours.billable }, { name: __("Non-billable"), values: d.hours.non_billable }] }, colors: [palette.green, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.4 } });
