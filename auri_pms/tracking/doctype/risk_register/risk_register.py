@@ -5,6 +5,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import getseries
 from frappe.utils import getdate, today
 
 from auri_pms.tracking.risk import risk_level, scale_value
@@ -17,6 +18,12 @@ class RiskRegister(Document):
 	def before_insert(self) -> None:
 		"""The project identifier is part of the name, so fetch it before naming."""
 		self.set_project_identifier()
+
+	def autoname(self) -> None:
+		"""Number the risks of every project separately: ALP-RISK-0001, ALP-RISK-0002, BET-RISK-0001 ..."""
+		self.set_project_identifier()
+		prefix = f"{self.project_identifier}-RISK-"
+		self.name = prefix + getseries(prefix, 4)
 
 	def validate(self) -> None:
 		"""Capability, work item project, score and level, and the closing date."""

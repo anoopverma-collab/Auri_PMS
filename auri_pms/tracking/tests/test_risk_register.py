@@ -36,8 +36,12 @@ class TestRiskRegister(TrackerTestCase):
 			doc = self.risk(**values)
 			self.assertEqual((doc.risk_score, doc.risk_level), (score, level), values)
 
-	def test_name_carries_the_project_identifier(self):
-		self.assertTrue(self.risk().name.startswith("ALP-RISK-"))
+	def test_name_carries_the_project_identifier_and_numbers_each_project_on_its_own(self):
+		first, second = self.risk(), self.risk()
+		other = self.risk(project=self.BET)
+		self.assertTrue(first.name.startswith("ALP-RISK-"))
+		self.assertEqual(int(second.name.rsplit("-", 1)[1]), int(first.name.rsplit("-", 1)[1]) + 1)
+		self.assertEqual(other.name, "BET-RISK-0001")
 
 	def test_members_who_can_create_items_raise_risks_but_outsiders_cannot(self):
 		self.assertTrue(self.risk(REP).name)

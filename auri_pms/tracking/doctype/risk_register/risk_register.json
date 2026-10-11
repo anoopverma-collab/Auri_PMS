@@ -1,6 +1,6 @@
 {
 	"actions": [],
-	"autoname": "format:{project_identifier}-RISK-{####}",
+	"autoname": "",
 	"creation": "2026-10-11 18:00:00.000000",
 	"doctype": "DocType",
 	"engine": "InnoDB",
@@ -197,11 +197,11 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-11 20:00:00.000000",
+	"modified": "2026-10-11 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Tracking",
 	"name": "Risk Register",
-	"naming_rule": "Expression",
+	"naming_rule": "By controller method",
 	"owner": "Administrator",
 	"permissions": [
 		{
