@@ -10,7 +10,7 @@ A centralized platform for project planning, task management, timelines, effort 
 
 * Frappe v16 + ERPNext v16 (required app), standard Desk UI only, Frappe Cloud compatible
   (no OS packages, no custom bench commands at runtime).
-* Module: **Tracking**. Nothing in Frappe or ERPNext core is modified: everything is added through
+* Module: **Auri PMS**. Nothing in Frappe or ERPNext core is modified: everything is added through
   hooks, Custom Fields, Custom DocPerms and `doc_events`.
 
 ## Features
@@ -226,13 +226,13 @@ or overdue.
 
 ```bash
 bench --site <site> run-tests --app auri_pms          # whole suite
-bench --site <site> run-tests --app auri_pms --module auri_pms.tracking.tests.test_workflow
+bench --site <site> run-tests --app auri_pms --module auri_pms.auri_pms.tests.test_workflow
 ruff check . && ruff format --check .                      # Python
 eslint --ext .js auri_pms                              # JS (default Frappe config)
 ```
 
-Tests live in `auri_pms/tracking/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
-database savepoint. Business rules live in the DocType controllers and `tracking/utils.py`; client
+Tests live in `auri_pms/auri_pms/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
+database savepoint. Business rules live in the DocType controllers and `auri_pms/utils.py`; client
 scripts are UX only.
 
 Design decisions made where the specification was silent are listed in [DECISIONS.md](DECISIONS.md).
@@ -245,7 +245,7 @@ auri_pms/
   fixtures/                 custom fields, roles
   public/js/                auri_hub.bundle.js (shared dashboard UI and themes), auri_pms.bundle.js, project.js
   workspace_sidebar/  desktop_icon/
-  tracking/
+  auri_pms/
     utils.py                capabilities, hierarchy, roll-ups, progress formula
     api.py                  hub, health, portfolio, My Work and quality endpoints, log_time, link queries
     health.py  dashboards.py  status_report.py

@@ -1,0 +1,32 @@
+{
+	"actions": [],
+	"creation": "2026-10-10 10:00:00",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"tracker"
+	],
+	"fields": [
+		{
+			"fieldname": "tracker",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Ticket Type",
+			"options": "Ticket Type",
+			"reqd": 1
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-10-10 20:20:07.864639",
+	"modified_by": "Administrator",
+	"module": "Auri PMS",
+	"name": "Project Ticket Type",
+	"owner": "Administrator",
+	"permissions": [],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

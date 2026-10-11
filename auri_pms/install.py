@@ -5,7 +5,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 
-from auri_pms.tracking.utils import nearest_indicator
+from auri_pms.auri_pms.utils import nearest_indicator
 
 BOARD_NAME = "Work Items by Status"
 
@@ -213,7 +213,7 @@ def ensure_project_permissions() -> None:
 # --------------------------------------------------------------------------- uninstall
 def before_uninstall() -> None:
 	"""Remove what the app added to other doctypes; ERPNext Activity Types stay untouched."""
-	for name in frappe.get_all("Custom Field", filters={"module": "Tracking"}, pluck="name"):
+	for name in frappe.get_all("Custom Field", filters={"module": "Auri PMS"}, pluck="name"):
 		frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
 	for doctype, grants in ERPNEXT_PERMISSIONS.items():
 		for role in grants:

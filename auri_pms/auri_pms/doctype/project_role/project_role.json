@@ -1,0 +1,127 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "field:role_name",
+	"creation": "2026-10-10 10:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"role_name",
+		"can_create_items",
+		"can_edit_any_item",
+		"can_delete_items",
+		"can_manage_releases",
+		"can_manage_categories",
+		"can_log_time",
+		"can_edit_others_time",
+		"can_manage_members",
+		"can_be_assigned"
+	],
+	"fields": [
+		{
+			"fieldname": "role_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Role Name",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "can_create_items",
+			"fieldtype": "Check",
+			"label": "Can Create Items"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_edit_any_item",
+			"fieldtype": "Check",
+			"label": "Can Edit Any Item"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_delete_items",
+			"fieldtype": "Check",
+			"label": "Can Delete Items"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_manage_releases",
+			"fieldtype": "Check",
+			"label": "Can Manage Releases"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_manage_categories",
+			"fieldtype": "Check",
+			"label": "Can Manage Categories"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_log_time",
+			"fieldtype": "Check",
+			"label": "Can Log Time"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_edit_others_time",
+			"fieldtype": "Check",
+			"label": "Can Edit Others' Time"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_manage_members",
+			"fieldtype": "Check",
+			"label": "Can Manage Members"
+		},
+		{
+			"default": "0",
+			"fieldname": "can_be_assigned",
+			"fieldtype": "Check",
+			"label": "Can Be Assigned"
+		}
+	],
+	"issingle": 0,
+	"istable": 0,
+	"modified": "2026-10-10 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Auri PMS",
+	"name": "Project Role",
+	"naming_rule": "By fieldname",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Tracker Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Tracker User"
+		}
+	],
+	"search_fields": "role_name",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "role_name"
+}
