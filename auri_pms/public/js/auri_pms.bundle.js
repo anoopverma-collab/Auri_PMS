@@ -30,6 +30,17 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
+// The app's sidebar used to be called "Tracker". A browser that remembered it for a screen would show that old name in the
+// sidebar header: rewrite the stored choice once so it points at the current sidebar.
+try {
+	const remembered = localStorage.getItem("sidebar_item_map");
+	if (remembered && remembered.includes('"Tracker"')) {
+		localStorage.setItem("sidebar_item_map", remembered.replace(/"Tracker"/g, '"Auri PMS"'));
+	}
+} catch (e) {
+	/* storage can be blocked: nothing to repair then */
+}
+
 // Searching "Auri PMS", "PMS" or "Project Hub" in the Awesome Bar offers the Project Hub, the landing screen of the app.
 $(document).on("startup", () => {
 	const search = frappe.search && frappe.search.utils;
