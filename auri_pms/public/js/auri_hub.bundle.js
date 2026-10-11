@@ -84,7 +84,10 @@ ui.days = (n) => (cint(n) === 1 ? __("1 day") : __("{0} days", [n]));
 // empty sidebar after a refresh or from a direct link: Frappe looks the sidebar up by the argument, not by the page.
 ui.showSidebar = () => {
 	try {
-		if (frappe.app && frappe.app.sidebar) frappe.app.sidebar.show_sidebar_for_module("Auri PMS");
+		const sidebar = frappe.app && frappe.app.sidebar;
+		// not show_sidebar_for_module: it keeps whatever sidebar the previous screen had when that one lists this route's name
+		if (sidebar && sidebar.sidebar_title !== "Auri PMS") sidebar.setup("Auri PMS");
+		else if (sidebar) sidebar.set_active_workspace_item();
 	} catch (e) {
 		/* the sidebar is a convenience: never break the page for it */
 	}

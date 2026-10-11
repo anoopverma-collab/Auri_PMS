@@ -44,9 +44,27 @@ try {
 	/* storage or boot data unavailable: nothing to repair then */
 }
 
+// Frappe remembers a sidebar per screen in localStorage and keeps the sidebar that was open before, so after visiting another app
+// (for example ERPNext's Projects) our screens could show that app's sidebar until a hard refresh. Our own screens (the dashboards
+// and every screen that only the Auri PMS sidebar links to) therefore always switch to the Auri PMS sidebar.
+const PMS_PAGES = ["project-hub", "portfolio", "my-work", "quality-dashboard", "status-report"];
+const is_pms_screen = (sidebar) => {
+	const route = frappe.get_route() || [];
+	if (PMS_PAGES.includes(route[0])) return true;
+	if (!sidebar.all_sidebar_items) return false;
+	const owners = sidebar.get_workspace_sidebars(sidebar.entity_from_route(route));
+	return owners.length > 0 && owners.every((name) => name === "Auri PMS");
+};
 const keep_pms_sidebar = () => {
-	const sidebar = frappe.app && frappe.app.sidebar;
-	if (sidebar && STALE_SIDEBARS.includes(sidebar.sidebar_title)) sidebar.setup("Auri PMS");
+	try {
+		const sidebar = frappe.app && frappe.app.sidebar;
+		if (!sidebar) return;
+		if (STALE_SIDEBARS.includes(sidebar.sidebar_title) || (sidebar.sidebar_title !== "Auri PMS" && is_pms_screen(sidebar))) {
+			sidebar.setup("Auri PMS");
+		}
+	} catch (e) {
+		/* the sidebar is a convenience: never break the page for it */
+	}
 };
 $(document).on("startup", () => {
 	if (frappe.router && frappe.router.on) frappe.router.on("change", () => setTimeout(keep_pms_sidebar, 80));

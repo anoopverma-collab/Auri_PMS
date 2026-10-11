@@ -128,7 +128,7 @@ def check_lock(dates: list) -> None:
 def rollup_items(work_items: set[str | None]) -> None:
 	"""Recalculate totals for work items (and ancestors), then their releases."""
 	releases, sprints = set(), set()
-	for item in filter(None, work_items):
+	for item in (name for name in work_items if name):
 		recalc_chain(item)
 		release, sprint = frappe.db.get_value("Work Item", item, ["release", "sprint"])
 		releases.add(release)
