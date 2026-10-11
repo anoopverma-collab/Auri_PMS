@@ -22,6 +22,7 @@ from auri_pms.tracking.health import (
 	ticket_flow,
 	time_summary,
 )
+from auri_pms.tracking.risk import my_risks, portfolio_risk_counts
 from auri_pms.tracking.utils import get_settings
 
 LEVEL_ORDER = {"red": 0, "amber": 1, "green": 2, "none": 3}
@@ -43,6 +44,7 @@ WORK_ITEM_FIELDS = [
 	"done_percent",
 	"sprint",
 	"category",
+	"project_module",
 	"dependent_on_client",
 	"client_dependency_since",
 ]
@@ -104,6 +106,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		)
 	}
 
+	risk_counts = portfolio_risk_counts([p.name for p in projects])
 	rows = []
 	series = {
 		k: [0] * len(buckets.starts)
@@ -150,6 +153,10 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 				"overdue": flow["overdue"],
 				"overdue_pct": flow["overdue_pct"],
 				"client_dependent": flow["client_dependent"],
+				"risks_open": risk_counts[project.name]["open"],
+				"risks_critical": risk_counts[project.name]["critical"],
+				"risks_high": risk_counts[project.name]["high"],
+				"risks_overdue": risk_counts[project.name]["overdue"],
 				"avg_resolution_days": flow["avg_resolution_days"],
 				"created_period": sum(flow["created"]),
 				"resolved_period": sum(flow["resolved"]),
@@ -185,6 +192,9 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		"amber": sum(r["level"] == "amber" for r in rows),
 		"green": sum(r["level"] == "green" for r in rows),
 		"none": sum(r["level"] == "none" and not r["health_hidden"] for r in rows),
+		"risks_open": sum(r["risks_open"] for r in rows),
+		"risks_critical": sum(r["risks_critical"] for r in rows),
+		"risks_high": sum(r["risks_high"] for r in rows),
 		"hidden": sum(r["health_hidden"] for r in rows),
 		"open": sum(r["open"] for r in rows),
 		"closed": sum(r["closed"] for r in rows),
@@ -231,6 +241,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 			"priority",
 			"due_date",
 			"sprint",
+			"project_module",
 			"estimated_hours",
 			"spent_hours",
 			"done_percent",
@@ -240,6 +251,14 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 		],
 		limit_page_length=0,
 	)
+	module_names = {
+		m.name: m.module_name
+		for m in frappe.get_all(
+			"Project Module",
+			filters={"name": ["in", list({i.project_module for i in items if i.project_module}) or [""]]},
+			fields=["name", "module_name"],
+		)
+	}
 	project_names = {
 		p.name: p
 		for p in frappe.get_all(
@@ -257,6 +276,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 			"project_label": project_names[item.project].project_name or item.project
 			if item.project in project_names
 			else item.project,
+			"module": module_names.get(item.project_module) or "",
 			"blocked_by": blockers.get(item.name, []),
 			"days_overdue": (today_ - due).days if due and due < today_ else 0,
 		}
@@ -342,6 +362,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 				"missing_days": missing,
 			},
 			"raised": raised,
+			"risks": my_risks(user),
 			"sprints": my_sprints(user),
 			"closed_weekly": closed_weekly,
 			"closed_recent": closed[:5],
@@ -456,6 +477,22 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			1 if cint(bug.is_closed) else 0
 		] += 1
 
+	by_module: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+	if any(b.project_module for b in bugs):
+		module_rows = frappe.get_all(
+			"Project Module",
+			filters={"name": ["in", list({b.project_module for b in bugs if b.project_module})]},
+			fields=["name", "module_name", "project"],
+		)
+		prefix = {m.name: m.module_name if project else f"{m.module_name} ({m.project})" for m in module_rows}
+		for bug in bugs:
+			by_module[
+				prefix.get(bug.project_module, _("(no module)")) if bug.project_module else _("(no module)")
+			][1 if cint(bug.is_closed) else 0] += 1
+	else:
+		for bug in bugs:
+			by_module[_("(no module)")][1 if cint(bug.is_closed) else 0] += 1
+
 	by_project = []
 	if not project:
 		labels = {
@@ -546,6 +583,10 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			"by_category": sorted(
 				[{"label": k, "open": v[0], "closed": v[1]} for k, v in by_category.items()],
 				key=lambda r: -(r["open"] + r["closed"]),
+			)[:8],
+			"by_module": sorted(
+				[{"label": k, "open": v[0], "closed": v[1]} for k, v in by_module.items()],
+				key=lambda r: (r["label"] == _("(no module)"), -(r["open"] + r["closed"]), r["label"]),
 			)[:8],
 			"by_project": by_project,
 			"critical": [

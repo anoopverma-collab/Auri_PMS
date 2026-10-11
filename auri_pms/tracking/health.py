@@ -10,6 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
+from auri_pms.tracking.risk import risk_reasons
 from auri_pms.tracking.utils import get_burndown
 
 AGE_BUCKETS = (
@@ -120,6 +121,7 @@ def get_health(project: str, period: str = "3m") -> frappe._dict:
 			"sprint",
 			"dependent_on_client",
 			"client_dependency_since",
+			"project_module",
 		],
 		limit_page_length=0,
 	)
@@ -133,6 +135,19 @@ def get_health(project: str, period: str = "3m") -> frappe._dict:
 	buckets = make_buckets(period, earliest, today_)
 	# only activity inside the period is charted; open/closed totals always describe the whole project
 	flow = ticket_flow(items, buckets)
+	labels = module_labels(project)
+	by_module: dict[str, list[int]] = defaultdict(
+		lambda: [0, 0, 0]
+	)  # open with us, closed, open waiting on client
+	for item in items:
+		key = labels.get(item.project_module) or _("(no module)")
+		by_module[key][1 if cint(item.is_closed) else 2 if cint(item.dependent_on_client) else 0] += 1
+	flow["by_module"] = [
+		{"label": k, "open": v[0], "closed": v[1], "client": v[2]}
+		for k, v in sorted(
+			by_module.items(), key=lambda kv: (kv[0] == _("(no module)"), -(kv[1][0] + kv[1][2]), kv[0])
+		)
+	]
 	time = time_summary(entries, items, buckets)
 	workload = workload_summary(items, entries)
 	sprints = velocity(project)
@@ -259,6 +274,27 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 		"estimated_open_hours": flt(est_open, 2),
 		"estimated_closed_hours": flt(est_closed, 2),
 	}
+
+
+def module_labels(project: str) -> dict[str, str]:
+	"""{Project Module name: module name} for one project."""
+	return {
+		m.name: m.module_name
+		for m in frappe.get_all(
+			"Project Module", filters={"project": project}, fields=["name", "module_name"]
+		)
+	}
+
+
+def count_by_module(rows: list, labels: dict[str, str]) -> list[dict]:
+	"""[{label, count, client}] of open tickets per module (tickets without a module are grouped last)."""
+	counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+	for row in rows:
+		key = labels.get(row.get("project_module")) or _("(no module)")
+		counts[key][0] += 1
+		counts[key][1] += cint(row.get("dependent_on_client"))
+	ordered = sorted(counts.items(), key=lambda kv: (kv[0] == _("(no module)"), -kv[1][0], kv[0]))
+	return [{"label": k, "count": v[0], "client": v[1]} for k, v in ordered]
 
 
 def count_by(rows: list, field: str, ordered_by_status: bool = False) -> list[dict]:
@@ -505,6 +541,8 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 					release["label"], flt(release["percent"], 0)
 				),
 			)
+	for reason in risk_reasons(project):
+		add(reason["level"], reason["text"])
 	if flow["created_4w"] > flow["resolved_4w"] * 1.5 and flow["created_4w"] >= 4:
 		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"))
 	if flow["client_dependent"]:  # informational: shown, but neither the level nor the score changes
@@ -531,5 +569,5 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 	)
 	label_ = {"green": _("On Track"), "amber": _("At Risk"), "red": _("Off Track")}[level]
 	if level == "green":
-		add("green", _("No schedule, effort or backlog risks detected"))
+		add("green", _("No schedule, effort, backlog or risk-register issues detected"))
 	return {"level": level, "label": label_, "score": score, "reasons": reasons}

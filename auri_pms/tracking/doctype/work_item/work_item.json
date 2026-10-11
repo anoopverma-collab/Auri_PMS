@@ -12,6 +12,7 @@
 		"priority",
 		"assigned_to",
 		"category",
+		"project_module",
 		"release",
 		"sprint",
 		"parent_work_item",
@@ -100,6 +101,15 @@
 			"fieldtype": "Link",
 			"label": "Category",
 			"options": "Work Item Category"
+		},
+		{
+			"fieldname": "project_module",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Module",
+			"options": "Project Module",
+			"search_index": 1,
+			"description": "The part of the product this ticket is about"
 		},
 		{
 			"fieldname": "release",
@@ -285,7 +295,7 @@
 			"link_fieldname": "work_item"
 		}
 	],
-	"modified": "2026-10-10 20:20:08.195092",
+	"modified": "2026-10-11 19:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Tracking",
 	"name": "Work Item",

@@ -23,11 +23,13 @@ A centralized platform for project planning, task management, timelines, effort 
 | Roles and access | project roles with nine capability flags; private projects stay hidden from outsiders |
 | Sprints | start/end dates, goal, add tickets to a sprint, Start / Complete, Sprint Board and Burndown |
 | Releases | group tickets into versions with progress and due date |
+| Modules | tag every ticket with the module (part of the product) it is for, such as Sales, Stock or Accounts; dashboards, reports and the client report break the numbers down by module |
+| Risk Register | one record per project risk with probability x impact scoring (Low, Medium, High, Critical), owner, mitigation plan and due date; open risks feed the project health status, the dashboards and the client report |
 | Kanban board | one column per status, drag a ticket to change its status (blocked moves are refused) |
 | Gantt chart | tickets drawn from start date to due date, filtered to the project |
 | Time tracking | log hours per ticket with activity type and a *Billable* flag; limits per entry/day and lock days |
 | Dependent on Client | tick a ticket that waits on the client; tracked with a note and *Waiting since* and counted everywhere |
-| Dashboards | Project Health, Portfolio, My Work, Quality and Client Status Report |
+| Dashboards | Project Health (with a risk heat map and tickets by module), Portfolio (risks per project), My Work (risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
 | Themes and range | 8 themes in light and dark and a 1 month / 3 months / 6 months / Overall range, shared by all dashboards |
 | Reports | Work Item Summary, Time Log Summary, Release Progress, Overdue Work Items, Sprint Summary, Sprint Burndown, Client Dependencies |
 | Email | email a project's status report (preview, PDF, weekly schedule), daily due-date digests, optional email-to-ticket intake |
@@ -140,6 +142,8 @@ Activity Types are left alone).
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
 | **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types | 
 | **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
+| **Project Module** | the modules of a project (name, optional lead); project managers maintain them and tickets pick one in the *Module* field |
+| **Risk Register** | project, risk, category, owner, probability and impact (1-5 each; the score is the product), status (Identified, Mitigating, Monitoring, Occurred, Closed), mitigation due date, mitigation and contingency plan, related ticket, and *Show in Client Status Report*; anyone who can create tickets in the project can raise and edit risks, project managers delete them |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |

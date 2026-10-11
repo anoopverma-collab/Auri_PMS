@@ -169,6 +169,6 @@ def warn_about_removed_members(doc, old) -> None:
 def get_dashboard_data(data: dict) -> dict:
 	"""override_doctype_dashboards hook: add Work Items, Releases and Time Entries to the Project dashboard."""
 	data.setdefault("transactions", []).append(
-		{"label": _("Auri PMS"), "items": ["Work Item", "Release", "Time Entry"]}
+		{"label": _("Auri PMS"), "items": ["Work Item", "Release", "Risk Register", "Time Entry"]}
 	)
 	return data

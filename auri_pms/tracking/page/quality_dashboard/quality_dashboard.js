@@ -93,6 +93,7 @@ class QualityDashboard {
 					${panel(`${__("Bugs opened vs fixed")} (${per})`, `<div class="hub-chart" id="q-flow"></div>`)}
 					${panel(__("Time to fix by priority (days)"), d.fix_time.length ? d.fix_time.map((r) => bar(`${__(r.priority)} (${r.count})`, r.days, Math.max(...d.fix_time.map((x) => x.days)))).join("") : `<div class="text-muted small">${__("Nothing fixed in this range")}</div>`)}
 					${panel(__("Bugs by category"), stack(d.by_category.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"]))}
+					${d.by_module.some((r) => r.label !== __("(no module)")) ? panel(__("Bugs by module"), stack(d.by_module.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"])) : ""}
 					${projects}
 				</div>
 				<div class="hub-col">

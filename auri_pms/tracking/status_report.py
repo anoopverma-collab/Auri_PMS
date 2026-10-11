@@ -21,7 +21,8 @@ from frappe.utils import (
 
 from auri_pms.permissions import can_see_project
 from auri_pms.tracking.dashboards import blocked_by_open, full_names
-from auri_pms.tracking.health import as_date, get_health, health_visible, release_health
+from auri_pms.tracking.health import as_date, get_health, health_visible, module_labels, release_health
+from auri_pms.tracking.risk import client_risks
 from auri_pms.tracking.utils import has_capability
 
 MAX_RANGE_DAYS = 366
@@ -57,6 +58,7 @@ def build_report(project: str, from_date, to_date) -> frappe._dict:
 			"closed_on",
 			"done_percent",
 			"sprint",
+			"project_module",
 			"estimated_hours",
 			"dependent_on_client",
 			"client_dependency_note",
@@ -70,6 +72,9 @@ def build_report(project: str, from_date, to_date) -> frappe._dict:
 		fields=["date", "hours", "is_billable", "activity_type"],
 		limit_page_length=0,
 	)
+	module_names = module_labels(project)
+	for item in items:
+		item["module"] = module_names.get(item.project_module) or ""
 	statuses = frappe.get_all(
 		"Work Item Status", fields=["name", "sequence", "is_closed"], order_by="sequence asc"
 	)
@@ -147,6 +152,17 @@ def build_report(project: str, from_date, to_date) -> frappe._dict:
 		as_dict=True,
 		order_by="end_date desc",
 	)
+	by_module: dict[str, list[int]] = {}
+	for item in items:
+		if not item.module:
+			continue
+		row = by_module.setdefault(item.module, [0, 0])
+		row[0] += 1 if cint(item.is_closed) and in_range(item.closed_on) else 0
+		row[1] += 0 if cint(item.is_closed) else 1
+	module_rows = [
+		{"label": k, "delivered": v[0], "open": v[1]}
+		for k, v in sorted(by_module.items(), key=lambda kv: (-kv[1][1], kv[0]))
+	]
 	total = len(items)
 	return frappe._dict(
 		project=info,
@@ -188,6 +204,8 @@ def build_report(project: str, from_date, to_date) -> frappe._dict:
 			for i in open_items
 			if blockers.get(i.name)
 		][:10],
+		modules=module_rows,
+		risks=client_risks(project),
 		releases=[r for r in release_health(project, today_)],
 		sprint=sprint,
 		last_sprint=last_sprint,
@@ -221,31 +239,36 @@ REPORT_TEMPLATE = """
 </td></tr>
 {% macro section(title) %}<tr><td style="padding:22px 28px 4px;"><div style="font-size:15px;font-weight:700;border-bottom:2px solid #e5e7eb;padding-bottom:6px;">{{ title | e }}</div></td></tr>{% endmacro %}
 {% macro th(text) %}<th align="left" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;padding:6px 6px;border-bottom:1px solid #e5e7eb;">{{ text | e }}</th>{% endmacro %}
+{% macro tdm(text, module) %}<td style="font-size:13px;padding:6px;border-bottom:1px solid #f3f4f6;">{{ text | e }}{% if module %}<div style="font-size:11px;color:#6b7280;">{{ module | e }}</div>{% endif %}</td>{% endmacro %}
 {% macro td(text, extra="") %}<td style="font-size:13px;padding:6px;border-bottom:1px solid #f3f4f6;{{ extra }}">{{ text | e }}</td>{% endmacro %}
+
+{% if r.modules %}{{ section(_("Progress by module")) }}
+<tr><td style="padding:6px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Module")) }}{{ th(_("Delivered")) }}{{ th(_("Open")) }}</tr>
+{% for m in r.modules %}<tr>{{ td(m.label) }}{{ td(m.delivered) }}{{ td(m.open) }}</tr>{% endfor %}</table></td></tr>{% endif %}
 
 {{ section(_("Delivered in this period") + " (" ~ r.summary.delivered ~ ")") }}
 <tr><td style="padding:6px 28px;">{% if r.delivered %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Type")) }}{{ th(_("Closed")) }}</tr>
-{% for i in r.delivered %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(i.tracker) }}{{ td(frappe.utils.formatdate(i.closed_on)) }}</tr>{% endfor %}</table>{% if r.delivered_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.delivered_more }} {{ _("more") }}</div>{% endif %}{% else %}<div style="font-size:13px;color:#6b7280;padding:6px;">{{ _("No tickets were closed in this period.") }}</div>{% endif %}</td></tr>
+{% for i in r.delivered %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(i.tracker) }}{{ td(frappe.utils.formatdate(i.closed_on)) }}</tr>{% endfor %}</table>{% if r.delivered_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.delivered_more }} {{ _("more") }}</div>{% endif %}{% else %}<div style="font-size:13px;color:#6b7280;padding:6px;">{{ _("No tickets were closed in this period.") }}</div>{% endif %}</td></tr>
 
 {{ section(_("In progress") + " (" ~ (r.in_progress | length + r.in_progress_more) ~ ")") }}
 <tr><td style="padding:6px 28px;">{% if r.in_progress %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Status")) }}{{ th(_("% done")) }}{{ th(_("Due")) }}</tr>
-{% for i in r.in_progress %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(i.status) }}{{ td(i.done_percent | int ~ "%") }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "") }}</tr>{% endfor %}</table>{% if r.in_progress_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.in_progress_more }} {{ _("more") }}</div>{% endif %}{% else %}<div style="font-size:13px;color:#6b7280;padding:6px;">{{ _("Nothing is in progress right now.") }}</div>{% endif %}</td></tr>
+{% for i in r.in_progress %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(i.status) }}{{ td(i.done_percent | int ~ "%") }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "") }}</tr>{% endfor %}</table>{% if r.in_progress_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.in_progress_more }} {{ _("more") }}</div>{% endif %}{% else %}<div style="font-size:13px;color:#6b7280;padding:6px;">{{ _("Nothing is in progress right now.") }}</div>{% endif %}</td></tr>
 
 {% if r.waiting %}{{ section(_("Waiting on you") + " (" ~ r.summary.waiting ~ ")") }}
 <tr><td style="padding:6px 28px;"><div style="font-size:12px;color:#6b7280;padding:2px 6px 6px;">{{ _("These tickets cannot move forward until we receive your input.") }}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("What we need")) }}{{ th(_("Waiting")) }}</tr>
-{% for i in r.waiting %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(i.client_dependency_note or "") }}{{ td(i.days ~ " " ~ _("days"), "color:#b45309;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.waiting_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.waiting_more }} {{ _("more") }}</div>{% endif %}</td></tr>{% endif %}
+{% for i in r.waiting %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(i.client_dependency_note or "") }}{{ td(i.days ~ " " ~ _("days"), "color:#b45309;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.waiting_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.waiting_more }} {{ _("more") }}</div>{% endif %}</td></tr>{% endif %}
 
 {% if r.next_up %}{{ section(_("Coming up next")) }}
 <tr><td style="padding:6px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Priority")) }}{{ th(_("Due")) }}</tr>
-{% for i in r.next_up %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(i.priority) }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "") }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% for i in r.next_up %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(i.priority) }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "") }}</tr>{% endfor %}</table></td></tr>{% endif %}
 
 {% if r.overdue or r.blocked or risk_releases %}{{ section(_("Risks and issues")) }}
 <tr><td style="padding:6px 28px;">
 {% if r.overdue %}<div style="font-size:13px;font-weight:600;padding:4px 6px;">{{ _("Overdue tickets") }} ({{ r.summary.overdue }})</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-{% for i in r.overdue %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(i.days ~ " " ~ _("days late"), "color:#ef4444;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.overdue_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.overdue_more }} {{ _("more") }}</div>{% endif %}{% endif %}
+{% for i in r.overdue %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(i.days ~ " " ~ _("days late"), "color:#ef4444;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.overdue_more %}<div style="font-size:12px;color:#6b7280;padding:6px;">+ {{ r.overdue_more }} {{ _("more") }}</div>{% endif %}{% endif %}
 {% if r.blocked %}<div style="font-size:13px;font-weight:600;padding:10px 6px 4px;">{{ _("Blocked tickets") }}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-{% for i in r.blocked %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ td(i.subject) }}{{ td(_("waiting for") ~ " " ~ i.blocked_by | join(", ")) }}</tr>{% endfor %}</table>{% endif %}
+{% for i in r.blocked %}<tr>{{ td(i.name, "white-space:nowrap;") }}{{ tdm(i.subject, i.module) }}{{ td(_("waiting for") ~ " " ~ i.blocked_by | join(", ")) }}</tr>{% endfor %}</table>{% endif %}
 {% for rel in risk_releases %}<div style="font-size:13px;padding:8px 6px 0;color:#b45309;">&#9888; {{ _("Release") }} {{ rel.label | e }}: {{ rel.percent | int }}% {{ _("complete") }}{% if rel.days_left is not none %}, {% if rel.days_left < 0 %}{{ -rel.days_left }} {{ _("days past due") }}{% else %}{{ rel.days_left }} {{ _("days left") }}{% endif %}{% endif %}</div>{% endfor %}
 </td></tr>{% endif %}
 
@@ -256,6 +279,10 @@ REPORT_TEMPLATE = """
 {% if r.releases %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;"><tr>{{ th(_("Release")) }}{{ th(_("Due")) }}{{ th(_("Progress")) }}</tr>
 {% for rel in r.releases %}<tr>{{ td(rel.label) }}{{ td(frappe.utils.formatdate(rel.due_date) if rel.due_date else "") }}{{ td(rel.percent | int ~ "%") }}</tr>{% endfor %}</table>{% endif %}
 </td></tr>{% endif %}
+
+{% if r.risks %}{{ section(_("Risks and mitigation") + " (" ~ r.risks | length ~ ")") }}
+<tr><td style="padding:6px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Risk")) }}{{ th(_("Level")) }}{{ th(_("Mitigation")) }}{{ th(_("Due")) }}</tr>
+{% for k in r.risks %}<tr>{{ td(k.title) }}{{ td(k.risk_level) }}{{ td(k.mitigation) }}{{ td(frappe.utils.formatdate(k.mitigation_due) if k.mitigation_due else "") }}</tr>{% endfor %}</table></td></tr>{% endif %}
 
 {{ section(_("Time spent in this period")) }}
 <tr><td style="padding:6px 28px 4px;">

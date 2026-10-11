@@ -287,20 +287,24 @@ permission_query_conditions = {
 	"Project": "auri_pms.permissions.project_query",
 	"Work Item": "auri_pms.permissions.work_item_query",
 	"Release": "auri_pms.permissions.release_query",
+	"Risk Register": "auri_pms.permissions.risk_register_query",
 	"Sprint": "auri_pms.permissions.sprint_query",
 	"Project Status Report": "auri_pms.permissions.status_report_query",
 	"Time Entry": "auri_pms.permissions.time_entry_query",
 	"Work Item Category": "auri_pms.permissions.category_query",
+	"Project Module": "auri_pms.permissions.project_module_query",
 }
 
 has_permission = {
 	"Project": "auri_pms.permissions.project_has_permission",
 	"Work Item": "auri_pms.permissions.work_item_has_permission",
 	"Release": "auri_pms.permissions.release_has_permission",
+	"Risk Register": "auri_pms.permissions.risk_register_has_permission",
 	"Sprint": "auri_pms.permissions.sprint_has_permission",
 	"Project Status Report": "auri_pms.permissions.status_report_has_permission",
 	"Time Entry": "auri_pms.permissions.time_entry_has_permission",
 	"Work Item Category": "auri_pms.permissions.category_has_permission",
+	"Project Module": "auri_pms.permissions.project_module_has_permission",
 }
 
 override_doctype_dashboards = {"Project": ["auri_pms.tracking.project_hooks.get_dashboard_data"]}

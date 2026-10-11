@@ -173,6 +173,35 @@ ui.table = (rows, head, cells) =>
 		? `<table class="table table-sm hub-table"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(cells).join("")}</tbody></table>`
 		: `<div class="text-muted small">${__("None yet")}</div>`;
 
+// Risk Register helpers shared by the hub, My Work and Portfolio.
+ui.riskBadge = (level, score) => `<span class="hub-badge hub-rb hub-rb-${String(level || "low").toLowerCase()}">${__(level || "Low")}${score ? ` · ${score}` : ""}</span>`;
+
+ui.riskLevelCounts = (by_level) =>
+	`<div class="hub-risk-levels">${["Critical", "High", "Medium", "Low"].map((l) => `<span class="hub-rb hub-rb-${l.toLowerCase()}"><b>${cint((by_level || {})[l])}</b> ${__(l)}</span>`).join("")}</div>`;
+
+ui.riskTable = (rows, with_project) =>
+	ui.table(
+		rows,
+		[__("Risk"), __("Level"), with_project ? __("Project") : __("Owner"), __("Due")],
+		(r) =>
+			`<tr><td>${ui.link("Risk Register", r.name, r.title)}${r.overdue ? ` <span class="hub-badge hub-badge-bad">${__("Overdue")}</span>` : ""}<div class="hub-sub">${ui.esc(__(r.status))}</div></td>
+			<td style="white-space:nowrap">${ui.riskBadge(r.risk_level, r.risk_score)}</td>
+			<td>${ui.esc(with_project ? r.project_label : r.owner)}</td>
+			<td style="white-space:nowrap" class="${r.overdue ? "text-danger" : ""}">${r.mitigation_due ? frappe.datetime.str_to_user(r.mitigation_due) : ""}</td></tr>`
+	);
+
+// 5 x 5 probability / impact matrix; ``matrix[0]`` is probability 5 and the columns are impact 1..5.
+ui.heatmap = (matrix) => {
+	const cell = (p, i, n) => {
+		const score = p * i;
+		const level = score >= 15 ? "critical" : score >= 10 ? "high" : score >= 5 ? "medium" : "low";
+		return `<div class="hub-heat-cell hub-heat-${level} ${n ? "has" : ""}" title="${__("Probability {0} x Impact {1}", [p, i])}">${n || ""}</div>`;
+	};
+	const rows = matrix.map((row, idx) => `<div class="hub-heat-axis">${5 - idx}</div>${row.map((n, col) => cell(5 - idx, col + 1, n)).join("")}`).join("");
+	return `<div class="hub-heat"><div class="hub-heat-axis"></div>${[1, 2, 3, 4, 5].map((i) => `<div class="hub-heat-axis">${i}</div>`).join("")}${rows}</div>
+		<div class="hub-sub" style="margin-top:6px">${__("Rows: probability (5 = almost certain). Columns: impact (5 = severe).")}</div>`;
+};
+
 ui.link = (doctype, name, label) => `<a href="/desk/${frappe.router.slug(doctype)}/${encodeURIComponent(name)}">${ui.esc(label || name)}</a>`;
 
 ui.chart = ($root, selector, config) => {
@@ -283,7 +312,7 @@ ui.injectStyle = () => {
 			.hub-reason.hub-red i { background: #ef4444; } .hub-reason.hub-amber i { background: #f59e0b; } .hub-reason.hub-green i { background: #10b981; }
 			.hub-meter { display: flex; height: 22px; border-radius: 999px; overflow: hidden; box-shadow: var(--n-inset); margin-bottom: 12px; border: 1px solid var(--g-border); }
 			.hub-meter i, .hub-stack i { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; text-align: center; line-height: 22px; min-width: 0; }
-			.seg-blue { background: #3b82f6; } .seg-green { background: #10b981; } .seg-orange { background: #f59e0b; }
+			.seg-blue { background: #3b82f6; } .seg-green { background: #10b981; } .seg-orange { background: #f59e0b; } .seg-red { background: #ef4444; } .seg-yellow { background: #eab308; }
 			.hub-legend { display: flex; gap: 16px; font-size: 11px; color: var(--g-muted); margin-bottom: 8px; }
 			.hub-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
 			.hub-stack { display: grid; grid-template-columns: 150px 1fr 44px; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; }
@@ -321,6 +350,17 @@ ui.injectStyle = () => {
 
 			/* shared by Portfolio, My Work, Quality and Status Report */
 			.hub-reason.hub-info i { background: #3b82f6; }
+			/* risk register */
+			.hub-rb { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+			.hub-rb-critical { color: #ef4444; background: rgba(239, 68, 68, .14); } .hub-rb-high { color: #f97316; background: rgba(249, 115, 22, .14); }
+			.hub-rb-medium { color: #ca8a04; background: rgba(234, 179, 8, .16); } .hub-rb-low { color: #10b981; background: rgba(16, 185, 129, .14); }
+			.hub-risk-levels { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+			.hub-risk-levels .hub-rb b { font-size: 14px; margin-right: 2px; }
+			.hub-heat { display: grid; grid-template-columns: 22px repeat(5, minmax(0, 1fr)); gap: 5px; max-width: 360px; }
+			.hub-heat-axis { font-size: 11px; color: var(--g-muted); text-align: center; align-self: center; }
+			.hub-heat-cell { aspect-ratio: 1.25; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; opacity: .28; }
+			.hub-heat-cell.has { opacity: 1; }
+			.hub-heat-critical { background: #ef4444; } .hub-heat-high { background: #f97316; } .hub-heat-medium { background: #eab308; } .hub-heat-low { background: #10b981; }
 			.hub-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 			.hub-chip { font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 999px; cursor: pointer; user-select: none;
 				background: var(--g-glass-strong); border: 1px solid var(--g-border); box-shadow: var(--n-soft); color: var(--g-text); }

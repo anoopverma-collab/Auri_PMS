@@ -66,6 +66,11 @@ def release_query(user: str | None = None, doctype: str | None = None) -> str:
 	return _project_scope(user or frappe.session.user, "`tabRelease`.project")
 
 
+def risk_register_query(user: str | None = None, doctype: str | None = None) -> str:
+	"""permission_query_conditions for Risk Register."""
+	return _project_scope(user or frappe.session.user, "`tabRisk Register`.project")
+
+
 def time_entry_query(user: str | None = None, doctype: str | None = None) -> str:
 	"""permission_query_conditions for Time Entry."""
 	return _project_scope(user or frappe.session.user, "`tabTime Entry`.project")
@@ -79,6 +84,11 @@ def sprint_query(user: str | None = None, doctype: str | None = None) -> str:
 def status_report_query(user: str | None = None, doctype: str | None = None) -> str:
 	"""permission_query_conditions for Project Status Report."""
 	return _project_scope(user or frappe.session.user, "`tabProject Status Report`.project")
+
+
+def project_module_query(user: str | None = None, doctype: str | None = None) -> str:
+	"""permission_query_conditions for Project Module."""
+	return _project_scope(user or frappe.session.user, "`tabProject Module`.project")
 
 
 def category_query(user: str | None = None, doctype: str | None = None) -> str:
@@ -124,8 +134,18 @@ def release_has_permission(doc, ptype: str | None = None, user: str | None = Non
 	return _has_project_permission(doc, ptype, user)
 
 
+def risk_register_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
+	"""has_permission hook for Risk Register."""
+	return _has_project_permission(doc, ptype, user)
+
+
 def time_entry_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Time Entry."""
+	return _has_project_permission(doc, ptype, user)
+
+
+def project_module_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
+	"""has_permission hook for Project Module."""
 	return _has_project_permission(doc, ptype, user)
 
 

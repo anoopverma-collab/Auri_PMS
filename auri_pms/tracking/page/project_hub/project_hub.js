@@ -147,6 +147,7 @@ class ProjectHub {
 		this.page.add_inner_button(__("Calendar"), () => window.location.assign(`/desk/work-item/view/calendar/default?project=${encodeURIComponent(project)}`), view);
 		this.page.add_inner_button(__("Sprints"), go(["List", "Sprint", "List"]), view);
 		this.page.add_inner_button(__("Releases"), go(["List", "Release", "List"]), view);
+		this.page.add_inner_button(__("Risk Register"), () => window.location.assign(`/desk/risk-register?project=${encodeURIComponent(project)}`), view);
 		this.page.add_inner_button(__("Time Entries"), go(["List", "Time Entry", "List"]), view);
 		const reports = __("Reports");
 		["Work Item Summary", "Overdue Work Items", "Client Dependencies", "Time Log Summary", "Release Progress", "Sprint Summary"].forEach((name) => {
@@ -193,6 +194,12 @@ class ProjectHub {
 			`<tr><td>${link("Release", r.name, r.release_name)}</td><td>${__(r.status)}</td><td>${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}</td><td>${flt(r.percent_complete, 0)}%</td></tr>`);
 		const team = table(d.members, [__("Name"), __("Role")], (m) => `<tr><td>${esc(m.full_name || m.user)}</td><td>${esc(m.project_role)}</td></tr>`);
 		const info = d.project;
+		const rk = d.risks;
+		const risk_actions = `<span style="float:right" class="small"><a href="#" data-risk-list>${__("Open register")}</a>${d.capabilities.can_create_items ? ` &middot; <a href="#" data-risk-new>${__("New risk")}</a>` : ""}</span>`;
+		const risk_panel = ui.panel(
+			`${__("Risk register")} (${rk.open})${risk_actions}`,
+			rk.total ? `${ui.riskLevelCounts(rk.by_level)}${rk.overdue ? `<div class="hub-sub" style="margin-bottom:8px">${__("{0} past the mitigation date", [rk.overdue])}</div>` : ""}${ui.riskTable(rk.top.slice(0, 5).map((r) => ({ ...r, project_label: "" })))}` : `<div class="text-muted small">${__("No risks have been registered for this project.")}</div>`
+		);
 		this.$body.html(`
 			<div class="hub-title"><h4>${esc(info.project_name || info.name)}</h4>
 				<span class="hub-ident">${esc(info.tracker_identifier)}</span>
@@ -211,13 +218,15 @@ class ProjectHub {
 					<div class="hub-panel"><h6>${__("Recent work items")}</h6>${recent}</div>
 				</div>
 				<div class="hub-col">
-					<div class="hub-panel"><h6>${__("Open by status")}</h6>${split(d.by_status)}<h6 class="mt-3">${__("Open by ticket type")}</h6>${split(d.by_tracker)}</div>
+					<div class="hub-panel"><h6>${__("Open by status")}</h6>${split(d.by_status)}<h6 class="mt-3">${__("Open by ticket type")}</h6>${split(d.by_tracker)}${d.by_module.length > 1 || (d.by_module[0] && d.by_module[0].label !== __("(no module)")) ? `<h6 class="mt-3">${__("Open by module")}</h6>${split(d.by_module)}` : ""}</div>
+					${risk_panel}
 					<div class="hub-panel"><h6>${__("Sprints")}</h6>${sprints}</div>
 					<div class="hub-panel"><h6>${__("Releases")}</h6>${releases}</div>
 					<div class="hub-panel"><h6>${__("Team")} (${d.members.length})</h6>${team}</div>
 				</div>
 			</div>`);
 		this.$body.find(".hub-tile[data-route]").on("click", (e) => this.open_tile($(e.currentTarget).data("route")));
+		this.bind_risk_links();
 		this.$body.find("[data-open-report]").on("click", (e) => {
 			e.preventDefault();
 			this.open_tile("client");
@@ -235,6 +244,18 @@ class ProjectHub {
 				colors: ["#ec4899", "#2490ef"],
 			});
 		}
+	}
+
+	bind_risk_links() {
+		const project = this.project;
+		this.$body.find("[data-risk-list]").on("click", (e) => {
+			e.preventDefault();
+			window.location.assign(`/desk/risk-register?project=${encodeURIComponent(project)}`);
+		});
+		this.$body.find("[data-risk-new]").on("click", (e) => {
+			e.preventDefault();
+			frappe.new_doc("Risk Register", { project });
+		});
 	}
 
 	open_tile(kind) {
@@ -277,6 +298,17 @@ class ProjectHub {
 					`<tr><td style="white-space:nowrap">${link("Work Item", t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.note || "")}</td><td class="${t.days > 7 ? "text-danger" : ""}" style="white-space:nowrap">${ui.days(t.days)}</td></tr>`)
 				: `<div class="text-muted small">${__("Nothing is waiting on the client.")}</div>`
 		);
+		const has_modules = f.by_module.some((r) => r.label !== __("(no module)"));
+		const module_panel = has_modules
+			? panel(__("Open vs closed (by module)"), stack(f.by_module.map((r) => [r.label, r.open, r.client, r.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"]))
+			: "";
+		const rk = h.risks;
+		const risk_health = panel(
+			`${__("Risk register")} (${rk.open} ${__("open")})<span style="float:right" class="small"><a href="#" data-risk-list>${__("Open register")}</a>${d.capabilities.can_create_items ? ` &middot; <a href="#" data-risk-new>${__("New risk")}</a>` : ""}</span>`,
+			rk.total
+				? `${ui.riskLevelCounts(rk.by_level)}${rk.overdue ? `<div class="hub-sub" style="margin-bottom:8px">${__("{0} past the mitigation date", [rk.overdue])}</div>` : ""}${ui.heatmap(rk.matrix)}<div class="mt-3">${ui.riskTable(rk.top.map((r) => ({ ...r, project_label: "" })))}</div>`
+				: `<div class="text-muted small">${__("No risks have been registered for this project.")}</div>`
+		);
 		const tile = (value, label, cls, sub) =>
 			`<div class="hub-tile ${cls || ""}"><b>${value}</b><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div>`;
 		const risk_badge = (r) => `<span class="hub-badge hub-risk-${r.risk}">${r.risk === "late" ? __("Late") : r.risk === "risk" ? __("At Risk") : __("On Track")}</span>`;
@@ -315,6 +347,7 @@ class ProjectHub {
 				<div class="hub-col">
 					${panel(`${__("Tickets created vs resolved")} (${per})`, `<div class="hub-chart" id="hc-flow"></div><div class="small text-muted mt-2">${__("{0} created · {1} resolved in this range", [f.created_total, f.resolved_total]) + (f.created_waiting ? ` · ${__("{0} of the new tickets are waiting on the client", [f.created_waiting])}` : "")}</div>`)}
 					${panel(__("Open vs closed (by type)"), open_closed)}
+					${module_panel}
 					${panel(`${__("Spent time: billable vs non-billable")} (${per})`, `<div class="hub-chart" id="hc-time"></div>`)}
 					${panel(__("Hours by activity (billable vs non-billable)"), stack(t.by_activity.map((a) => [a.label, a.billable, a.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]))}
 					${people_panels}
@@ -323,6 +356,7 @@ class ProjectHub {
 					${panel(`${__("Open backlog trend")} (${per})`, `<div class="hub-chart" id="hc-trend"></div>`)}
 					${panel(__("Open by status (with us vs waiting on client)"), split(f.open_by_status))}
 					${waiting_panel}
+					${risk_health}
 					${panel(__("Estimated vs spent hours"), `${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}`)}
 					${panel(__("Sprint velocity (tickets closed per completed sprint)"), h.velocity.length ? `<div class="hub-chart" id="hc-velocity"></div><div class="small text-muted mt-2">${__("Average {0} tickets / {1} hours per sprint", [flt(h.velocity.reduce((a, v) => a + v.items, 0) / h.velocity.length, 1), flt(h.velocity.reduce((a, v) => a + v.hours, 0) / h.velocity.length, 1)])}</div>` : `<div class="text-muted small">${__("No completed sprints yet")}</div>`)}
 					${panel(__("Age of open tickets"), `<div class="hub-chart" id="hc-aging"></div>`)}
@@ -331,6 +365,7 @@ class ProjectHub {
 				</div>
 			</div>`);
 
+		this.bind_risk_links();
 		this.$body.find("[data-open-report]").on("click", (e) => {
 			e.preventDefault();
 			this.open_tile("client");

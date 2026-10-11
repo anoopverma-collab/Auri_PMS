@@ -144,7 +144,11 @@ class WorkItem(Document):
 
 	def validate_category_and_release(self) -> None:
 		"""R-12 same project, R-13 only Open releases accept (new) items."""
-		for fieldname, doctype in (("category", "Work Item Category"), ("release", "Release")):
+		for fieldname, doctype in (
+			("category", "Work Item Category"),
+			("project_module", "Project Module"),
+			("release", "Release"),
+		):
 			value = self.get(fieldname)
 			if value and frappe.db.get_value(doctype, value, "project") != self.project:
 				frappe.throw(_("{0} does not belong to Project {1}").format(value, self.project))

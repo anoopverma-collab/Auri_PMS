@@ -105,6 +105,18 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "shield-alert",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Risk Register",
+   "link_to": "Risk Register",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
    "icon": "timer-reset",
    "indent": 0,
    "keep_closed": 0,
@@ -264,6 +276,18 @@
    "icon": "settings",
    "indent": 0,
    "keep_closed": 0,
+   "label": "Project Module",
+   "link_to": "Project Module",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
    "label": "PMS Settings",
    "link_to": "PMS Settings",
    "link_type": "DocType",
@@ -283,7 +307,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-11 17:00:00.000000",
+ "modified": "2026-10-11 19:30:00.000000",
  "modified_by": "Administrator",
  "module": "Tracking",
  "name": "Auri PMS",

@@ -34,7 +34,9 @@ def get_columns() -> list[dict]:
 
 def get_data(filters: frappe._dict) -> list[dict]:
 	"""Aggregate work items per project (permission aware through frappe.get_list)."""
-	item_filters = {k: filters[k] for k in ("project", "tracker", "release") if filters.get(k)}
+	item_filters = {
+		k: filters[k] for k in ("project", "tracker", "release", "project_module") if filters.get(k)
+	}
 	items = frappe.get_list(
 		"Work Item",
 		filters=item_filters,

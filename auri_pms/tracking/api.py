@@ -290,6 +290,7 @@ def get_project_hub(project: str) -> dict:
 			"status",
 			"priority",
 			"tracker",
+			"project_module",
 			"assigned_to",
 			"due_date",
 			"is_closed",
@@ -329,7 +330,8 @@ def get_project_hub(project: str) -> dict:
 		"hours_mine": flt(sum(flt(h.hours) for h in hours if h.user == user), 2),
 	}
 
-	from auri_pms.tracking.health import count_by
+	from auri_pms.tracking.health import count_by, count_by_module, module_labels
+	from auri_pms.tracking.risk import risk_summary
 
 	sprints = frappe.get_list(
 		"Sprint",
@@ -378,6 +380,8 @@ def get_project_hub(project: str) -> dict:
 		numbers=numbers,
 		by_status=count_by(open_items, "status", ordered_by_status=True),
 		by_tracker=count_by(open_items, "tracker"),
+		by_module=count_by_module(open_items, module_labels(project)),
+		risks=risk_summary(project),
 		by_priority=count_by(open_items, "priority"),
 		active_sprint=active,
 		sprints=sprints,
@@ -415,7 +419,10 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 
 	if not frappe.db.exists("Project", project) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	from auri_pms.tracking.risk import risk_summary
+
 	data = get_health(project, period)
+	data["risks"] = risk_summary(project)
 	if not health_visible(project, "hub"):
 		data["status"] = None
 	return data

@@ -232,6 +232,20 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     its banner, the Portfolio row reads "Hidden" (level none, counted under "No data"), and the report/email/PDF omit the status
     block. Counts, charts and hours are unchanged. The Quality and My Work dashboards have no project health verdict.
 
+66. **Project Module and the Module field.** Work Item has a *Module* link to *Project Module*, a per-project master like Work Item
+    Category (maintained with the *can_manage_categories* capability; the module must belong to the ticket's project). The field is
+    named `project_module` in the database. Modules appear as "Open by module" on the hub overview, "Open vs closed (by module)" on
+    Project Health, "Bugs by module" on Quality, a Module column on Client Dependencies and My Work, a Module filter on Work Item
+    Summary, and "Progress by module" plus a small module line under every ticket in the client report. Tickets without a module are
+    grouped as "(no module)" and the module tables are left out when nothing is tagged.
+67. **Risk Register.** One *Risk Register* document per risk (name `<identifier>-RISK-0001`). Probability and impact are 1-5 scales;
+    *Risk Score* = probability x impact and *Risk Level* is Low 1-4, Medium 5-9, High 10-14, Critical 15-25. Open means Identified,
+    Mitigating or Monitoring; *Occurred* and *Closed* are not open. Anyone who can create tickets in the project (*can_create_items*)
+    raises and edits risks, deleting needs *can_manage_releases*. Open risks feed the project health status: a critical open risk is a
+    red reason, a high one an amber reason, and risks past their mitigation date add an amber reason (so the Portfolio banner and the
+    client report carry them too). The client report lists only risks ticked *Show in Client Status Report*, with the mitigation plan
+    as plain text. Visibility follows the project like every other document.
+
 ## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.

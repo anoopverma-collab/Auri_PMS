@@ -74,7 +74,7 @@ class MyWork {
 					cint(i.dependent_on_client) ? `<span class="hub-badge hub-badge-warn" title="${esc(i.client_dependency_note || "")}">${__("Waiting on client")}</span>` : "",
 				].join(" ");
 				return `<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td>
-					<td>${esc(i.subject)} ${badges}<div class="hub-sub">${esc(i.project_label)}</div></td><td>${esc(__(i.status))}</td><td>${esc(__(i.priority))}</td>
+					<td>${esc(i.subject)} ${badges}<div class="hub-sub">${esc(i.project_label)}${i.module ? ` · ${esc(i.module)}` : ""}</div></td><td>${esc(__(i.status))}</td><td>${esc(__(i.priority))}</td>
 					<td class="${i.days_overdue ? "text-danger" : ""}" style="white-space:nowrap">${i.due_date ? frappe.datetime.str_to_user(i.due_date) : ""}${i.days_overdue ? `<div class="hub-sub">${__("{0} days late", [i.days_overdue])}</div>` : ""}</td>
 					<td><button class="hub-btn" data-log="${esc(i.name)}" data-subject="${esc(i.subject)}">${__("Log time")}</button></td></tr>`;
 			})
@@ -124,6 +124,7 @@ class MyWork {
 				<div class="hub-col">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 				<div class="hub-col">
 					${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
+					${panel(`${__("Risks I own")} (${d.risks.length})`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
 					${panel(`${__("Waiting on the client")} (${mine_waiting.length})`, waiting)}
 					${panel(__("My active sprints"), sprints)}
 					${panel(__("I raised, others are working on"), raised)}

@@ -87,6 +87,7 @@ class Portfolio {
 			<div class="hub-cols hub-cols-even">
 				<div class="hub-col">
 					${panel(__("Open, waiting on client and closed tickets by project"), stack(d.projects.slice(0, 12).map((p) => [p.project_name, p.open - p.client_dependent, p.client_dependent, p.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"]))}
+					${d.kpis.risks_open ? panel(__("Open risks by project"), stack(d.projects.filter((p) => p.risks_open).slice(0, 12).map((p) => [p.project_name, p.risks_critical, p.risks_high, p.risks_open - p.risks_critical - p.risks_high]), [__("Critical"), __("High"), __("Medium / Low")], ["seg-red", "seg-orange", "seg-yellow"])) : ""}
 					${panel(__("Budget burn by project (% of estimate)"), d.projects.filter((p) => p.burn_pct !== null).map((p) => bar(p.project_name, p.burn_pct, Math.max(100, ...d.projects.map((x) => x.burn_pct || 0)), p.burn_pct > 100 ? "seg-orange" : "")).join("") || `<div class="text-muted small">${__("No estimates yet")}</div>`)}
 				</div>
 				<div class="hub-col">
@@ -126,7 +127,7 @@ class Portfolio {
 			const cmp = Array.isArray(x) ? x[0] - y[0] || x[1] - y[1] : x < y ? -1 : x > y ? 1 : 0;
 			return asc ? cmp : -cmp;
 		});
-		const cols = [["project_name", __("Project")], ...(this.show_health ? [["level", __("Health")]] : []), ["open", __("Open"), 1], ["overdue_pct", __("Overdue %"), 1], ["completion_pct", __("Done %"), 1], ["burn_pct", __("Burn %"), 1], ["billable_pct", __("Billable %"), 1], ["client_dependent", __("Client"), 1], ["hours_period", __("Hours"), 1]];
+		const cols = [["project_name", __("Project")], ...(this.show_health ? [["level", __("Health")]] : []), ["open", __("Open"), 1], ["overdue_pct", __("Overdue %"), 1], ["completion_pct", __("Done %"), 1], ["burn_pct", __("Burn %"), 1], ["billable_pct", __("Billable %"), 1], ["client_dependent", __("Client"), 1], ["risks_open", __("Risks"), 1], ["hours_period", __("Hours"), 1]];
 		const head = cols.map(([k, label, num]) => `<th class="${num ? "num" : ""} ${key === k ? `sorted ${asc ? "asc" : ""}` : ""}" data-key="${k}">${label}</th>`).join("");
 		const dash = (v, suffix) => (v === null || v === undefined ? "-" : `${v}${suffix || ""}`);
 		const body = rows.length
@@ -137,7 +138,7 @@ class Portfolio {
 						${this.show_health ? (p.health_hidden ? "<td>-</td>" : `<td title="${ui.esc(p.headline)}"><span class="hub-dot ${p.level}"></span>${ui.esc(p.label)}${p.score === null ? "" : ` <span class="hub-sub">${p.score}</span>`}</td>`) : ""}
 						<td class="num">${p.open}</td><td class="num">${p.overdue_pct}%</td><td class="num">${p.completion_pct}%</td>
 						<td class="num ${p.burn_pct > 100 ? "text-danger" : ""}">${dash(p.burn_pct, "%")}</td><td class="num">${p.billable_pct}%</td>
-						<td class="num">${p.client_dependent || "-"}</td><td class="num">${p.hours_period}</td></tr>`
+						<td class="num">${p.client_dependent || "-"}</td><td class="num ${p.risks_critical ? "text-danger" : ""}" title="${__("{0} critical, {1} high", [p.risks_critical, p.risks_high])}">${p.risks_open || "-"}${p.risks_critical ? ` <span class="hub-sub">(${p.risks_critical} ${__("critical")})</span>` : ""}</td><td class="num">${p.hours_period}</td></tr>`
 					)
 					.join("")
 			: `<tr><td colspan="${cols.length}" class="text-muted">${__("No projects match.")}</td></tr>`;

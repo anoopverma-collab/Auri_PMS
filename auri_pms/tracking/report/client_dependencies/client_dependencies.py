@@ -25,6 +25,7 @@ def get_columns() -> list[dict]:
 			"width": 120,
 		},
 		{"fieldname": "subject", "label": _("Summary"), "fieldtype": "Data", "width": 260},
+		{"fieldname": "module", "label": _("Module"), "fieldtype": "Data", "width": 130},
 		{
 			"fieldname": "project",
 			"label": _("Project"),
@@ -75,6 +76,7 @@ def get_data(filters: frappe._dict) -> list[dict]:
 			"subject",
 			"project",
 			"tracker as ticket_type",
+			"project_module",
 			"status",
 			"priority",
 			"assigned_to",
@@ -84,8 +86,17 @@ def get_data(filters: frappe._dict) -> list[dict]:
 		],
 		limit_page_length=0,
 	)
+	labels = {
+		m.name: m.module_name
+		for m in frappe.get_all(
+			"Project Module",
+			filters={"name": ["in", list({r.project_module for r in rows if r.project_module}) or [""]]},
+			fields=["name", "module_name"],
+		)
+	}
 	today_ = getdate(today())
 	for row in rows:
+		row["module"] = labels.get(row.pop("project_module", None)) or ""
 		row["days_waiting"] = (today_ - getdate(row.since)).days if row.since else 0
 	minimum = cint(filters.get("min_days"))
 	return sorted(
