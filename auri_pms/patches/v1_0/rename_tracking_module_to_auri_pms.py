@@ -27,7 +27,8 @@ def execute() -> None:
 		)
 	for doctype in MODULE_TABLES:
 		if frappe.db.has_column(doctype, "module"):
-			frappe.db.sql(f"update `tab{doctype}` set module = %s where module = %s", (NEW, OLD))  # nosec
+			table = frappe.qb.DocType(doctype)
+			frappe.qb.update(table).set(table.module, NEW).where(table.module == OLD).run()
 	frappe.db.delete("Module Def", OLD)
 	for job in frappe.get_all(
 		"Scheduled Job Type", filters={"method": ["like", "auri_pms.tracking.%"]}, pluck="name"
