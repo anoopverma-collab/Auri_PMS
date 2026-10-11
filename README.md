@@ -46,13 +46,13 @@ The starting point. It lists only the projects you belong to (plus public ones);
 
 ### Project overview
 
-One project's workbench: open, overdue, assigned to me, unassigned, backlog, closed, waiting-on-client and hours; the active sprint with its burndown; open tickets by status and type; the tickets waiting on the client; sprints, releases, team and recent tickets. The *Views* and *Reports* menus open the list, Kanban, Gantt and reports already filtered to this project.
+One project's workbench, laid out in aligned rows: the sprint with its burndown next to open tickets by status and type; tickets waiting on the client and open tickets by module next to the risk register; sprints, releases and team side by side; and the 10 most recently changed tickets. The *Views* and *Reports* menus open the list, Kanban, Gantt, risk register and reports already filtered to this project.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/02-project-overview.png" alt="Project overview (light)"></td><td width="50%"><img src="docs/screenshots/dark/02-project-overview.png" alt="Project overview (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
 ### Project Health
 
-The client-facing health view. The banner gives the status (On Track, At Risk or Off Track), a score and every reason behind it. Below it: complete %, open and closed tickets, overdue, waiting on the client, hours spent, billable hours, created vs resolved, backlog trend, ageing, sprint velocity and estimated vs spent hours. Use the *Range* menu for 1 month, 3 months, 6 months or overall.
+The client-facing health view. The banner gives the status (On Track, At Risk or Off Track), a score and every reason behind it, including open risks and overdue mitigations. Below it: complete %, open and closed tickets, overdue, waiting on the client, hours, then paired panels for created vs resolved, backlog trend, tickets by type, module, status and priority, waiting on the client, estimated vs spent hours, a full-width **risk register** (probability x impact heat map and the top open risks), time and activity, people, sprint velocity, ageing and releases. Use the *Range* menu for 1 month, 3 months, 6 months or overall.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/03-project-health.png" alt="Project Health (light)"></td><td width="50%"><img src="docs/screenshots/dark/03-project-health.png" alt="Project Health (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
@@ -97,6 +97,14 @@ One column per ticket status. Drag a card to change its status; a move the workf
 Each ticket drawn from its start date to its due date, so overlaps and slips are visible. Zoom with the Quarter Day, Day, Week, Month and Year buttons.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/10-gantt-chart.png" alt="Gantt chart (light)"></td><td width="50%"><img src="docs/screenshots/dark/10-gantt-chart.png" alt="Gantt chart (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
+
+### Risk Register
+
+One record per project risk. Probability and impact are each scored 1 to 5, the score is their product, and the level follows from it (Low 1-4, Medium 5-9, High 10-14, Critical 15-25). Each risk has an owner, a status (Identified, Mitigating, Monitoring, Occurred, Closed), a mitigation plan and due date, a contingency plan and an optional related ticket. Open risks lower the project health status and appear on the project overview, Project Health, Portfolio and My Work; risks ticked *Show in Client Status Report* are listed with their mitigation in the client report.
+
+<table><tr><td width="50%"><img src="docs/screenshots/light/11-risk-register-list.png" alt="Risk Register list (light)"></td><td width="50%"><img src="docs/screenshots/dark/11-risk-register-list.png" alt="Risk Register list (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
+
+<table><tr><td width="50%"><img src="docs/screenshots/light/12-risk-register-form.png" alt="Risk Register form (light)"></td><td width="50%"><img src="docs/screenshots/dark/12-risk-register-form.png" alt="Risk Register form (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
 ## App themes
 
