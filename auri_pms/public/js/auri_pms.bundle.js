@@ -30,13 +30,13 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
-// Searching "tracker" or "Auri PMS" in the Awesome Bar offers the Project Hub, the landing screen of the app.
+// Searching "Auri PMS", "PMS" or "Project Hub" in the Awesome Bar offers the Project Hub, the landing screen of the app.
 $(document).on("startup", () => {
 	const search = frappe.search && frappe.search.utils;
 	if (search && search.make_function_searchable) {
 		const open_hub = () => frappe.set_route("project-hub");
-		search.make_function_searchable(open_hub, __("Tracker"));
-		search.make_function_searchable(open_hub, __("Tracker Project Hub"));
+		search.make_function_searchable(open_hub, __("PMS"));
+		search.make_function_searchable(open_hub, __("Open Project Hub"));
 		search.make_function_searchable(open_hub, __("Auri PMS"));
 		search.make_function_searchable(open_hub, __("Auri PMS Project Hub"));
 	}

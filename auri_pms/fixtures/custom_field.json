@@ -118,7 +118,7 @@
   "fieldtype": "Link",
   "insert_after": "tracker_sec",
   "is_system_generated": 0,
-  "label": "Tracker Project",
+  "label": "Auri PMS Project",
   "module": "Tracking",
   "name": "Email Account-tracker_project",
   "options": "Project"

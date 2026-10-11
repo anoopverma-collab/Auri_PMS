@@ -146,7 +146,7 @@ Activity Types are left alone).
 | **Risk Register** | project, risk, category, owner, probability and impact (1-5 each; the score is the product), status (Identified, Mitigating, Monitoring, Occurred, Closed), mitigation due date, mitigation and contingency plan, related ticket, and *Show in Client Status Report*; anyone who can create tickets in the project can raise and edit risks, project managers delete them |
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
-| **Email Account** | optional: *Tracker Project* (+ default ticket type) turns received mail into work items |
+| **Email Account** | optional: *Auri PMS Project* (+ default ticket type) turns received mail into work items |
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
 projects they are a member of, plus public projects. Inside a project the member's **Project Role**

@@ -76,7 +76,7 @@ class QualityDashboard {
 				`<tr class="hub-clickrow" data-project="${esc(p.project)}"><td>${esc(p.label)}</td><td>${p.open}</td><td>${p.closed}</td><td>${p.created_period}</td></tr>`))
 			: "";
 		this.$body.html(`
-			<div class="hub-title"><h4>${__("Quality")}</h4><span class="text-muted">${scope} · ${__(ui.PERIOD_NOTE[d.period])} · ${__("defect trackers: {0}", [esc(d.defect_trackers.join(", "))])}</span></div>
+			<div class="hub-title"><h4>${__("Quality")}</h4><span class="text-muted">${scope} · ${__(ui.PERIOD_NOTE[d.period])} · ${__("defect ticket types: {0}", [esc(d.defect_trackers.join(", "))])}</span></div>
 			${ui.statusBanner(d.status, __("quality"))}
 			<div class="hub-tiles">
 				${tile(t.open, __("Open bugs"), "hub-blue", `${t.client_open ? `${t.client_open} ${__("waiting on client")} · ` : ""}${t.closed} ${__("fixed so far")}`)}

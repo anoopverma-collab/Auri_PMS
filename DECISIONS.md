@@ -194,7 +194,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 57. **No home screen.** The old Tracker workspace (number cards and charts) was removed with a patch; its content now lives in
     My Work (personal numbers) and the Portfolio (overview). The sidebar starts with the Project Hub and the app icon is
     called *Tracker*, so searching "tracker" in the Awesome Bar lists *Open Tracker* first and Enter opens the Project Hub
-    (a *Tracker* and a *Tracker Project Hub* command are also registered).
+    (*PMS*, *Auri PMS* and *Open Project Hub* commands are also registered).
 57a. **Tracker is now called Ticket Type.** The DocType *Tracker* (Bug, Feature, Task, Support) was renamed to *Ticket Type*, its
     children to *Ticket Type Transition* and *Project Ticket Type*; labels, messages and the sidebar follow. The specification
     calls it Tracker, so field names stay (`tracker` on Work Item and Project Ticket Type, `enabled_trackers`,
