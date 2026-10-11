@@ -10,7 +10,7 @@ from __future__ import annotations
 import frappe
 from frappe.utils import cint
 
-from auri_pms.tracking.utils import (
+from auri_pms.auri_pms.utils import (
 	get_member_role,
 	has_unrestricted_project_view,
 	is_manager,

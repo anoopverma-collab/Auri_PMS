@@ -1,0 +1,26 @@
+{
+ "creation": "2026-10-11 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-10-11 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Auri PMS",
+ "name": "portfolio",
+ "owner": "Administrator",
+ "page_name": "portfolio",
+ "roles": [
+  {
+   "role": "Tracker User"
+  },
+  {
+   "role": "Tracker Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Portfolio"
+}

@@ -22,6 +22,7 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 - App logo, social preview image and light and dark screenshots of every screen in the README.
 
 ### Changed
+- The module is now called **Auri PMS** (was *Tracking*) and the Python package is `auri_pms.auri_pms`; a migration patch moves existing sites over.
 - Renamed the app to **Auri PMS (Project Management System)**; the Python package is now `auri_pms`.
 - Dashboards use aligned layouts: columns end on the same line, project cards have equal height, the project overview and
   Project Health are built from rows of paired panels, and every screen shows 8 tiles in two rows of four.

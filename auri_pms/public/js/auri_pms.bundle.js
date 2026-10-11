@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 // Loaded on every desk page so the custom Quick Entry exists before the first Work Item form is opened.
-const WI_API = "auri_pms.tracking.api";
+const WI_API = "auri_pms.auri_pms.api";
 
 // Quick Entry: subject, project, tracker, priority, assigned_to, due_date (status is set by the server).
 frappe.provide("frappe.ui.form");
@@ -30,7 +30,7 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
-// Frappe builds an extra sidebar for every module and our module is called "Tracking", so a screen could show "Tracking" (or the
+// Frappe builds an extra sidebar for every module and the module used to be called "Tracking", so old browsers may remember "Tracking" (or the
 // old name "Tracker") in the top-left corner instead of "Auri PMS". Drop that generated sidebar, repair any remembered choice
 // that points at it, and switch back whenever one of the two names is shown.
 const STALE_SIDEBARS = ["Tracker", "Tracking"];

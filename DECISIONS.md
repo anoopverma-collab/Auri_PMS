@@ -15,7 +15,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
    `Project` is skipped for Tracker/System Managers and for anyone holding the ERPNext roles *Projects
    Manager* or *Projects User*, otherwise installing the app would hide ordinary ERPNext projects from
    those users. Work Items, Releases, Time Entries and Categories are always filtered.
-4. **Capability lookup is the single source of truth.** `tracking/utils.get_capabilities()` is used for
+4. **Capability lookup is the single source of truth.** `auri_pms/utils.get_capabilities()` is used for
    every capability decision. The other places that read *Project Member* are not capability decisions: the SQL
    sub-query that builds the visibility filter, the assignee link query (lists candidates), the release-closed
    notification (lists recipients) and the Project hooks (validate the document's own rows).
@@ -84,7 +84,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     Notification Settings); it is skipped by Frappe for self-assignment. **N-2** (author and assignee, never the
     actor), **N-4** (daily digest) and **N-5** (release closed, all members, Notification Log) are Python because a
     Notification condition cannot exclude the actor per recipient or address project members. No Notification fixture
-    is shipped; the `Notification` fixture filter (module Tracking) is registered so one can be added without code
+    is shipped; the `Notification` fixture filter (module Auri PMS) is registered so one can be added without code
     changes.
 26. **`frappe.sendmail` has no `enqueue_after_commit` argument in v16.** Emails are written to the Email Queue inside
     the transaction (sent by the queue after commit). One email per recipient is queued; `queue_separately=True` sends

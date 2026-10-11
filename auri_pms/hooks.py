@@ -266,21 +266,21 @@ after_migrate = ["auri_pms.install.after_migrate"]
 before_uninstall = "auri_pms.install.before_uninstall"
 
 fixtures = [
-	{"dt": "Custom Field", "filters": [["module", "=", "Tracking"]]},
-	{"dt": "Property Setter", "filters": [["module", "=", "Tracking"]]},
+	{"dt": "Custom Field", "filters": [["module", "=", "Auri PMS"]]},
+	{"dt": "Property Setter", "filters": [["module", "=", "Auri PMS"]]},
 	{"dt": "Role", "filters": [["name", "in", ["Tracker Manager", "Tracker User"]]]},
-	{"dt": "Notification", "filters": [["module", "=", "Tracking"]]},
+	{"dt": "Notification", "filters": [["module", "=", "Auri PMS"]]},
 ]
 
 doc_events = {
 	"Project": {
-		"validate": "auri_pms.tracking.project_hooks.validate",
-		"on_update": "auri_pms.tracking.project_hooks.on_update",
-		"on_trash": "auri_pms.tracking.project_hooks.on_trash",
+		"validate": "auri_pms.auri_pms.project_hooks.validate",
+		"on_update": "auri_pms.auri_pms.project_hooks.on_update",
+		"on_trash": "auri_pms.auri_pms.project_hooks.on_trash",
 	},
-	"User": {"on_update": "auri_pms.tracking.utils.clear_cache"},
-	"ToDo": {"validate": "auri_pms.tracking.doctype.work_item.work_item.validate_todo"},
-	"Communication": {"after_insert": "auri_pms.tracking.email_intake.on_communication"},
+	"User": {"on_update": "auri_pms.auri_pms.utils.clear_cache"},
+	"ToDo": {"validate": "auri_pms.auri_pms.doctype.work_item.work_item.validate_todo"},
+	"Communication": {"after_insert": "auri_pms.auri_pms.email_intake.on_communication"},
 }
 
 permission_query_conditions = {
@@ -307,12 +307,12 @@ has_permission = {
 	"Project Module": "auri_pms.permissions.project_module_has_permission",
 }
 
-override_doctype_dashboards = {"Project": ["auri_pms.tracking.project_hooks.get_dashboard_data"]}
+override_doctype_dashboards = {"Project": ["auri_pms.auri_pms.project_hooks.get_dashboard_data"]}
 
 scheduler_events = {
 	"daily": [
-		"auri_pms.tracking.tasks.send_due_digests",
-		"auri_pms.tracking.status_report.send_scheduled_reports",
+		"auri_pms.auri_pms.tasks.send_due_digests",
+		"auri_pms.auri_pms.status_report.send_scheduled_reports",
 	]
 }
 
