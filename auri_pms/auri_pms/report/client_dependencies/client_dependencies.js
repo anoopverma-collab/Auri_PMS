@@ -3,7 +3,7 @@
 
 frappe.query_reports["Client Dependencies"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
 		{fieldname: "assigned_to", label: __("Assigned To"), fieldtype: "Link", options: "User"},
 		{fieldname: "min_days", label: __("Waiting at least (days)"), fieldtype: "Int", default: 0},
 	],

@@ -65,7 +65,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 	today_ = getdate(today())
 	projects = frappe.get_list(
 		"Project",
-		filters={"tracker_identifier": ["is", "set"]},
+		filters={"pms_enabled": 1},
 		fields=["name", "project_name", "tracker_identifier", "status", "is_public"],
 		order_by="modified desc",
 		limit_page_length=200,

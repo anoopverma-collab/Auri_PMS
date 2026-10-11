@@ -32,6 +32,7 @@ class TestEndToEnd(TrackerTestCase):
 			TM,
 			"Project",
 			project_name="Website Revamp",
+			pms_enabled=1,
 			tracker_identifier=ident,
 			tracker_members=[
 				{"user": MGR, "project_role": "Manager"},

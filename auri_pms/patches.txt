@@ -11,3 +11,4 @@ auri_pms.patches.v1_0.remove_tracker_home
 auri_pms.patches.v1_0.rename_tracker_sidebar_to_auri_pms
 auri_pms.patches.v1_0.remove_report_frequency_field
 # Patches added in this section will be executed after doctypes are migrated
+auri_pms.patches.v1_0.enable_pms_on_existing_projects

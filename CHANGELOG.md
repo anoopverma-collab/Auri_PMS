@@ -6,6 +6,7 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Added
+- **Enable Auri PMS** checkbox on the Project. Only enabled projects show in the Project Hub, Portfolio, reports and the Project field of every Auri PMS document; enabling selects all active Ticket Types by default. A patch enables existing projects that have an Identifier.
 - **Monthly client status report:** next to the weekly schedule a project can set *Send Monthly On Day* (1-28); the report covers
   the previous calendar month. Weekly and monthly can be used together.
 - **Risk Register** DocType: probability x impact scoring (Low, Medium, High, Critical), owner, status, mitigation and

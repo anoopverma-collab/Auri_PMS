@@ -66,6 +66,7 @@ class TestRelations(TrackerTestCase):
 				"doctype": "Project",
 				"company": ensure_company(),
 				"project_name": "Private",
+				"pms_enabled": 1,
 				"tracker_identifier": "PRV",
 				"tracker_members": [{"user": MGR, "project_role": "Manager"}],
 			}

@@ -3,7 +3,7 @@
 
 frappe.query_reports["Work Item Summary"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
 		{fieldname: "tracker", label: __("Ticket Type"), fieldtype: "Link", options: "Ticket Type"},
 		{
 			fieldname: "project_module",

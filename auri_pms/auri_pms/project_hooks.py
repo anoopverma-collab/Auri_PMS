@@ -17,18 +17,28 @@ from auri_pms.auri_pms.utils import (
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{1,9}$")
 TRACKER_ROLES = {"Tracker User", "Tracker Manager"}
+PROJECT_RECORDS = ("Work Item", "Release", "Risk Register", "Sprint", "Time Entry")
 LAYOUT_FIELDTYPES = {"Section Break", "Column Break", "Tab Break", "HTML", "Heading", "Button", "Fold"}
-TRACKER_FIELDS = {"tracker_identifier", "parent_project", "is_public", "tracker_members", "enabled_trackers"}
+TRACKER_FIELDS = {
+	"pms_enabled",
+	"tracker_identifier",
+	"parent_project",
+	"is_public",
+	"tracker_members",
+	"enabled_trackers",
+}
 
 
 def validate(doc, method: str | None = None) -> None:
 	"""Project.validate hook: identifier, parent, members and who may change what."""
 	old = doc.get_doc_before_save()
+	validate_enabled(doc, old)
 	validate_identifier(doc, old)
 	validate_parent_project(doc)
 	validate_members(doc, old)
 	validate_tracker_permissions(doc, old)
 	warn_about_removed_members(doc, old)
+	set_default_ticket_types(doc, old)
 
 
 def on_update(doc, method: str | None = None) -> None:
@@ -53,6 +63,30 @@ def on_update(doc, method: str | None = None) -> None:
 def on_trash(doc, method: str | None = None) -> None:
 	"""Project.on_trash hook: refresh caches."""
 	clear_cache()
+
+
+def validate_enabled(doc, old) -> None:
+	"""Enable Auri PMS needs an identifier and cannot be removed while the project has Auri PMS records."""
+	if cint(doc.get("pms_enabled")) and not doc.get("tracker_identifier"):
+		frappe.throw(_("Set an Identifier to enable Auri PMS on this project"))
+	if old and cint(old.get("pms_enabled")) and not cint(doc.get("pms_enabled")):
+		for doctype in PROJECT_RECORDS:
+			if frappe.db.exists(doctype, {"project": doc.name}):
+				frappe.throw(
+					_("Auri PMS cannot be disabled on Project {0}: it still has {1} records").format(
+						doc.name, _(doctype)
+					)
+				)
+
+
+def set_default_ticket_types(doc, old) -> None:
+	"""When Auri PMS is switched on, enable every active Ticket Type unless some were already chosen."""
+	if not cint(doc.get("pms_enabled")) or (old and cint(old.get("pms_enabled"))):
+		return
+	if doc.get("enabled_trackers"):
+		return
+	for name in frappe.get_all("Ticket Type", filters={"is_active": 1}, pluck="name", order_by="name"):
+		doc.append("enabled_trackers", {"tracker": name})
 
 
 def validate_identifier(doc, old) -> None:
@@ -109,6 +143,7 @@ def validate_members(doc, old) -> None:
 def _tracker_state(doc) -> tuple:
 	"""Comparable snapshot of the fields only managers may change."""
 	return (
+		cint(doc.get("pms_enabled")),
 		cint(doc.get("is_public")),
 		sorted((r.user, r.project_role) for r in doc.get("tracker_members") or []),
 		sorted(r.tracker for r in doc.get("enabled_trackers") or []),
@@ -117,7 +152,7 @@ def _tracker_state(doc) -> tuple:
 
 def validate_tracker_permissions(doc, old) -> None:
 	"""Only a manager or a member with can_manage_members changes members, visibility or trackers."""
-	empty = (0, [], [])
+	empty = (0, 0, [], [])
 	before = _tracker_state(old) if old else empty
 	if _tracker_state(doc) != before and not is_manager():
 		allowed = bool(old) and get_capabilities(doc.name)["can_manage_members"]

@@ -2,6 +2,7 @@
 
 import frappe
 
+from auri_pms.auri_pms import api
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, TrackerTestCase, ensure_company, make_user
 
 
@@ -12,6 +13,7 @@ class TestProject(TrackerTestCase):
 				"doctype": "Project",
 				"company": ensure_company(),
 				"project_name": name,
+				"pms_enabled": 1 if identifier else 0,
 				"tracker_identifier": identifier,
 				"tracker_members": [{"user": u, "project_role": r} for u, r in (members or [])],
 				**kw,
@@ -85,3 +87,38 @@ class TestProject(TrackerTestCase):
 		doc = frappe.get_doc("Project", self.BET)
 		doc.append("tracker_members", {"user": MGR, "project_role": "Manager"})
 		self.assertThrows("added more than once", doc.save)
+
+	def test_enable_needs_identifier(self):
+		"""Enable Auri PMS without an identifier is rejected."""
+		doc = self.project("No ident")
+		doc.pms_enabled = 1
+		self.assertThrows("Set an Identifier to enable Auri PMS", doc.insert)
+
+	def test_enabling_selects_all_active_ticket_types(self):
+		"""A project that is enabled without choosing ticket types gets every active one."""
+		doc = self.project("Defaults", "DEFT").insert()
+		active = set(frappe.get_all("Ticket Type", filters={"is_active": 1}, pluck="name"))
+		self.assertTrue(active)
+		self.assertEqual({r.tracker for r in doc.enabled_trackers}, active)
+
+	def test_chosen_ticket_types_are_kept(self):
+		"""Ticket types chosen by hand are not replaced by the default."""
+		doc = self.project("Chosen", "CHOS", enabled_trackers=[{"tracker": "Bug"}]).insert()
+		self.assertEqual([r.tracker for r in doc.enabled_trackers], ["Bug"])
+
+	def test_cannot_disable_with_records(self):
+		"""Auri PMS cannot be switched off while the project has work items."""
+		doc = frappe.get_doc("Project", self.ALP)
+		doc.pms_enabled = 0
+		self.assertThrows("cannot be disabled", doc.save)
+
+	def test_disabled_project_is_hidden_and_unusable(self):
+		"""A project without Enable Auri PMS is not listed and no work item can be created in it."""
+		doc = self.project("Plain").insert()
+		self.assertFalse(doc.pms_enabled)
+		with self.as_user(MGR):
+			self.assertNotIn(
+				doc.name, [r[0] for r in api.project_create_query("Project", "", "name", 0, 50, None)]
+			)
+			self.assertNotIn(doc.name, [p.name for p in api.get_hub_projects()])
+		self.assertThrows("Enable Auri PMS on Project", lambda: self.new_item(MGR, project=doc.name))

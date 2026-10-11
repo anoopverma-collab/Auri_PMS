@@ -421,7 +421,7 @@ def send_scheduled_reports() -> None:
 	for filters, from_date, to_date in due:
 		projects = frappe.get_all(
 			"Project",
-			filters={**filters, "tracker_report_recipients": ["is", "set"]},
+			filters={**filters, "pms_enabled": 1, "tracker_report_recipients": ["is", "set"]},
 			fields=["name", "tracker_report_recipients"],
 		)
 		for project in projects:

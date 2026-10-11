@@ -3,7 +3,7 @@
 
 frappe.query_reports["Overdue Work Items"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
 		{fieldname: "assigned_to", label: __("Assigned To"), fieldtype: "Link", options: "User"},
 	],
 };

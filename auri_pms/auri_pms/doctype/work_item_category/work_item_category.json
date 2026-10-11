@@ -22,6 +22,7 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"label": "Project",
+			"link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
 			"options": "Project",
 			"reqd": 1,
 			"search_index": 1

@@ -28,6 +28,7 @@ class TestPerformance(TrackerTestCase):
 					"doctype": "Project",
 					"company": ensure_company(),
 					"project_name": f"Perf {number}",
+					"pms_enabled": 1,
 					"tracker_identifier": f"PF{number}",
 					"tracker_members": [
 						{"user": MGR, "project_role": "Manager"},

@@ -79,6 +79,7 @@ def make_project(
 			"doctype": "Project",
 			"company": ensure_company(),
 			"project_name": name,
+			"pms_enabled": 1 if identifier else 0,
 			"tracker_identifier": identifier,
 			"is_public": 1 if public else 0,
 			# the health status is off by default; the fixture projects show it so the dashboards can be tested

@@ -7,7 +7,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate
 
-from auri_pms.auri_pms.utils import has_capability, recalc_sprint
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, recalc_sprint
 
 STATUS_ORDER = {"Planned": 0, "Active": 1, "Completed": 2}
 
@@ -32,6 +32,7 @@ class Sprint(Document):
 
 	def set_project_identifier(self) -> None:
 		"""Copy the project identifier (needed for the document name)."""
+		ensure_pms_project(self.project, _("creating sprints"))
 		identifier = frappe.db.get_value("Project", self.project, "tracker_identifier")
 		if not identifier:
 			frappe.throw(_("Set an Identifier on Project {0} before creating sprints").format(self.project))

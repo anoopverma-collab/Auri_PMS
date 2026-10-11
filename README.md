@@ -156,9 +156,16 @@ Activity Types are left alone).
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Auri PMS Project* (+ default ticket type) turns received mail into work items |
 
-### Project settings: Client Status Report and Health Status
+### Project settings: Enable Auri PMS, Client Status Report and Health Status
 
-Both sections are on the **Auri PMS tab of the Project** form.
+All of this is on the **Auri PMS tab of the Project** form.
+
+**Enable Auri PMS** - tick it to manage a project in Auri PMS; the rest of the tab stays hidden until you do.
+
+* Only enabled projects appear in Auri PMS: the Project Hub, Portfolio, the Project field of every Auri PMS document and report, and the client status report schedule. Ordinary ERPNext projects are left alone.
+* An Identifier is required to enable it. Ticking the box selects every active Ticket Type for the project; untick the ones you do not want.
+* It cannot be switched off while the project has work items, releases, risks, sprints or time entries.
+* Projects that already had an Identifier are enabled automatically by the upgrade.
 
 **Client Status Report** - who gets the report and when.
 
