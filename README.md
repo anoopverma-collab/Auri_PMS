@@ -177,6 +177,22 @@ Every report that is sent is logged as a **Project Status Report**, so you can s
 | **Show on Portfolio** | the Portfolio dashboard (the banner and the project's status in the table) |
 | **Show in Client Status Report (email, PDF)** | the Client Status Report screen, the emailed report and its PDF |
 
+**How the health status is worked out.** The status is calculated live from the project's own data, using these checks:
+
+| Check | At Risk (amber) | Off Track (red) |
+|---|---|---|
+| Overdue open tickets | more than 10% of open tickets | more than 25% |
+| Active sprint | slightly behind the ideal burndown (over 10% of scope) | well behind (over 25%) |
+| Effort | hours spent run ahead of the work completed (over 25 points) | hours spent exceed the estimate |
+| Releases | at 80% or less and due within 7 days, or just past the due date | past the due date and under 80% done |
+| Risk register | a *High* open risk, or an open risk past its mitigation date | a *Critical* open risk |
+| Backlog | more tickets created than resolved over the last 4 weeks (1.5x or more) | - |
+
+- **Status:** *On Track* when nothing is flagged, *At Risk* when at least one amber check fires, *Off Track* when at least one red check fires.
+- **Score:** starts at 100, minus 10 for each amber reason and 25 for each red reason (never below 0).
+- **Reasons:** every flagged check is listed in plain words (for example "12% of open tickets are overdue (3)"), so the banner always says why. A ticket waiting on the client is shown as an information line and does not change the status or score.
+- **No data yet:** a project without tickets shows no status.
+
 This lets you keep the verdict internal (tick Hub and Portfolio only) while the client report shows just the facts, or show it everywhere once the project is healthy.
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
