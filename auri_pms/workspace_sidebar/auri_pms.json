@@ -69,6 +69,18 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "database",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Masters",
+   "link_to": "",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
    "icon": "list-todo",
    "indent": 0,
    "keep_closed": 0,
@@ -79,7 +91,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "clock",
    "indent": 0,
@@ -91,7 +103,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "package",
    "indent": 0,
@@ -103,7 +115,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "shield-alert",
    "indent": 0,
@@ -115,7 +127,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "timer-reset",
    "indent": 0,
@@ -127,7 +139,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "projects",
    "indent": 0,
@@ -139,7 +151,79 @@
    "type": "Link"
   },
   {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Ticket Type",
+   "link_to": "Ticket Type",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Work Item Status",
+   "link_to": "Work Item Status",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Project Role",
+   "link_to": "Project Role",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Work Item Category",
+   "link_to": "Work Item Category",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Project Module",
+   "link_to": "Project Module",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
    "child": 0,
+   "collapsible": 1,
+   "icon": "sheet",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Reports",
+   "link_to": "",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -151,7 +235,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -163,7 +247,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -175,7 +259,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -187,7 +271,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -199,7 +283,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -211,7 +295,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "chart",
    "indent": 0,
@@ -226,64 +310,16 @@
    "child": 0,
    "collapsible": 1,
    "icon": "settings",
-   "indent": 0,
+   "indent": 1,
    "keep_closed": 0,
-   "label": "Ticket Type",
-   "link_to": "Ticket Type",
+   "label": "Settings",
+   "link_to": "",
    "link_type": "DocType",
    "show_arrow": 0,
-   "type": "Link"
+   "type": "Section Break"
   },
   {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "settings",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Work Item Status",
-   "link_to": "Work Item Status",
-   "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "settings",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Project Role",
-   "link_to": "Project Role",
-   "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "settings",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Work Item Category",
-   "link_to": "Work Item Category",
-   "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "settings",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Project Module",
-   "link_to": "Project Module",
-   "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "settings",
    "indent": 0,
@@ -295,7 +331,7 @@
    "type": "Link"
   },
   {
-   "child": 0,
+   "child": 1,
    "collapsible": 1,
    "icon": "mail",
    "indent": 0,
@@ -307,7 +343,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-11 19:30:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "Auri PMS",
