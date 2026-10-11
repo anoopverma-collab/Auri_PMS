@@ -66,8 +66,9 @@ def ensure_workspace_docs() -> None:
 
 
 def after_migrate() -> None:
-	"""Keep Project permissions in place after migrate; editable master data is never touched here."""
+	"""Keep Project permissions, the sidebar and the app icon in place after migrate; master data is never touched."""
 	ensure_project_permissions()
+	ensure_workspace_docs()
 
 
 def create_default_data() -> None:
