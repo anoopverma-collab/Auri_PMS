@@ -51,7 +51,7 @@ class TestSprint(TrackerTestCase):
 
 	def test_sp04_project_needs_identifier(self):
 		"""SP-04: a project without identifier cannot have sprints."""
-		self.assertThrows("Set an Identifier on Project", lambda: self.sprint(project=self.GAM, user=TM))
+		self.assertThrows("Enable Auri PMS on Project", lambda: self.sprint(project=self.GAM, user=TM))
 
 	def test_sp05_lifecycle(self):
 		"""SP-05: Planned -> Active -> Completed only; no skipping, no going back."""

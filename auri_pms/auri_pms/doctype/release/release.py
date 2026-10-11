@@ -7,7 +7,7 @@ from frappe import _
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.model.document import Document
 
-from auri_pms.auri_pms.utils import has_capability
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability
 
 
 class Release(Document):
@@ -25,6 +25,7 @@ class Release(Document):
 
 	def set_project_identifier(self) -> None:
 		"""Copy the project identifier (needed for the document name)."""
+		ensure_pms_project(self.project, _("creating releases"))
 		identifier = frappe.db.get_value("Project", self.project, "tracker_identifier")
 		if not identifier:
 			frappe.throw(_("Set an Identifier on Project {0} before creating releases").format(self.project))

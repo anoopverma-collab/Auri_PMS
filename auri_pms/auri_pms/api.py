@@ -138,7 +138,7 @@ def project_create_query(
 	"""Link query for Work Item.project: projects (with an identifier) the user may create items in."""
 	candidates = frappe.get_list(
 		"Project",
-		filters={"tracker_identifier": ["is", "set"]},
+		filters={"pms_enabled": 1},
 		or_filters={"name": ["like", _like(txt)], "project_name": ["like", _like(txt)]},
 		fields=["name", "project_name"],
 		order_by="modified desc",
@@ -233,6 +233,7 @@ def get_hub_projects() -> list[dict]:
 	"""Projects the user can see, with the numbers shown on the Project Hub cards."""
 	projects = frappe.get_list(
 		"Project",
+		filters={"pms_enabled": 1},
 		fields=["name", "project_name", "tracker_identifier", "status", "is_public"],
 		order_by="modified desc",
 		limit_page_length=0,
@@ -281,7 +282,7 @@ def get_project_hub(project: str) -> dict:
 	from auri_pms.auri_pms.utils import get_burndown
 	from auri_pms.permissions import can_see_project
 
-	if not frappe.db.exists("Project", project) or not can_see_project(project):
+	if not frappe.db.exists("Project", {"name": project, "pms_enabled": 1}) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
 	info = frappe.db.get_value(
 		"Project",

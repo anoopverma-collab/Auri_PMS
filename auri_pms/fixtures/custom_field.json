@@ -11,22 +11,38 @@
   "name": "Project-tab_tracker"
  },
  {
+  "default": "0",
+  "description": "Tick to manage this project in Auri PMS. Only enabled projects appear in Auri PMS screens, dashboards and Project fields.",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "pms_enabled",
+  "fieldtype": "Check",
+  "in_standard_filter": 1,
+  "insert_after": "tab_tracker",
+  "is_system_generated": 0,
+  "label": "Enable Auri PMS",
+  "module": "Auri PMS",
+  "name": "Project-pms_enabled"
+ },
+ {
+  "depends_on": "eval:doc.pms_enabled",
   "description": "2-10 uppercase letters or digits, starting with a letter. Set once; used in Work Item names.",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "tracker_identifier",
   "fieldtype": "Data",
   "in_standard_filter": 1,
-  "insert_after": "tab_tracker",
+  "insert_after": "pms_enabled",
   "is_system_generated": 0,
   "label": "Identifier",
   "length": 10,
-  "mandatory_depends_on": "eval:doc.__islocal",
+  "mandatory_depends_on": "eval:doc.pms_enabled && doc.__islocal",
   "module": "Auri PMS",
   "name": "Project-tracker_identifier",
   "unique": 1
  },
  {
+  "depends_on": "eval:doc.pms_enabled",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "parent_project",
@@ -51,6 +67,7 @@
  },
  {
   "default": "0",
+  "depends_on": "eval:doc.pms_enabled",
   "description": "Visible to all Tracker Users",
   "doctype": "Custom Field",
   "dt": "Project",
@@ -63,6 +80,7 @@
   "name": "Project-is_public"
  },
  {
+  "depends_on": "eval:doc.pms_enabled",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "tracker_sec_members",
@@ -137,6 +155,7 @@
  },
  {
   "collapsible": 1,
+  "depends_on": "eval:doc.pms_enabled",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "tracker_sec_report",
@@ -187,6 +206,7 @@
  },
  {
   "collapsible": 1,
+  "depends_on": "eval:doc.pms_enabled",
   "description": "Choose where this project's health status (On Track / At Risk / Off Track, score and reasons) is shown. Counts and charts are always shown.",
   "doctype": "Custom Field",
   "dt": "Project",

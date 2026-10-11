@@ -23,7 +23,7 @@ class TestWorkItem(TrackerTestCase):
 
 	def test_t022_project_without_identifier(self):
 		"""T-022: creating on Gamma is rejected with the identifier message."""
-		self.assertThrows("Set an Identifier on Project", lambda: self.new_item(DEV, self.GAM))
+		self.assertThrows("Enable Auri PMS on Project", lambda: self.new_item(DEV, self.GAM))
 
 	def test_t023_outsider_cannot_create_on_private(self):
 		"""T-023: out cannot create on ALP."""

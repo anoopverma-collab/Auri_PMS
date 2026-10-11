@@ -9,7 +9,7 @@ from frappe.model.naming import getseries
 from frappe.utils import getdate, today
 
 from auri_pms.auri_pms.risk import risk_level, scale_value
-from auri_pms.auri_pms.utils import has_capability
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability
 
 
 class RiskRegister(Document):
@@ -36,6 +36,7 @@ class RiskRegister(Document):
 
 	def set_project_identifier(self) -> None:
 		"""Copy the project identifier (needed for the document name)."""
+		ensure_pms_project(self.project, _("adding risks"))
 		identifier = frappe.db.get_value("Project", self.project, "tracker_identifier")
 		if not identifier:
 			frappe.throw(_("Set an Identifier on Project {0} before adding risks").format(self.project))

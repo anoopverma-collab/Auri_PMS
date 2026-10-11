@@ -89,6 +89,7 @@ class TestPermissions(TrackerTestCase):
 				"doctype": "Project",
 				"company": ensure_company(),
 				"project_name": "Parent",
+				"pms_enabled": 1,
 				"tracker_identifier": "PAR",
 				"tracker_members": [
 					{"user": OUT, "project_role": "Developer"},
@@ -101,6 +102,7 @@ class TestPermissions(TrackerTestCase):
 				"doctype": "Project",
 				"company": ensure_company(),
 				"project_name": "Child",
+				"pms_enabled": 1,
 				"tracker_identifier": "CHD",
 				"parent_project": parent.name,
 				"tracker_members": [{"user": MGR, "project_role": "Manager"}],

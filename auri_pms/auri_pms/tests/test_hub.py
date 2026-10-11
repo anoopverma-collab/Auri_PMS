@@ -22,8 +22,8 @@ class TestProjectHub(TrackerTestCase):
 		out = self.hub_projects(OUT)
 		self.assertIn(self.BET, out)
 		self.assertNotIn(self.ALP, out)
-		self.assertTrue({self.ALP, self.BET, self.GAM} <= set(self.hub_projects(TM)))
-		self.assertIsNone(self.hub_projects(TM)[self.GAM].tracker_identifier)  # picker can flag it
+		self.assertTrue({self.ALP, self.BET} <= set(self.hub_projects(TM)))
+		self.assertNotIn(self.GAM, self.hub_projects(TM))  # Auri PMS is not enabled on it
 
 	def test_picker_numbers(self):
 		"""Open, overdue, mine, team size and the active sprint are shown on the card."""

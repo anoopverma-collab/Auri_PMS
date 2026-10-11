@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 import frappe
+from frappe import _
 from frappe.utils import cint, flt
 
 CAPABILITY_FIELDS: tuple[str, ...] = (
@@ -37,6 +38,12 @@ def clear_cache(doc=None, method: str | None = None) -> None:
 
 
 # --------------------------------------------------------------------------- users and roles
+def ensure_pms_project(project: str | None, action: str) -> None:
+	"""Throw unless ``project`` has Enable Auri PMS ticked (``action`` completes "before ...")."""
+	if project and not cint(frappe.db.get_value("Project", project, "pms_enabled")):
+		frappe.throw(_("Enable Auri PMS on Project {0} before {1}").format(project, action))
+
+
 def is_manager(user: str | None = None) -> bool:
 	"""Return True for Administrator, Tracker Manager and System Manager."""
 	user = user or frappe.session.user

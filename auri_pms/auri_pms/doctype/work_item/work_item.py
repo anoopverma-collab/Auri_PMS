@@ -11,6 +11,7 @@ from frappe.utils import cint, flt, now_datetime, today
 
 from auri_pms.auri_pms.utils import (
 	compute_progress,
+	ensure_pms_project,
 	follow_work_item,
 	get_ancestors,
 	get_capabilities,
@@ -51,6 +52,7 @@ class WorkItem(Document):
 		"""Reject creation before a series number is consumed (R-03, R-04)."""
 		if not self.project:
 			return
+		ensure_pms_project(self.project, _("creating work items"))
 		identifier = frappe.db.get_value("Project", self.project, "tracker_identifier")
 		if not identifier:
 			frappe.throw(

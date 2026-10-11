@@ -3,7 +3,7 @@
 
 frappe.query_reports["Sprint Summary"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project"},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
 		{fieldname: "status", label: __("Status"), fieldtype: "Select", options: ["", "Planned", "Active", "Completed"]},
 	],
 };
