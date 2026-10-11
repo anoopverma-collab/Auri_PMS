@@ -30,16 +30,29 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
-// The app's sidebar used to be called "Tracker". A browser that remembered it for a screen would show that old name in the
-// sidebar header: rewrite the stored choice once so it points at the current sidebar.
+// Frappe builds an extra sidebar for every module and our module is called "Tracking", so a screen could show "Tracking" (or the
+// old name "Tracker") in the top-left corner instead of "Auri PMS". Drop that generated sidebar, repair any remembered choice
+// that points at it, and switch back whenever one of the two names is shown.
+const STALE_SIDEBARS = ["Tracker", "Tracking"];
 try {
+	if (frappe.boot && frappe.boot.workspace_sidebar_item) delete frappe.boot.workspace_sidebar_item.tracking;
 	const remembered = localStorage.getItem("sidebar_item_map");
-	if (remembered && remembered.includes('"Tracker"')) {
-		localStorage.setItem("sidebar_item_map", remembered.replace(/"Tracker"/g, '"Auri PMS"'));
+	if (remembered && STALE_SIDEBARS.some((name) => remembered.includes(`"${name}"`))) {
+		localStorage.setItem("sidebar_item_map", remembered.replace(/"(Tracker|Tracking)"/g, '"Auri PMS"'));
 	}
 } catch (e) {
-	/* storage can be blocked: nothing to repair then */
+	/* storage or boot data unavailable: nothing to repair then */
 }
+
+const keep_pms_sidebar = () => {
+	const sidebar = frappe.app && frappe.app.sidebar;
+	if (sidebar && STALE_SIDEBARS.includes(sidebar.sidebar_title)) sidebar.setup("Auri PMS");
+};
+$(document).on("startup", () => {
+	if (frappe.router && frappe.router.on) frappe.router.on("change", () => setTimeout(keep_pms_sidebar, 80));
+	$(document).on("page-change", () => setTimeout(keep_pms_sidebar, 80));
+	setTimeout(keep_pms_sidebar, 300);
+});
 
 // Searching "Auri PMS", "PMS" or "Project Hub" in the Awesome Bar offers the Project Hub, the landing screen of the app.
 $(document).on("startup", () => {
