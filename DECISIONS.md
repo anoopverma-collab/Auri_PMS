@@ -186,7 +186,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     The reasons are listed next to the status so a client can see why.
 55. *(removed)* A client-view toggle and a print button were tried and removed at the owner's request; the people-level
     panels (tickets and hours by person) always show.
-56. **Sample data:** the SJDM sample tickets were back-dated (creation and closing dates spread over the project timeline) and
+56. **Sample data:** the Auriga sample tickets were back-dated (creation and closing dates spread over the project timeline) and
     meetings/support time marked non-billable so the dashboard has a history to show.
 
 ## Dashboards, client dependency and navigation

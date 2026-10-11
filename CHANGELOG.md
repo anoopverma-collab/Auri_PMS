@@ -8,7 +8,7 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ### Added
 - **Risk Register** DocType: probability x impact scoring (Low, Medium, High, Critical), owner, status, mitigation and
   contingency plan, mitigation due date, related ticket and a *Show in Client Status Report* switch. Risks are numbered per
-  project (`SJDM-RISK-0001`).
+  project (`AURI-RISK-0001`).
 - Open risks feed the **project health status** (critical and high risks, overdue mitigations), so the Project Health banner, the
   Portfolio banner and the client report carry them.
 - Risk panels: heat map and top risks on Project Health, a risk panel on the project overview, a *Risks* column and an *Open risks

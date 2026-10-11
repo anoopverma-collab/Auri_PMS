@@ -17,7 +17,7 @@ A centralized platform for project planning, task management, timelines, effort 
 
 | Area | What you get |
 |---|---|
-| Tickets (Work Items) | bugs, features, tasks and support requests with parent/child tickets, priorities, categories, start/due dates, estimates, relations and blockers; per-project ticket numbers such as `SJDM-00001` |
+| Tickets (Work Items) | bugs, features, tasks and support requests with parent/child tickets, priorities, categories, start/due dates, estimates, relations and blockers; per-project ticket numbers such as `AURI-00001` |
 | Ticket Types and workflow | configurable ticket types with default status, *Counts as Defect* flag and allowed status transitions per project role |
 | Project Hub | project-first screen: users only see projects they belong to (or public ones) and work inside the chosen project |
 | Roles and access | project roles with nine capability flags; private projects stay hidden from outsiders |
@@ -36,7 +36,7 @@ A centralized platform for project planning, task management, timelines, effort 
 
 ## Screenshots
 
-All screenshots use the sample SJDM Implementation project data. Every screen is shown in **light** and **dark** mode: the app follows Frappe's own light/dark setting (user menu, *Toggle Theme*), so nothing needs configuring.
+All screenshots use the sample Auriga project data. Every screen is shown in **light** and **dark** mode: the app follows Frappe's own light/dark setting (user menu, *Toggle Theme*), so nothing needs configuring.
 
 ### Project Hub
 
@@ -155,6 +155,29 @@ Activity Types are left alone).
 | **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Auri PMS Project* (+ default ticket type) turns received mail into work items |
+
+### Project settings: Client Status Report and Health Status
+
+Both sections are on the **Auri PMS tab of the Project** form.
+
+**Client Status Report** - who gets the weekly report and when.
+
+| Field | What it does |
+|---|---|
+| **Report Recipients** | Email addresses (comma or new line) that receive the weekly status report. Several people can be listed, for example the client contact and your manager. |
+| **Send Weekly On** | The weekday the report is emailed automatically (a daily job sends it once on that day, covering the previous 7 days). Leave it blank to send reports manually only, from the *Client Status Report* screen. |
+
+Every report that is sent is logged as a **Project Status Report**, so you can see what went out and when.
+
+**Health Status** - where the project's health verdict is shown. The verdict is the traffic light (**On Track / At Risk / Off Track**), the 0-100 score and the reasons behind it. Counts, charts, tickets and hours are always shown; only the verdict is optional. All three boxes are off by default, so a new project shows no health judgement until you choose to.
+
+| Checkbox | When ticked, the health status appears on |
+|---|---|
+| **Show on Project Hub (Health Dashboard)** | the project's health dashboard (the banner at the top) |
+| **Show on Portfolio** | the Portfolio dashboard (the banner and the project's status in the table) |
+| **Show in Client Status Report (email, PDF)** | the Client Status Report screen, the emailed report and its PDF |
+
+This lets you keep the verdict internal (tick Hub and Portfolio only) while the client report shows just the facts, or show it everywhere once the project is healthy.
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
 projects they are a member of, plus public projects. Inside a project the member's **Project Role**
