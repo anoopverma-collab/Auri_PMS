@@ -193,6 +193,9 @@ class ProjectHub {
 		const releases = table(d.releases, [__("Release"), __("Status"), __("Due"), __("%")], (r) =>
 			`<tr><td>${link("Release", r.name, r.release_name)}</td><td>${__(r.status)}</td><td>${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}</td><td>${flt(r.percent_complete, 0)}%</td></tr>`);
 		const team = table(d.members, [__("Name"), __("Role")], (m) => `<tr><td>${esc(m.full_name || m.user)}</td><td>${esc(m.project_role)}</td></tr>`);
+		const status_panel = `<div class="hub-panel"><h6>${__("Open by status")}</h6>${split(d.by_status)}<h6 class="mt-3">${__("Open by ticket type")}</h6>${split(d.by_tracker)}</div>`;
+		const has_modules = d.by_module.some((r) => r.label !== __("(no module)"));
+		const module_panel = has_modules ? `<div class="hub-panel"><h6>${__("Open by module")}</h6>${split(d.by_module)}</div>` : "";
 		const info = d.project;
 		const rk = d.risks;
 		const risk_actions = `<span style="float:right" class="small"><a href="#" data-risk-list>${__("Open register")}</a>${d.capabilities.can_create_items ? ` &middot; <a href="#" data-risk-new>${__("New risk")}</a>` : ""}</span>`;
@@ -211,20 +214,20 @@ class ProjectHub {
 				${tile(n.client_dependent, __("Waiting on client"), n.client_dependent ? "hub-orange" : "hub-teal", "client", n.client_oldest_days === null || n.client_oldest_days === undefined ? "" : __("oldest {0} days", [n.client_oldest_days]))}
 				${tile(n.hours_total, __("Hours logged"), "hub-teal", null, __("{0} h this week", [n.hours_week]))}
 			</div>
-			<div class="hub-cols">
-				<div class="hub-col">
-					${sprint_html}
-					${waiting_panel}
-					<div class="hub-panel"><h6>${__("Recent work items")}</h6>${recent}</div>
-				</div>
-				<div class="hub-col">
-					<div class="hub-panel"><h6>${__("Open by status")}</h6>${split(d.by_status)}<h6 class="mt-3">${__("Open by ticket type")}</h6>${split(d.by_tracker)}${d.by_module.length > 1 || (d.by_module[0] && d.by_module[0].label !== __("(no module)")) ? `<h6 class="mt-3">${__("Open by module")}</h6>${split(d.by_module)}` : ""}</div>
-					${risk_panel}
-					<div class="hub-panel"><h6>${__("Sprints")}</h6>${sprints}</div>
-					<div class="hub-panel"><h6>${__("Releases")}</h6>${releases}</div>
-					<div class="hub-panel"><h6>${__("Team")} (${d.members.length})</h6>${team}</div>
-				</div>
-			</div>`);
+			<div class="hub-row">
+				${sprint_html}
+				${status_panel}
+			</div>
+			<div class="hub-row">
+				<div class="hub-col">${waiting_panel}${module_panel}</div>
+				${risk_panel}
+			</div>
+			<div class="hub-row hub-row-3">
+				<div class="hub-panel"><h6>${__("Sprints")}</h6>${sprints}</div>
+				<div class="hub-panel"><h6>${__("Releases")}</h6>${releases}</div>
+				<div class="hub-panel"><h6>${__("Team")} (${d.members.length})</h6>${team}</div>
+			</div>
+			<div class="hub-panel"><h6>${__("Recent work items")}</h6>${recent}</div>`);
 		this.$body.find(".hub-tile[data-route]").on("click", (e) => this.open_tile($(e.currentTarget).data("route")));
 		this.bind_risk_links();
 		this.$body.find("[data-open-report]").on("click", (e) => {
