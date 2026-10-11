@@ -165,11 +165,10 @@ Both sections are on the **Auri PMS tab of the Project** form.
 | Field | What it does |
 |---|---|
 | **Report Recipients** | Email addresses (comma or new line) that receive the status report. Several people can be listed, for example the client contact and your manager. |
-| **Send** | *Weekly* (default) or *Monthly*. |
-| **Send Weekly On** | (Weekly) the weekday the report is emailed automatically; it covers the previous 7 days. Leave it blank to send reports manually only, from the *Client Status Report* screen. |
-| **Send Monthly On Day** | (Monthly) the day of the month, 1-28, the report is emailed automatically; it covers the previous calendar month. Leave it blank to send reports manually only. |
+| **Send Weekly On** | The weekday the weekly report is emailed automatically; it covers the previous 7 days. Leave it blank for no weekly report. |
+| **Send Monthly On Day** | The day of the month (1-28) the monthly report is emailed automatically; it covers the previous calendar month. Leave it blank for no monthly report. |
 
-A daily job does the sending, once per project per day.
+Use either one or **both**: a project can get a weekly and a monthly report. With both blank, reports are sent manually only, from the *Client Status Report* screen. A daily job does the sending, once per project per report period.
 
 Every report that is sent is logged as a **Project Status Report**, so you can see what went out and when.
 

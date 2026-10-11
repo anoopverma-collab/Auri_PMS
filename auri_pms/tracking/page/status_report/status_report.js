@@ -126,7 +126,7 @@ class StatusReport {
 				<div class="hub-col">
 					${preview.status ? ui.statusBanner(preview.status) : ""}
 					<div class="hub-panel"><h6>${__("Recently sent")}</h6>${past}</div>
-					<div class="hub-panel"><h6>${__("Automatic schedule")}</h6><div class="text-muted small">${__("Set Report Recipients and the weekly or monthly schedule (Send) in the Auri PMS tab of the Project to email this report automatically.")}</div></div>
+					<div class="hub-panel"><h6>${__("Automatic schedule")}</h6><div class="text-muted small">${__("Set Report Recipients and Send Weekly On and/or Send Monthly On Day (use both for a weekly and a monthly report) in the Auri PMS tab of the Project to email this report automatically.")}</div></div>
 				</div>
 			</div>`);
 		const frame = this.$body.find("iframe")[0];

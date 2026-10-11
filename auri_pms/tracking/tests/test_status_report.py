@@ -196,10 +196,8 @@ class TestStatusReport(TrackerTestCase):
 			self.ALP,
 			{
 				"tracker_report_recipients": "client@example.com",
-				"tracker_report_frequency": "Monthly",
 				"tracker_report_month_day": str(today_.day),
-				# a weekday that matches today must not also trigger a weekly report
-				"tracker_report_weekday": today_.strftime("%A"),
+				"tracker_report_weekday": "",
 			},
 		)
 		send_scheduled_reports()
@@ -211,6 +209,22 @@ class TestStatusReport(TrackerTestCase):
 		last_end = add_days(today_.replace(day=1), -1)
 		self.assertEqual((logs[0].from_date, logs[0].to_date), (last_end.replace(day=1), last_end))
 
+	def test_weekly_and_monthly_together(self):
+		"""Both schedules can be set on one project; on a day that matches both, both reports go out once."""
+		today_ = getdate(today())
+		frappe.db.set_value(
+			"Project",
+			self.ALP,
+			{
+				"tracker_report_recipients": "client@example.com",
+				"tracker_report_weekday": today_.strftime("%A"),
+				"tracker_report_month_day": str(today_.day),
+			},
+		)
+		send_scheduled_reports()
+		send_scheduled_reports()
+		self.assertEqual(frappe.db.count("Project Status Report", {"project": self.ALP, "scheduled": 1}), 2)
+
 	def test_monthly_schedule_skips_other_days(self):
 		"""Nothing is sent when today is not the chosen day of the month."""
 		today_ = getdate(today())
@@ -220,7 +234,6 @@ class TestStatusReport(TrackerTestCase):
 			self.ALP,
 			{
 				"tracker_report_recipients": "client@example.com",
-				"tracker_report_frequency": "Monthly",
 				"tracker_report_month_day": other,
 			},
 		)

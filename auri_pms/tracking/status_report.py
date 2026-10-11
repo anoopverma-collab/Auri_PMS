@@ -306,7 +306,8 @@ def render_html(report: frappe._dict, note: str | None = None) -> str:
 		(f"{report.summary.completion_pct:.0f}%", _("Complete"), "#ecfdf5"),
 		(report.summary.hours, _("Hours"), "#ecfeff"),
 	]
-	return frappe.render_template(
+	# REPORT_TEMPLATE is a module constant; no user input is ever used as template source.
+	return frappe.render_template(  # nosemgrep: frappe-ssti
 		REPORT_TEMPLATE,
 		{
 			"r": report,
@@ -399,23 +400,20 @@ def get_pdf_bytes(project: str, from_date, to_date, note: str | None = None) -> 
 
 
 def send_scheduled_reports() -> None:
-	"""Daily job: send the weekly report on the chosen weekday and the monthly report on the chosen day (once a day)."""
+	"""Daily job: send the weekly report on the chosen weekday and the monthly report on the chosen day (or both)."""
 	today_ = getdate(today())
 	first_of_month = today_.replace(day=1)
 	last_month_end = add_days(first_of_month, -1)
 	due = [
-		# weekly (also projects saved before the frequency existed): the previous 7 days
+		# weekly: the previous 7 days
 		(
-			{
-				"tracker_report_frequency": ["!=", "Monthly"],
-				"tracker_report_weekday": today_.strftime("%A"),
-			},
+			{"tracker_report_weekday": today_.strftime("%A")},
 			add_days(today_, -7),
 			add_days(today_, -1),
 		),
-		# monthly: the previous calendar month
+		# monthly: the previous calendar month (a project can have both)
 		(
-			{"tracker_report_frequency": "Monthly", "tracker_report_month_day": str(today_.day)},
+			{"tracker_report_month_day": str(today_.day)},
 			last_month_end.replace(day=1),
 			last_month_end,
 		),
@@ -427,11 +425,14 @@ def send_scheduled_reports() -> None:
 			fields=["name", "tracker_report_recipients"],
 		)
 		for project in projects:
+			# once per report period: a weekly and a monthly report may go out on the same day
 			already = frappe.db.exists(
 				"Project Status Report",
 				{
 					"project": project.name,
 					"scheduled": 1,
+					"from_date": str(from_date),
+					"to_date": str(to_date),
 					"sent_on": [">=", get_datetime(f"{today_} 00:00:00")],
 				},
 			)

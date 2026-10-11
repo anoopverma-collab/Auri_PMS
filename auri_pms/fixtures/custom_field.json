@@ -160,36 +160,20 @@
   "name": "Project-tracker_report_recipients"
  },
  {
-  "default": "Weekly",
-  "description": "Weekly: sent on the chosen weekday. Monthly: sent on the chosen day of the month and covers the previous calendar month.",
-  "doctype": "Custom Field",
-  "dt": "Project",
-  "fieldname": "tracker_report_frequency",
-  "fieldtype": "Select",
-  "insert_after": "tracker_report_recipients",
-  "is_system_generated": 0,
-  "label": "Send",
-  "module": "Tracking",
-  "name": "Project-tracker_report_frequency",
-  "options": "Weekly\nMonthly"
- },
- {
-  "description": "Leave blank to send reports manually only. Covers the previous 7 days.",
+  "description": "Weekly report: the weekday it is sent, covering the previous 7 days. Leave blank for no weekly report.",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "tracker_report_weekday",
   "fieldtype": "Select",
-  "insert_after": "tracker_report_frequency",
+  "insert_after": "tracker_report_recipients",
   "is_system_generated": 0,
   "label": "Send Weekly On",
   "module": "Tracking",
   "name": "Project-tracker_report_weekday",
-  "options": "\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
-  "depends_on": "eval:doc.tracker_report_frequency!=\"Monthly\""
+  "options": "\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
  },
  {
-  "depends_on": "eval:doc.tracker_report_frequency==\"Monthly\"",
-  "description": "Day of the month (1-28). Leave blank to send reports manually only. Covers the previous calendar month.",
+  "description": "Monthly report: the day of the month (1-28) it is sent, covering the previous calendar month. Leave blank for no monthly report. Can be used together with the weekly report.",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "tracker_report_month_day",
