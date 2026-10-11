@@ -80,6 +80,16 @@ ui.PERIODS = PERIODS;
 ui.PERIOD_NOTE = PERIOD_NOTE;
 ui.PALETTE = { blue: "#3b82f6", green: "#10b981", orange: "#f59e0b", purple: "#8b5cf6", cyan: "#06b6d4", red: "#ef4444", pink: "#ec4899" };
 ui.days = (n) => (cint(n) === 1 ? __("1 day") : __("{0} days", [n]));
+// Pages that take an argument in their address (project-hub/PROJ-0001, status-report/PROJ-0001) would otherwise show an
+// empty sidebar after a refresh or from a direct link: Frappe looks the sidebar up by the argument, not by the page.
+ui.showSidebar = () => {
+	try {
+		if (frappe.app && frappe.app.sidebar) frappe.app.sidebar.show_sidebar_for_module("Auri PMS");
+	} catch (e) {
+		/* the sidebar is a convenience: never break the page for it */
+	}
+};
+
 ui.esc = (value) => frappe.utils.escape_html(value === null || value === undefined ? "" : String(value));
 
 ui.setFlag = (key, value) => {

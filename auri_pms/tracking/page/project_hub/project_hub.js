@@ -33,6 +33,7 @@ class ProjectHub {
 
 	show(project, view) {
 		this.view = view === "health" ? "health" : "overview";
+		ui.showSidebar();
 		this.page.clear_primary_action();
 		this.page.clear_inner_toolbar();
 		this.page.clear_menu();

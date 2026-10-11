@@ -35,6 +35,7 @@ class StatusReport {
 	}
 
 	show(project) {
+		ui.showSidebar();
 		this.page.clear_inner_toolbar();
 		this.page.clear_primary_action();
 		ui.applyTheme(this.$body);
