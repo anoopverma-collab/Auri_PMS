@@ -129,8 +129,11 @@ EMAIL_TEMPLATES = [
 
 
 def template_html(filename: str) -> str:
-	"""The HTML of a ready-made template."""
-	with open(frappe.get_app_path("auri_pms", "templates", "emails", filename), encoding="utf-8") as f:
+	"""The HTML of a ready-made template; ``filename`` is one of the constants in EMAIL_TEMPLATES."""
+	path = frappe.get_app_path("auri_pms", "templates", "emails", filename)
+	# a file shipped with the app; no user input is part of the path
+	# nosemgrep: frappe-security-file-traversal
+	with open(path, encoding="utf-8") as f:
 		return f.read()
 
 
