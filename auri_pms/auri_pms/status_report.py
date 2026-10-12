@@ -34,7 +34,9 @@ from auri_pms.permissions import can_see_project
 
 MAX_RANGE_DAYS = 366
 MAX_RECIPIENTS = 20
-MAX_EMAIL_BYTES = 10 * 1024 * 1024  # most mail servers refuse 10-25 MB messages; the database caps a row at 16 MB
+MAX_EMAIL_BYTES = (
+	10 * 1024 * 1024
+)  # most mail servers refuse 10-25 MB messages; the database caps a row at 16 MB
 BUILTIN_LAYOUT = "__builtin__"  # template value that forces the built-in layout for one send
 REPORT_SECTIONS = (
 	"modules",
@@ -54,7 +56,11 @@ LEVEL_COLOUR = {"green": "#10b981", "amber": "#f59e0b", "red": "#ef4444", "none"
 
 
 def build_report(
-	project: str, from_date, to_date, exclude: list[str] | None = None, include: dict | list[str] | None = None
+	project: str,
+	from_date,
+	to_date,
+	exclude: list[str] | None = None,
+	include: dict | list[str] | None = None,
 ) -> frappe._dict:
 	"""Everything the report shows for ``project`` between two dates (permission aware).
 
@@ -367,8 +373,18 @@ def render_html(
 			(report.summary.delivered, _("Delivered"), "#ecfdf5", "delivered"),
 			(report.summary.created, _("New tickets"), "#eff6ff", "created"),
 			(report.summary.open, _("Open"), "#e3f2fd", "in_progress"),
-			(report.summary.overdue, _("Overdue"), "#fef2f2" if report.summary.overdue else "#f9fafb", "issues"),
-			(report.summary.waiting, _("Waiting on you"), "#fffbeb" if report.summary.waiting else "#f9fafb", "waiting"),
+			(
+				report.summary.overdue,
+				_("Overdue"),
+				"#fef2f2" if report.summary.overdue else "#f9fafb",
+				"issues",
+			),
+			(
+				report.summary.waiting,
+				_("Waiting on you"),
+				"#fffbeb" if report.summary.waiting else "#f9fafb",
+				"waiting",
+			),
 			(f"{report.summary.completion_pct:.0f}%", _("Complete"), "#ecfdf5", "completion"),
 			(report.summary.hours, _("Hours"), "#ecfeff", "time"),
 		]
@@ -456,7 +472,9 @@ def default_subject(report: frappe._dict, template: str | None = None) -> str:
 			.replace("{to_date}", frappe.utils.formatdate(report.to_date))
 		)[:140]
 	if template and template.subject:
-		return frappe.render_template(template.subject, {"r": report, "report": report})  # nosemgrep: frappe-ssti
+		return frappe.render_template(
+			template.subject, {"r": report, "report": report}
+		)  # nosemgrep: frappe-ssti
 	return _("{0}: status report {1} to {2}").format(
 		report.project.project_name,
 		frappe.utils.formatdate(report.from_date),
@@ -538,7 +556,11 @@ def send_report(
 	return log.name
 
 
-def get_pdf_bytes(project: str, from_date, to_date, note: str | None = None,
+def get_pdf_bytes(
+	project: str,
+	from_date,
+	to_date,
+	note: str | None = None,
 	exclude: list[str] | None = None,
 	template: str | None = None,
 	include: dict | list[str] | None = None,
@@ -627,7 +649,9 @@ def fit_to_page(html: str) -> str:
 		html = html.replace(f"background:{page}", "background:transparent", 1)
 	paper = f"html, body {{ background: {colour}; }} " if colour else ""
 	return (
-		'<meta charset="utf-8"><style>' + paper + "tr, td, th, .keep { page-break-inside: avoid; } body { margin: 0; }"
+		'<meta charset="utf-8"><style>'
+		+ paper
+		+ "tr, td, th, .keep { page-break-inside: avoid; } body { margin: 0; }"
 		" @media print { body { -webkit-print-color-adjust: exact; } }</style>" + html
 	)
 

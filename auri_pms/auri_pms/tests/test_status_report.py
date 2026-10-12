@@ -169,7 +169,11 @@ class TestStatusReport(TrackerTestCase):
 		self.assertEqual((log.recipient_count, log.delivery_status, log.sent_count), (2, "Queued", 0))
 		frappe.db.set_value(
 			"Email Queue Recipient",
-			{"parenttype": "Email Queue", "recipient": "a@example.com", "parent": ["in", self.queues_of(name)]},
+			{
+				"parenttype": "Email Queue",
+				"recipient": "a@example.com",
+				"parent": ["in", self.queues_of(name)],
+			},
 			"status",
 			"Sent",
 		)
@@ -177,7 +181,11 @@ class TestStatusReport(TrackerTestCase):
 		self.assertEqual((log.delivery_status, log.sent_count, log.failed_count), ("Partially Sent", 1, 0))
 		frappe.db.set_value(
 			"Email Queue Recipient",
-			{"parenttype": "Email Queue", "recipient": "b@example.com", "parent": ["in", self.queues_of(name)]},
+			{
+				"parenttype": "Email Queue",
+				"recipient": "b@example.com",
+				"parent": ["in", self.queues_of(name)],
+			},
 			"status",
 			"Error",
 		)
@@ -306,7 +314,9 @@ class TestStatusReport(TrackerTestCase):
 		self.assertNotIn("tickets were raised", quiet)
 		self.assertNotIn("Overall completion", quiet)
 		tiles_on = render_html(report, template="__builtin__")
-		tiles_off = render_html(report, sections={"delivered": 0, "created": 0, "completion": 0}, template="__builtin__")
+		tiles_off = render_html(
+			report, sections={"delivered": 0, "created": 0, "completion": 0}, template="__builtin__"
+		)
 		self.assertIn(">Delivered<", tiles_on)
 		for label in ("Delivered", "New tickets", "Complete"):
 			self.assertNotIn(f">{label}<", tiles_off)
@@ -323,7 +333,9 @@ class TestStatusReport(TrackerTestCase):
 		# the Additional tickets section has its own switch
 		for template in ("__builtin__", "PMS Status Report - Corporate", "PMS Status Report - Summary"):
 			self.assertIn("Additional tickets", render_html(noted, template=template), template)
-			self.assertNotIn("Additional tickets", render_html(noted, sections={"extra": 0}, template=template), template)
+			self.assertNotIn(
+				"Additional tickets", render_html(noted, sections={"extra": 0}, template=template), template
+			)
 		self.assertEqual(build_report(self.ALP, days(-7), days(0), [hidden.name], [hidden.name]).extra, [])
 		for name in ("PMS Status Report - Summary", "PMS Status Report - Summary Dark"):
 			self.assertIn("Hidden but added", render_html(report, template=name))
@@ -353,7 +365,9 @@ class TestStatusReport(TrackerTestCase):
 		same = status_for_sections(status, {"issues": 1, "time": 1, "waiting": 1})
 		self.assertEqual((same["level"], len(same["reasons"])), ("red", 3))
 		no_issues = status_for_sections(status, {"issues": 0, "time": 1, "waiting": 1})
-		self.assertEqual((no_issues["level"], no_issues["label"], no_issues["score"]), ("amber", "At Risk", 90))
+		self.assertEqual(
+			(no_issues["level"], no_issues["label"], no_issues["score"]), ("amber", "At Risk", 90)
+		)
 		clear = status_for_sections(status, {"issues": 0, "time": 0, "waiting": 0})
 		self.assertEqual((clear["level"], clear["score"]), ("green", 100))
 		self.assertEqual([r["level"] for r in clear["reasons"]], ["green"])
@@ -367,7 +381,6 @@ class TestStatusReport(TrackerTestCase):
 			layout_order,
 			visible_tickets,
 		)
-
 		from auri_pms.install import ensure_email_templates
 
 		ensure_email_templates()
@@ -389,7 +402,9 @@ class TestStatusReport(TrackerTestCase):
 		self.assertEqual(configured_order()[:2], ["in_progress", "delivered"])
 		self.assertEqual(len(configured_order()), 10)
 		self.assertTrue(first(render_html(report, template=corp), in_progress, delivered))
-		self.assertTrue(first(render_html(report, template=corp, order=["delivered"]), delivered, in_progress))
+		self.assertTrue(
+			first(render_html(report, template=corp, order=["delivered"]), delivered, in_progress)
+		)
 		self.assertEqual(clean_order(["time", "nope", "time"])[:2], ["time", "modules"])
 		self.assertEqual(layout_order('{% set default_order = ["plan", "risks"] %}')[:2], ["plan", "risks"])
 		# the ticket list of the page follows the order of the sections
@@ -398,7 +413,10 @@ class TestStatusReport(TrackerTestCase):
 			{"name": "A-2", "subject": "b", "section": "y", "key": "waiting"},
 		]
 		self.assertEqual(
-			[t["name"] for t in visible_tickets(tickets, {"delivered": 1, "waiting": 1}, ["waiting", "delivered"])],
+			[
+				t["name"]
+				for t in visible_tickets(tickets, {"delivered": 1, "waiting": 1}, ["waiting", "delivered"])
+			],
 			["A-2", "A-1"],
 		)
 

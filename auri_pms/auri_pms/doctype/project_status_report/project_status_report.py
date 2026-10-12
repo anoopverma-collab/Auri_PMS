@@ -26,9 +26,7 @@ class ProjectStatusReport(Document):
 		)
 		if not queues:
 			return  # entries are purged after a while; keep the last known state
-		statuses = frappe.get_all(
-			"Email Queue Recipient", filters={"parent": ["in", queues]}, pluck="status"
-		)
+		statuses = frappe.get_all("Email Queue Recipient", filters={"parent": ["in", queues]}, pluck="status")
 		sent, failed = statuses.count("Sent"), statuses.count("Error")
 		if not statuses:
 			return

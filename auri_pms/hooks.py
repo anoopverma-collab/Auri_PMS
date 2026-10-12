@@ -310,11 +310,13 @@ has_permission = {
 override_doctype_dashboards = {"Project": ["auri_pms.auri_pms.project_hooks.get_dashboard_data"]}
 
 scheduler_events = {
-	"hourly": ["auri_pms.auri_pms.doctype.project_status_report.project_status_report.refresh_pending_statuses"],
+	"hourly": [
+		"auri_pms.auri_pms.doctype.project_status_report.project_status_report.refresh_pending_statuses"
+	],
 	"daily": [
 		"auri_pms.auri_pms.tasks.send_due_digests",
 		"auri_pms.auri_pms.status_report.send_scheduled_reports",
-	]
+	],
 }
 
 global_search_doctypes = {"Default": [{"doctype": "Work Item", "index": 30}]}

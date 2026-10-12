@@ -30,11 +30,13 @@ class PMSSettings(Document):
 
 	def validate_risk_levels(self) -> None:
 		"""Medium < High < Critical, all inside the 1-25 score range."""
-		medium, high, critical = (cint(self.risk_medium_from), cint(self.risk_high_from), cint(self.risk_critical_from))
+		medium, high, critical = (
+			cint(self.risk_medium_from),
+			cint(self.risk_high_from),
+			cint(self.risk_critical_from),
+		)
 		if not 1 <= medium < high < critical <= 25:
-			frappe.throw(
-				_("Risk thresholds must increase from Medium to Critical and stay between 1 and 25")
-			)
+			frappe.throw(_("Risk thresholds must increase from Medium to Critical and stay between 1 and 25"))
 
 	def validate_health_thresholds(self) -> None:
 		"""Percentages stay between 0 and 100 and Off Track is never below At Risk."""
@@ -55,7 +57,12 @@ class PMSSettings(Document):
 			from auri_pms.auri_pms.status_report import parse_recipients
 
 			parse_recipients(self.report_default_recipients)  # raises on an invalid or too long list
-		for fieldname in ("release_due_soon_days", "backlog_growth_min_created", "score_red_penalty", "score_amber_penalty"):
+		for fieldname in (
+			"release_due_soon_days",
+			"backlog_growth_min_created",
+			"score_red_penalty",
+			"score_amber_penalty",
+		):
 			if cint(self.get(fieldname)) < 0:
 				frappe.throw(_("{0} cannot be negative").format(_(self.meta.get_label(fieldname))))
 		if flt(self.backlog_growth_ratio) < 1:

@@ -510,16 +510,16 @@ def get_status_report_html(
 	order: str | None = None,
 ) -> dict:
 	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
+	from auri_pms.auri_pms.health import status_for_sections
 	from auri_pms.auri_pms.status_report import (
 		build_report,
-		default_subject,
-		render_html,
 		current_order,
+		default_subject,
 		merge_recipients,
+		render_html,
 		section_switches,
 		visible_tickets,
 	)
-	from auri_pms.auri_pms.health import status_for_sections
 
 	report = build_report(project, from_date, to_date, parse_excluded(exclude), parse_included(include))
 	switches = section_switches(parse_sections(sections))
