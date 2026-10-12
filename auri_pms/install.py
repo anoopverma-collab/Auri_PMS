@@ -134,8 +134,33 @@ def template_html(filename: str) -> str:
 		return f.read()
 
 
+def ensure_template_flag() -> None:
+	"""Make sure Email Template has its *Enable for Auri PMS* checkbox.
+
+	On a fresh install Frappe runs after_install before it syncs the app's fixtures, so the field is created here
+	first; the fixture later finds it already in place."""
+	name = "Email Template-auri_pms_enabled"
+	if frappe.db.exists("Custom Field", name):
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Custom Field",
+			"dt": "Email Template",
+			"fieldname": "auri_pms_enabled",
+			"fieldtype": "Check",
+			"label": "Enable for Auri PMS",
+			"default": "0",
+			"description": "Offer this template for the client status report in Auri PMS",
+			"in_standard_filter": 1,
+			"insert_after": "subject",
+			"module": "Auri PMS",
+		}
+	).insert(ignore_permissions=True)
+
+
 def ensure_email_templates(overwrite: bool = False) -> None:
 	"""Create the ready-made status report Email Templates; an existing (possibly edited) one is kept unless ``overwrite``."""
+	ensure_template_flag()
 	for name, subject, filename in EMAIL_TEMPLATES:
 		values = {
 			"name": name,
