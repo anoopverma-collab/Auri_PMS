@@ -292,6 +292,8 @@ def visible_tickets(tickets: list[dict], switches: dict, order: list[str] | None
 def _load_default_layout() -> str:
 	"""The built-in layout (the first design of the report) lives with the ready-made templates."""
 	path = frappe.get_app_path("auri_pms", "templates", "emails", "pms_status_report_original.html")
+	# a fixed file shipped with the app; no user input is part of the path
+	# nosemgrep: frappe-security-file-traversal
 	with open(path, encoding="utf-8") as f:
 		return f.read()
 
@@ -472,9 +474,9 @@ def default_subject(report: frappe._dict, template: str | None = None) -> str:
 			.replace("{to_date}", frappe.utils.formatdate(report.to_date))
 		)[:140]
 	if template and template.subject:
-		return frappe.render_template(
-			template.subject, {"r": report, "report": report}
-		)  # nosemgrep: frappe-ssti
+		# the subject belongs to an Email Template that is enabled for Auri PMS (written by users who may edit Email Templates)
+		# nosemgrep: frappe-ssti
+		return frappe.render_template(template.subject, {"r": report, "report": report})
 	return _("{0}: status report {1} to {2}").format(
 		report.project.project_name,
 		frappe.utils.formatdate(report.from_date),
