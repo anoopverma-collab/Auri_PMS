@@ -32,7 +32,7 @@ A centralized platform for project planning, task management, timelines, effort 
 | Dashboards | Project Health (with a risk heat map and tickets by module), Portfolio (risks per project), My Work (risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
 | Themes and range | 8 themes in light and dark and a 1 month / 3 months / 6 months / Overall range, shared by all dashboards |
 | Reports | Work Item Summary, Time Log Summary, Release Progress, Overdue Work Items, Sprint Summary, Sprint Burndown, Client Dependencies |
-| Email | email a project's status report (preview, PDF, weekly schedule), daily due-date digests, optional email-to-ticket intake |
+| Email | email a project's status report (choice of layouts, sections you can switch and drag into order, tickets you can remove or add with a note, preview, PDF, weekly and monthly schedule, delivery tracking), daily due-date digests, optional email-to-ticket intake |
 
 ## Screenshots
 
@@ -145,6 +145,8 @@ Activity Types are left alone).
 | Where | What |
 |---|---|
 | **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth |
+| **PMS Settings > Risk & Health** | the Medium, High and Critical risk score levels and every project health threshold and score penalty (see *How the health status is worked out*) |
+| **PMS Settings > Status Report** | default Email Template, which sections the report includes, the Section Order table, default recipients and default subject (see *Client Status Report: layouts, sections and defaults*) |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
@@ -187,7 +189,7 @@ Every report that is sent is logged as a **Project Status Report**, so you can s
 | **Show on Portfolio** | the Portfolio dashboard (the banner and the project's status in the table) |
 | **Show in Client Status Report (email, PDF)** | the Client Status Report screen, the emailed report and its PDF |
 
-**How the health status is worked out.** The status is calculated live from the project's own data, using these checks:
+**How the health status is worked out.** The status is calculated live from the project's own data, using these checks (the percentages and days below are the defaults; change them in **PMS Settings > Risk & Health**):
 
 | Check | At Risk (amber) | Off Track (red) |
 |---|---|---|
@@ -204,6 +206,40 @@ Every report that is sent is logged as a **Project Status Report**, so you can s
 - **No data yet:** a project without tickets shows no status.
 
 This lets you keep the verdict internal (tick Hub and Portfolio only) while the client report shows just the facts, or show it everywhere once the project is healthy.
+
+### Client Status Report: layouts, sections and defaults
+
+Open **Client Status Report** from the sidebar, choose a project and period, preview the report, then **Email report** or
+**Download PDF**.
+
+**Layouts.** With no template chosen the report uses the built-in layout. The ready-made Email Templates are **Summary**,
+**Summary Dark**, **Corporate** and **Corporate Grey**. Make your own by writing an Email Template and ticking **Enable for Auri PMS**
+on it; only enabled templates appear in the pickers. Choose the default in **PMS Settings > Status Report**, or pick one for a single
+send with the **Email Template** field (or **Built-in layout**) on the report page.
+
+**Sections.** The sections are Progress by module, Waiting on client, Delivered, In progress, Coming up next, Additional tickets,
+Risks and issues, Plan, Risk register mitigation and Time spent, plus the summary figures (New tickets, Completion).
+
+* **Defaults:** in **PMS Settings > Status Report** tick the sections to include and drag the rows of **Section Order** (an empty
+  table keeps each layout's own order).
+* **For one report:** the **Sections** button on the report page shows each section with a drag handle and a checkbox. Applying
+  it changes the preview, the PDF and the emailed report; it is cleared when you change the project or period.
+* Scheduled (weekly and monthly) reports use the PMS Settings defaults.
+* Switching a section off also removes its summary figure and the status reasons that belong to it.
+
+**Tickets.** Every ticket of a section is listed. In **Tickets in this report** on the right you can remove a ticket from the
+current send (x), and add any ticket of the project with an optional note for the client (it appears under *Additional tickets*).
+Tick **Hide from Client Report** on a ticket to keep it out of every report and out of the client's health status.
+
+**Email defaults.** **Default Recipients** are added to each project's own recipients (dialog and scheduled sends); **Default Subject**
+is used when the chosen template has no subject (`{project}`, `{from_date}`, `{to_date}`).
+
+**Delivery.** Each sent report is a **Project Status Report** with *Emails Triggered*, *Delivered*, *Failed*, *Delivery Status*
+(Queued, Sent, Partially Sent, Failed) and the error; the status is refreshed from the Email Queue. A report over 10 MB is refused
+before sending; use **Download PDF** for very large reports.
+
+**PDF.** The PDF fills an A4 sheet edge to edge with the report's own colour on every page. For Calibri text in the PDF install the
+Carlito font on the server (`fonts-crosextra-carlito`).
 
 Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
 projects they are a member of, plus public projects. Inside a project the member's **Project Role**
