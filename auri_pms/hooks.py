@@ -1,7 +1,7 @@
 app_name = "auri_pms"
 app_title = "Auri PMS"
 app_publisher = "Anoop Verma"
-app_description = "Auri PMS (Project Management System). A centralized platform for project planning, task management, timelines, effort tracking, team collaboration, and delivery monitoring. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals, and management dashboards."
+app_description = "Auri PMS (Project Management System). A centralized platform for project planning, task management, timelines, effort tracking, team collaboration, and delivery monitoring. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals, and management dashboards, with risk tracking, project health status and client status reports (configurable layouts, sections and email defaults, PDF and delivery tracking)."
 app_email = "anoop.verma@aurigait.com"
 app_license = "mit"
 app_logo_url = "/assets/auri_pms/images/auri-pms-icon-256.png"
@@ -310,14 +310,19 @@ has_permission = {
 override_doctype_dashboards = {"Project": ["auri_pms.auri_pms.project_hooks.get_dashboard_data"]}
 
 scheduler_events = {
+	"hourly": [
+		"auri_pms.auri_pms.doctype.project_status_report.project_status_report.refresh_pending_statuses"
+	],
 	"daily": [
 		"auri_pms.auri_pms.tasks.send_due_digests",
 		"auri_pms.auri_pms.status_report.send_scheduled_reports",
-	]
+	],
 }
 
 global_search_doctypes = {"Default": [{"doctype": "Work Item", "index": 30}]}
 
 app_include_js = "auri_pms.bundle.js"
+
+boot_session = "auri_pms.auri_pms.boot.boot_session"
 
 doctype_js = {"Project": "public/js/project.js"}

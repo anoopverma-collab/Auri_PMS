@@ -19,6 +19,7 @@
 		"dependent_on_client",
 		"client_dependency_note",
 		"client_dependency_since",
+		"hide_from_client_report",
 		"author",
 		"column_break_1",
 		"start_date",
@@ -157,6 +158,13 @@
 			"label": "Waiting Since",
 			"no_copy": 1,
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"description": "Keep this ticket out of every client status report",
+			"fieldname": "hide_from_client_report",
+			"fieldtype": "Check",
+			"label": "Hide from Client Report"
 		},
 		{
 			"fieldname": "author",

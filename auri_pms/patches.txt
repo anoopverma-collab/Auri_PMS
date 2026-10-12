@@ -12,3 +12,12 @@ auri_pms.patches.v1_0.rename_tracker_sidebar_to_auri_pms
 auri_pms.patches.v1_0.remove_report_frequency_field
 # Patches added in this section will be executed after doctypes are migrated
 auri_pms.patches.v1_0.enable_pms_on_existing_projects
+auri_pms.patches.v1_0.set_risk_health_thresholds
+auri_pms.patches.v1_0.set_status_report_settings
+auri_pms.patches.v1_0.refresh_status_report_email_templates
+auri_pms.patches.v1_0.set_report_summary_switches
+auri_pms.patches.v1_0.consolidate_letter_templates
+auri_pms.patches.v1_0.list_all_report_tickets
+auri_pms.patches.v1_0.remove_letter_templates
+auri_pms.patches.v1_0.set_extra_tickets_switch
+auri_pms.patches.v1_0.rename_corporate_dark_to_grey

@@ -159,11 +159,11 @@ class TestRiskRegister(TrackerTestCase):
 		self.assertEqual([r["title"] for r in rows], ["Shown to client"])
 		self.assertEqual(rows[0]["mitigation"], "Add a second supplier")
 		report = build_report(self.ALP, add_days(today(), -7), today())
-		html = render_html(report)
+		html = render_html(report, template="__builtin__")
 		self.assertIn("Risks and mitigation", html)
 		self.assertIn("Shown to client", html)
 		self.assertNotIn("Internal only", html)
 
 	def test_client_report_has_no_risk_section_without_risks(self):
 		report = build_report(self.ALP, add_days(today(), -7), today())
-		self.assertNotIn("Risks and mitigation", render_html(report))
+		self.assertNotIn("Risks and mitigation", render_html(report, template="__builtin__"))

@@ -14,6 +14,13 @@
 		"sent_on",
 		"sent_by",
 		"scheduled",
+		"section_delivery",
+		"recipient_count",
+		"sent_count",
+		"failed_count",
+		"column_break_2",
+		"delivery_status",
+		"error",
 		"section_to",
 		"sent_to",
 		"section_body",
@@ -89,6 +96,53 @@
 			"read_only": 1
 		},
 		{
+			"fieldname": "section_delivery",
+			"fieldtype": "Section Break",
+			"label": "Delivery"
+		},
+		{
+			"default": "0",
+			"fieldname": "recipient_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Emails Triggered",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "sent_count",
+			"fieldtype": "Int",
+			"label": "Delivered",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "failed_count",
+			"fieldtype": "Int",
+			"label": "Failed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Queued",
+			"fieldname": "delivery_status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Delivery Status",
+			"options": "Queued\nSent\nPartially Sent\nFailed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "error",
+			"fieldtype": "Small Text",
+			"label": "Error",
+			"read_only": 1
+		},
+		{
 			"fieldname": "section_to",
 			"fieldtype": "Section Break",
 			"label": "Recipients"
@@ -113,7 +167,7 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-12 14:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Project Status Report",

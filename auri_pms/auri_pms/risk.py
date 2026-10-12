@@ -9,6 +9,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, today
 
+from auri_pms.auri_pms.utils import setting
+
 OPEN_STATUSES = ("Identified", "Mitigating", "Monitoring")
 LEVELS = ("Critical", "High", "Medium", "Low")
 LIST_FIELDS = [
@@ -32,13 +34,23 @@ def scale_value(label: str | None) -> int:
 	return cint(match.group(1)) if match else 0
 
 
+def risk_thresholds() -> frappe._dict:
+	"""Lowest score of the Medium, High and Critical levels (PMS Settings)."""
+	return frappe._dict(
+		medium=cint(setting("risk_medium_from")),
+		high=cint(setting("risk_high_from")),
+		critical=cint(setting("risk_critical_from")),
+	)
+
+
 def risk_level(score: int) -> str:
-	"""Low 1-4, Medium 5-9, High 10-14, Critical 15-25."""
-	if score >= 15:
+	"""Level of a score; with the default thresholds Low 1-4, Medium 5-9, High 10-14, Critical 15-25."""
+	limits = risk_thresholds()
+	if score >= limits.critical:
 		return "Critical"
-	if score >= 10:
+	if score >= limits.high:
 		return "High"
-	if score >= 5:
+	if score >= limits.medium:
 		return "Medium"
 	return "Low" if score else ""
 

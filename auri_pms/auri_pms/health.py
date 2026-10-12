@@ -11,7 +11,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.risk import risk_reasons
-from auri_pms.auri_pms.utils import get_burndown
+from auri_pms.auri_pms.utils import get_burndown, setting
 
 AGE_BUCKETS = (
 	(7, "0-7d"),
@@ -98,8 +98,10 @@ def health_visible(project: str, screen: str) -> bool:
 	return bool(cint(value))
 
 
-def get_health(project: str, period: str = "3m") -> frappe._dict:
-	"""Compute every number of the Project Health dashboard (permission aware through frappe.get_list)."""
+def get_health(project: str, period: str = "3m", client_view: bool = False) -> frappe._dict:
+	"""Compute every number of the Project Health dashboard (permission aware through frappe.get_list).
+
+	``client_view`` leaves out tickets flagged "Hide from Client Report" (the status shown to the client)."""
 	period = period if period in PERIODS else "3m"
 	today_ = getdate(today())
 	items = frappe.get_list(
@@ -122,9 +124,12 @@ def get_health(project: str, period: str = "3m") -> frappe._dict:
 			"dependent_on_client",
 			"client_dependency_since",
 			"project_module",
+			"hide_from_client_report",
 		],
 		limit_page_length=0,
 	)
+	if client_view:
+		items = [i for i in items if not cint(i.hide_from_client_report)]
 	entries = frappe.get_list(
 		"Time Entry",
 		filters={"project": project},
@@ -458,6 +463,7 @@ def release_health(project: str, today_: date) -> list[dict]:
 		order_by="due_date asc",
 		limit_page_length=0,
 	)
+	safe_pct, due_soon_days = flt(setting("release_progress_pct")), cint(setting("release_due_soon_days"))
 	result = []
 	for row in rows:
 		days_left = (getdate(row.due_date) - today_).days if row.due_date else None
@@ -465,8 +471,8 @@ def release_health(project: str, today_: date) -> list[dict]:
 		risk = "ok"
 		if days_left is not None and pct < 100:
 			if days_left < 0:
-				risk = "late" if pct < 80 else "risk"  # past due: Off track only when well behind
-			elif days_left <= 7 and pct < 80:
+				risk = "late" if pct < safe_pct else "risk"  # past due: Off track only when well behind
+			elif days_left <= due_soon_days and pct < safe_pct:
 				risk = "risk"
 		result.append(
 			{
@@ -486,24 +492,27 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 	"""Traffic-light status with the reasons behind it."""
 	reasons: list[dict] = []
 
-	def add(level: str, text: str) -> None:
-		reasons.append({"level": level, "text": text})
+	def add(level: str, text: str, section: str | None = None) -> None:
+		"""``section`` is the status report section the reason belongs to (None: always shown)."""
+		reasons.append({"level": level, "text": text, "section": section})
 
 	if not flow["total"]:
 		return {"level": "none", "label": _("No data yet"), "score": None, "reasons": []}
-	if flow["overdue_delivery_pct"] > 25:
+	if flow["overdue_delivery_pct"] > cint(setting("overdue_red_pct")):
 		add(
 			"red",
 			_("{0}% of open tickets are overdue ({1})").format(
 				flow["overdue_delivery_pct"], flow["overdue_delivery"]
 			),
+			"issues",
 		)
-	elif flow["overdue_delivery_pct"] > 10:
+	elif flow["overdue_delivery_pct"] > cint(setting("overdue_amber_pct")):
 		add(
 			"amber",
 			_("{0}% of open tickets are overdue ({1})").format(
 				flow["overdue_delivery_pct"], flow["overdue_delivery"]
 			),
+			"issues",
 		)
 	sprint = frappe.db.get_value("Sprint", {"project": project, "status": "Active"}, "name")
 	if sprint:
@@ -511,20 +520,21 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 		scope = get_burndown(sprint)["total"]
 		if rows and scope:
 			gap = (rows[-1]["actual"] - rows[-1]["ideal"]) / scope
-			if gap > 0.25:
-				add("red", _("Active sprint is well behind the ideal burndown"))
-			elif gap > 0.10:
-				add("amber", _("Active sprint is slightly behind the ideal burndown"))
+			if gap > cint(setting("burndown_red_pct")) / 100:
+				add("red", _("Active sprint is well behind the ideal burndown"), "plan")
+			elif gap > cint(setting("burndown_amber_pct")) / 100:
+				add("amber", _("Active sprint is slightly behind the ideal burndown"), "plan")
 	if time["burn_pct"] is not None:
 		done_share = flow["estimated_closed_hours"] * 100 / time["estimated"] if time["estimated"] else 0
 		if time["burn_pct"] > 100:
-			add("red", _("Spent hours exceed the estimate ({0}%)").format(time["burn_pct"]))
-		elif time["burn_pct"] - done_share > 25:
+			add("red", _("Spent hours exceed the estimate ({0}%)").format(time["burn_pct"]), "time")
+		elif time["burn_pct"] - done_share > cint(setting("effort_ahead_amber_pct")):
 			add(
 				"amber",
 				_("Effort used ({0}%) is ahead of work completed ({1}%)").format(
 					time["burn_pct"], flt(done_share, 0)
 				),
+				"time",
 			)
 	for release in release_health(project, today_):
 		if release["risk"] == "late":
@@ -533,6 +543,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 				_("Release {0} is past its due date at {1}%").format(
 					release["label"], flt(release["percent"], 0)
 				),
+				"plan",
 			)
 		elif release["risk"] == "risk":
 			add(
@@ -540,11 +551,14 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 				_("Release {0} is at {1}% and close to or just past its due date").format(
 					release["label"], flt(release["percent"], 0)
 				),
+				"plan",
 			)
 	for reason in risk_reasons(project):
-		add(reason["level"], reason["text"])
-	if flow["created_4w"] > flow["resolved_4w"] * 1.5 and flow["created_4w"] >= 4:
-		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"))
+		add(reason["level"], reason["text"], "risks")
+	if flow["created_4w"] > flow["resolved_4w"] * flt(setting("backlog_growth_ratio")) and flow[
+		"created_4w"
+	] >= cint(setting("backlog_growth_min_created")):
+		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"), "in_progress")
 	if flow["client_dependent"]:  # informational: shown, but neither the level nor the score changes
 		waiting, oldest = flow["client_dependent"], flow["client_oldest_days"] or 0
 		if waiting == 1:
@@ -553,7 +567,13 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 			)
 		else:
 			text = _("{0} tickets are waiting on the client (oldest {1} days)").format(waiting, oldest)
-		add("info", text)
+		add("info", text, "waiting")
+	return status_from_reasons(reasons)
+
+
+def status_from_reasons(reasons: list[dict]) -> dict:
+	"""Level, label and score that follow from a list of reasons (the "all clear" line is added here)."""
+	reasons = [r for r in reasons if r["level"] != "green"]
 	level = (
 		"red"
 		if any(r["level"] == "red" for r in reasons)
@@ -564,10 +584,25 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 	score = max(
 		0,
 		100
-		- 25 * sum(r["level"] == "red" for r in reasons)
-		- 10 * sum(r["level"] == "amber" for r in reasons),
+		- cint(setting("score_red_penalty")) * sum(r["level"] == "red" for r in reasons)
+		- cint(setting("score_amber_penalty")) * sum(r["level"] == "amber" for r in reasons),
 	)
 	label_ = {"green": _("On Track"), "amber": _("At Risk"), "red": _("Off Track")}[level]
 	if level == "green":
-		add("green", _("No schedule, effort, backlog or risk-register issues detected"))
+		reasons = [
+			*reasons,
+			{
+				"level": "green",
+				"text": _("No schedule, effort, backlog or risk-register issues detected"),
+				"section": None,
+			},
+		]
 	return {"level": level, "label": label_, "score": score, "reasons": reasons}
+
+
+def status_for_sections(status: dict, switches: dict) -> dict:
+	"""The status as it reads when only the report sections that are switched on are considered."""
+	if not status or status.get("level") == "none":
+		return status
+	reasons = [r for r in status["reasons"] if not r.get("section") or switches.get(r["section"])]
+	return status_from_reasons(reasons)

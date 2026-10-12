@@ -1,0 +1,92 @@
+{% macro section(title, count=None) %}<tr><td style="padding:28px 36px 8px;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0a3d62;border-bottom:1px solid #0a3d62;padding-bottom:6px;">{{ title }}{% if count is not none %}<span style="font-weight:400;color:#6b7785;"> &nbsp;({{ count }})</span>{% endif %}</div></td></tr>{% endmacro %}
+{% macro th(text, extra="") %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7785;padding:8px 8px 6px 0;border-bottom:1px solid #c9d1d9;{{ extra }}">{{ text }}</td>{% endmacro %}
+{% macro td(text, extra="") %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#1f2933;padding:8px 8px 8px 0;border-bottom:1px solid #e8ebee;vertical-align:top;{{ extra }}">{{ text | e }}</td>{% endmacro %}
+{% macro tid(name) %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;color:#0a3d62;padding:8px 10px 8px 0;border-bottom:1px solid #e8ebee;white-space:nowrap;vertical-align:top;">{{ name | e }}</td>{% endmacro %}
+{% macro tsub(text, module) %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#1f2933;padding:8px 8px 8px 0;border-bottom:1px solid #e8ebee;vertical-align:top;">{{ text | e }}{% if module %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;color:#6b7785;margin-top:1px;">{{ module | e }}</div>{% endif %}</td>{% endmacro %}
+{% macro more(n) %}{% if n %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;color:#6b7785;padding:8px 0 0;">+ {{ n }} {{ _("more") }}</div>{% endif %}{% endmacro %}
+{% macro body(inner) %}<tr><td style="padding:4px 36px 0;">{{ caller() }}</td></tr>{% endmacro %}
+{% set green, amber, red = "#1b7a4b", "#a15c07", "#b42318" %}
+<div style="background:#f4f6f8;padding:28px 12px;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;color:#1f2933;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #d9dee4;border-top:4px solid #008ee0;">
+<tr><td style="padding:30px 36px 20px;border-bottom:1px solid #d9dee4;">
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6b7785;">{{ _("Project status report") }}</div>
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:24px;font-weight:600;color:#0a3d62;margin-top:6px;">{{ r.project.project_name | e }}</div>
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#6b7785;margin-top:4px;">{{ _("Reporting period") }}: {{ frappe.utils.formatdate(r.from_date) }} &ndash; {{ frappe.utils.formatdate(r.to_date) }}</div>
+</td></tr>
+{% if r.status %}<tr><td style="padding:22px 36px 0;">
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6b7785;">{{ _("Overall status") }}</div>
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:18px;font-weight:600;color:{{ colour }};margin-top:3px;">{{ r.status.label | e }}{% if r.status.score is not none %}<span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:400;color:#6b7785;"> &nbsp;{{ r.status.score }} / 100</span>{% endif %}</div>
+  {% if r.status.reasons %}<ul style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:#3e4c59;">{% for reason in r.status.reasons %}<li>{{ reason.text | e }}</li>{% endfor %}</ul>{% endif %}
+</td></tr>{% endif %}
+{% if note %}<tr><td style="padding:20px 36px 0;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;border-left:3px solid #c9d1d9;padding:2px 0 2px 14px;font-size:14px;line-height:1.65;color:#3e4c59;">{{ note | e | replace("\n", "<br>") | safe }}</div></td></tr>{% endif %}
+<tr><td style="padding:24px 36px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;border-top:1px solid #d9dee4;border-bottom:1px solid #d9dee4;">{% for row in tiles | batch(4) %}{% set last_row = loop.last %}<tr>{% for t in row %}<td align="center" valign="top" width="25%" style="width:25%;padding:14px 4px;{% if not loop.last %}border-right:1px solid #e8ebee;{% endif %}{% if not last_row %}border-bottom:1px solid #e8ebee;{% endif %}"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:22px;font-weight:600;color:{{ red if (t[1] == _('Overdue') and t[0]) else '#0a3d62' }};">{{ t[0] }}</div><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6b7785;margin-top:3px;">{{ t[1] }}</div></td>{% endfor %}{% for _pad in range(4 - row | length) %}<td width="25%" style="width:25%;"></td>{% endfor %}</tr>{% endfor %}</table>
+</td></tr>
+<tr><td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;padding:16px 36px 0;font-size:13px;line-height:1.7;color:#3e4c59;">
+  {% if show.delivered %}{{ r.summary.delivered }} {{ _("tickets were delivered") }}. {% endif %}{% if show.created %}{{ r.summary.created }} {{ _("tickets were raised in this period") }}. {% endif %}{% if show.in_progress %}{{ r.summary.open }} {{ _("tickets remain open") }}{% if show.issues and r.summary.overdue %} ({{ r.summary.overdue }} {{ _("overdue") }}){% endif %}{% if show.waiting and r.summary.waiting %}, {{ r.summary.waiting }} {{ _("of which are waiting for client input") }}{% endif %}. {% endif %}{% if show.completion %}{{ _("Overall completion stands at") }} {{ r.summary.completion_pct | int }}%{% endif %}{% if show.time and r.summary.hours %}{{ ", " ~ _("with") if show.completion else _("Time logged") ~ ":" }} {{ r.summary.hours }} {{ _("hours logged") }} ({{ r.summary.billable }} {{ _("billable") }}, {{ r.summary.non_billable }} {{ _("non-billable") }}){% endif %}.
+</td></tr>
+
+{% macro sec_waiting() %}
+{% if show.waiting and r.waiting %}{{ section(_("Action required from the client"), r.summary.waiting) }}
+{% call body("") %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Information needed")) }}{{ th(_("Waiting"), "text-align:right;") }}</tr>
+{% for i in r.waiting %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.client_dependency_note or "") }}{{ td(i.days ~ " " ~ _("days"), "text-align:right;white-space:nowrap;color:" ~ amber ~ ";") }}</tr>{% endfor %}</table>{{ more(r.waiting_more) }}{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_delivered() %}
+{% if show.delivered %}{{ section(_("Delivered in this period"), r.summary.delivered) }}
+{% call body("") %}{% if r.delivered %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Type")) }}{{ th(_("Closed"), "text-align:right;") }}</tr>
+{% for i in r.delivered %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.tracker) }}{{ td(frappe.utils.formatdate(i.closed_on), "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{{ more(r.delivered_more) }}{% else %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#6b7785;">{{ _("No tickets were closed in this period.") }}</div>{% endif %}{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_in_progress() %}
+{% if show.in_progress %}{{ section(_("In progress"), r.in_progress | length + r.in_progress_more) }}
+{% call body("") %}{% if r.in_progress %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Status")) }}{{ th(_("Done"), "text-align:right;") }}{{ th(_("Due"), "text-align:right;") }}</tr>
+{% for i in r.in_progress %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.status) }}{{ td(i.done_percent | int ~ "%", "text-align:right;") }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "", "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{{ more(r.in_progress_more) }}{% else %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#6b7785;">{{ _("Nothing is in progress at the moment.") }}</div>{% endif %}{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_next_up() %}
+{% if show.next_up and r.next_up %}{{ section(_("Scheduled next")) }}
+{% call body("") %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Priority")) }}{{ th(_("Due"), "text-align:right;") }}</tr>
+{% for i in r.next_up %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.priority) }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "", "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_extra() %}
+{% if show.extra and r.extra %}{{ section(_("Additional tickets"), r.extra | length) }}
+{% call body("") %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Status")) }}{{ th(_("Note")) }}</tr>
+{% for i in r.extra %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.status) }}{{ td(i.report_note) }}</tr>{% endfor %}</table>{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_issues() %}
+{% if show.issues and (r.overdue or r.blocked or risk_releases) %}{{ section(_("Issues and delivery risks")) }}
+{% call body("") %}
+{% if r.overdue %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:600;padding:2px 0 4px;">{{ _("Overdue tickets") }} ({{ r.summary.overdue }})</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+{% for i in r.overdue %}<tr>{{ tid(i.name) }}{{ tsub(i.subject, i.module) }}{{ td(i.days ~ " " ~ _("days overdue"), "text-align:right;white-space:nowrap;color:" ~ red ~ ";") }}</tr>{% endfor %}</table>{{ more(r.overdue_more) }}{% endif %}
+{% if r.blocked %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:600;padding:14px 0 4px;">{{ _("Blocked tickets") }}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+{% for i in r.blocked %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(_("Blocked by") ~ " " ~ i.blocked_by | join(", ")) }}</tr>{% endfor %}</table>{% endif %}
+{% for rel in risk_releases %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:{{ amber }};padding-top:12px;"><b>{{ _("Release") }} {{ rel.label | e }}:</b> {{ rel.percent | int }}% {{ _("complete") }}{% if rel.days_left is not none %}, {% if rel.days_left < 0 %}{{ -rel.days_left }} {{ _("days past the due date") }}{% else %}{{ rel.days_left }} {{ _("days remaining") }}{% endif %}{% endif %}</div>{% endfor %}
+{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_plan() %}
+{% if show.plan and (r.sprint or r.releases) %}{{ section(_("Plan")) }}
+{% call body("") %}
+{% if r.sprint %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.7;"><b>{{ _("Current sprint") }}:</b> {{ r.sprint.sprint_name | e }} ({{ frappe.utils.formatdate(r.sprint.start_date) }} &ndash; {{ frappe.utils.formatdate(r.sprint.end_date) }}), {{ r.sprint.closed_items }} {{ _("of") }} {{ r.sprint.total_items }} {{ _("tickets closed") }} ({{ r.sprint.percent_complete | int }}%){% if r.sprint.goal %}<br><span style="color:#6b7785;">{{ _("Goal") }}: {{ r.sprint.goal | e }}</span>{% endif %}</div>{% endif %}
+{% if r.last_sprint %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.7;padding-top:6px;"><b>{{ _("Last completed sprint") }}:</b> {{ r.last_sprint.sprint_name | e }}, {{ r.last_sprint.closed_items }} {{ _("tickets delivered") }}</div>{% endif %}
+{% if r.releases %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;"><tr>{{ th(_("Release")) }}{{ th(_("Due date")) }}{{ th(_("Progress"), "text-align:right;") }}</tr>
+{% for rel in r.releases %}<tr>{{ td(rel.label) }}{{ td(frappe.utils.formatdate(rel.due_date) if rel.due_date else _("Not set")) }}{{ td(rel.percent | int ~ "%", "text-align:right;") }}</tr>{% endfor %}</table>{% endif %}
+{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_risks() %}
+{% if show.risks and r.risks %}{{ section(_("Risks and mitigation"), r.risks | length) }}
+{% call body("") %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Risk")) }}{{ th(_("Level")) }}{{ th(_("Mitigation")) }}{{ th(_("Due"), "text-align:right;") }}</tr>
+{% for k in r.risks %}<tr>{{ td(k.title) }}{{ td(k.risk_level, "font-weight:600;color:" ~ (red if k.risk_level in ("Critical", "High") else amber if k.risk_level == "Medium" else green) ~ ";") }}{{ td(k.mitigation) }}{{ td(frappe.utils.formatdate(k.mitigation_due) if k.mitigation_due else "", "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_modules() %}
+{% if show.modules and r.modules %}{{ section(_("Progress by module")) }}
+{% call body("") %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Module")) }}{{ th(_("Delivered"), "text-align:right;") }}{{ th(_("Open"), "text-align:right;") }}</tr>
+{% for m in r.modules %}<tr>{{ td(m.label) }}{{ td(m.delivered, "text-align:right;") }}{{ td(m.open, "text-align:right;") }}</tr>{% endfor %}</table>{% endcall %}{% endif %}
+{% endmacro %}
+{% macro sec_time() %}
+{% if show.time %}{{ section(_("Time recorded")) }}
+{% call body("") %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.7;">{{ r.summary.hours }} {{ _("hours in total") }}: {{ r.summary.billable }} {{ _("billable") }} {{ _("and") }} {{ r.summary.non_billable }} {{ _("non-billable") }}.</div>
+{% if r.activities %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;"><tr>{{ th(_("Activity")) }}{{ th(_("Billable"), "text-align:right;") }}{{ th(_("Non-billable"), "text-align:right;") }}</tr>{% for a in r.activities %}<tr>{{ td(a.label) }}{{ td(a.billable ~ " h", "text-align:right;") }}{{ td(a.non_billable ~ " h", "text-align:right;") }}</tr>{% endfor %}</table>{% endif %}{% endcall %}{% endif %}
+{% endmacro %}
+{% set default_order = ["waiting", "delivered", "in_progress", "next_up", "extra", "issues", "plan", "risks", "modules", "time"] %}
+{% set blocks = {"waiting": sec_waiting, "delivered": sec_delivered, "in_progress": sec_in_progress, "next_up": sec_next_up, "extra": sec_extra, "issues": sec_issues, "plan": sec_plan, "risks": sec_risks, "modules": sec_modules, "time": sec_time} %}
+{% for key in order %}{% if key in blocks %}{{ blocks[key]() }}{% endif %}{% endfor %}
+<tr><td style="padding:32px 36px 24px;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;border-top:1px solid #d9dee4;padding-top:12px;font-size:11px;color:#6b7785;">{{ _("Sent through Auri PMS") }} &middot; {{ _("generated on") }} {{ r.generated }}</div></td></tr>
+</table></div>

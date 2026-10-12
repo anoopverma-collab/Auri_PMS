@@ -1,0 +1,61 @@
+{% macro section(title) %}<tr><td style="padding:24px 36px 8px;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0a3d62;border-bottom:1px solid #0a3d62;padding-bottom:6px;">{{ title }}</div></td></tr>{% endmacro %}
+{% macro th(text, extra="") %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7785;padding:8px 8px 6px 0;border-bottom:1px solid #c9d1d9;{{ extra }}">{{ text }}</td>{% endmacro %}
+{% macro td(text, extra="") %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#1f2933;padding:7px 8px 7px 0;border-bottom:1px solid #e8ebee;vertical-align:top;{{ extra }}">{{ text | e }}</td>{% endmacro %}
+{% macro tid(name) %}<td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;color:#0a3d62;padding:7px 10px 7px 0;border-bottom:1px solid #e8ebee;white-space:nowrap;vertical-align:top;">{{ name | e }}</td>{% endmacro %}
+{% set green, amber, red = "#1b7a4b", "#a15c07", "#b42318" %}
+<div style="background:#f4f6f8;padding:28px 12px;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;color:#1f2933;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #d9dee4;border-top:4px solid #008ee0;">
+<tr><td style="padding:28px 36px 18px;border-bottom:1px solid #d9dee4;">
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6b7785;">{{ _("Status report summary") }}</div>
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:22px;font-weight:600;color:#0a3d62;margin-top:6px;">{{ r.project.project_name | e }}</div>
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#6b7785;margin-top:4px;">{{ frappe.utils.formatdate(r.from_date) }} &ndash; {{ frappe.utils.formatdate(r.to_date) }}</div>
+</td></tr>
+{% if r.status %}<tr><td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;padding:20px 36px 0;font-size:14px;"><b style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;color:#6b7785;font-size:11px;letter-spacing:.09em;text-transform:uppercase;">{{ _("Overall status") }}</b><br><span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:17px;font-weight:600;color:{{ colour }};">{{ r.status.label | e }}</span>{% for reason in r.status.reasons %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#3e4c59;line-height:1.6;">&ndash; {{ reason.text | e }}</div>{% endfor %}</td></tr>{% endif %}
+{% if note %}<tr><td style="padding:18px 36px 0;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;border-left:3px solid #c9d1d9;padding:2px 0 2px 14px;font-size:14px;line-height:1.65;color:#3e4c59;">{{ note | e | replace("\n", "<br>") | safe }}</div></td></tr>{% endif %}
+<tr><td style="padding:20px 36px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #d9dee4;border-bottom:1px solid #d9dee4;"><tr>
+  {% for t in tiles[:6] %}<td align="center" valign="top" style="padding:12px 2px;{% if not loop.last %}border-right:1px solid #e8ebee;{% endif %}"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:20px;font-weight:600;color:#0a3d62;">{{ t[0] }}</div><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#6b7785;margin-top:3px;">{{ t[1] }}</div></td>{% endfor %}
+  </tr></table>
+</td></tr>
+<tr><td style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;padding:16px 36px 0;font-size:14px;line-height:1.7;color:#3e4c59;">{% if show.delivered %}{{ r.summary.delivered }} {{ _("tickets were delivered in this period") }}. {% endif %}{% if show.in_progress %}{{ r.summary.open }} {{ _("tickets remain open") }}{% if show.issues and r.summary.overdue %}, {{ r.summary.overdue }} {{ _("of them overdue") }}{% endif %}. {% endif %}{% if show.waiting and r.summary.waiting %}{{ r.summary.waiting }} {{ _("tickets are waiting for your input") }}. {% endif %}{% if show.completion %}{{ _("The project is") }} {{ r.summary.completion_pct | int }}% {{ _("complete") }}.{% endif %}</td></tr>
+
+{% macro sec_waiting() %}
+{% if show.waiting and r.waiting %}{{ section(_("Action required")) }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Information needed")) }}</tr>
+{% for i in r.waiting %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(i.client_dependency_note or "") }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_delivered() %}
+{% if show.delivered and r.delivered %}{{ section(_("Delivered in this period") ~ " (" ~ r.summary.delivered ~ ")") }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Closed"), "text-align:right;") }}</tr>
+{% for i in r.delivered %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(frappe.utils.formatdate(i.closed_on), "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.delivered_more %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;color:#6b7785;padding-top:8px;">+ {{ r.delivered_more }} {{ _("more") }}</div>{% endif %}</td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_in_progress() %}
+{% if show.in_progress and r.in_progress %}{{ section(_("In progress") ~ " (" ~ (r.in_progress | length + r.in_progress_more) ~ ")") }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Status")) }}{{ th(_("Due"), "text-align:right;") }}</tr>
+{% for i in r.in_progress %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(i.status) }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "", "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table>{% if r.in_progress_more %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12px;color:#6b7785;padding-top:8px;">+ {{ r.in_progress_more }} {{ _("more") }}</div>{% endif %}</td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_next_up() %}
+{% if show.next_up and r.next_up %}{{ section(_("Scheduled next")) }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Due"), "text-align:right;") }}</tr>
+{% for i in r.next_up %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(frappe.utils.formatdate(i.due_date) if i.due_date else "", "text-align:right;white-space:nowrap;") }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_extra() %}
+{% if show.extra and r.extra %}{{ section(_("Additional tickets")) }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Ticket")) }}{{ th(_("Summary")) }}{{ th(_("Status")) }}{{ th(_("Note")) }}</tr>
+{% for i in r.extra %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(i.status) }}{{ td(i.report_note) }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_issues() %}
+{% if show.issues and r.overdue %}{{ section(_("Overdue tickets") ~ " (" ~ r.summary.overdue ~ ")") }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+{% for i in r.overdue %}<tr>{{ tid(i.name) }}{{ td(i.subject) }}{{ td(i.days ~ " " ~ _("days overdue"), "text-align:right;white-space:nowrap;color:" ~ red ~ ";") }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% endmacro %}
+{% macro sec_risks() %}
+{% if show.risks and r.risks %}{{ section(_("Risks and mitigation")) }}
+<tr><td style="padding:0 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>{{ th(_("Risk")) }}{{ th(_("Level")) }}{{ th(_("Mitigation")) }}</tr>
+{% for k in r.risks %}<tr>{{ td(k.title) }}{{ td(k.risk_level, "font-weight:600;color:" ~ (red if k.risk_level in ("Critical", "High") else amber if k.risk_level == "Medium" else green) ~ ";") }}{{ td(k.mitigation) }}</tr>{% endfor %}</table></td></tr>{% endif %}
+{% endmacro %}
+{% set default_order = ["waiting", "delivered", "in_progress", "next_up", "extra", "issues", "risks"] %}
+{% set blocks = {"waiting": sec_waiting, "delivered": sec_delivered, "in_progress": sec_in_progress, "next_up": sec_next_up, "extra": sec_extra, "issues": sec_issues, "risks": sec_risks} %}
+{% for key in order %}{% if key in blocks %}{{ blocks[key]() }}{% endif %}{% endfor %}
+<tr><td style="padding:30px 36px 22px;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;border-top:1px solid #d9dee4;padding-top:12px;font-size:11px;color:#6b7785;">{{ _("Sent through Auri PMS") }} &middot; {{ _("generated on") }} {{ r.generated }}</div></td></tr>
+</table></div>

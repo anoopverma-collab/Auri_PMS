@@ -74,6 +74,14 @@ def get_settings():
 	return frappe.get_cached_doc("PMS Settings")
 
 
+def setting(fieldname: str):
+	"""A PMS Settings value; a threshold never saved (new install) falls back to the field default."""
+	value = get_settings().get(fieldname)
+	if value in (None, ""):
+		value = frappe.get_meta("PMS Settings").get_field(fieldname).default
+	return value
+
+
 # --------------------------------------------------------------------------- capabilities
 def _role_flags(role: str | None) -> dict:
 	"""Return the capability flags of a Project Role (all False when the role is missing)."""
