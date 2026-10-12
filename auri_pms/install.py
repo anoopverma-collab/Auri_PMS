@@ -50,6 +50,7 @@ ACTIVITY_TYPES = ["Development", "Design", "Testing", "Meeting", "Support", "Doc
 def after_install() -> None:
 	"""Create default data once (idempotent) and prepare the Project permissions and Kanban board."""
 	create_default_data()
+	ensure_email_templates()
 	ensure_kanban_board()
 	ensure_project_permissions()
 	ensure_workspace_docs()
@@ -69,6 +70,8 @@ def after_migrate() -> None:
 	"""Keep Project permissions, the sidebar and the app icon in place after migrate; master data is never touched."""
 	ensure_project_permissions()
 	ensure_workspace_docs()
+	ensure_email_templates()
+	enable_shipped_email_templates()
 
 
 def create_default_data() -> None:
@@ -110,6 +113,50 @@ def create_default_data() -> None:
 		)
 		settings.flags.ignore_permissions = True
 		settings.save()
+
+
+# Email Template name, subject and file in templates/emails (pick one in PMS Settings > Status Report)
+_REPORT_SUBJECT = (
+	"{{ r.project.project_name }}: status report "
+	"{{ frappe.utils.formatdate(r.from_date) }} to {{ frappe.utils.formatdate(r.to_date) }}"
+)
+EMAIL_TEMPLATES = [
+	("PMS Status Report - Summary", _REPORT_SUBJECT, "pms_status_report_summary.html"),
+	("PMS Status Report - Corporate", _REPORT_SUBJECT, "pms_status_report_detailed.html"),
+	("PMS Status Report - Summary Dark", _REPORT_SUBJECT, "pms_status_report_summary_dark.html"),
+	("PMS Status Report - Corporate Grey", _REPORT_SUBJECT, "pms_status_report_detailed_grey.html"),
+]
+
+
+def template_html(filename: str) -> str:
+	"""The HTML of a ready-made template."""
+	with open(frappe.get_app_path("auri_pms", "templates", "emails", filename), encoding="utf-8") as f:
+		return f.read()
+
+
+def ensure_email_templates(overwrite: bool = False) -> None:
+	"""Create the ready-made status report Email Templates; an existing (possibly edited) one is kept unless ``overwrite``."""
+	for name, subject, filename in EMAIL_TEMPLATES:
+		values = {
+			"name": name,
+			"subject": subject,
+			"use_html": 1,
+			"response_html": template_html(filename),
+			"auri_pms_enabled": 1,
+		}
+		if not insert_if_missing("Email Template", name, values) and overwrite:
+			frappe.db.set_value("Email Template", name, {k: v for k, v in values.items() if k != "name"})
+
+
+def enable_shipped_email_templates() -> None:
+	"""Tick "Enable for Auri PMS" on the ready-made templates once; a template switched off later stays off."""
+	marker = "auri_pms_templates_enabled"
+	if frappe.db.get_default(marker) or not frappe.db.has_column("Email Template", "auri_pms_enabled"):
+		return
+	for name, *_rest in EMAIL_TEMPLATES:
+		if frappe.db.exists("Email Template", name):
+			frappe.db.set_value("Email Template", name, "auri_pms_enabled", 1)
+	frappe.db.set_default(marker, "1")
 
 
 def insert_if_missing(doctype: str, name: str, values: dict) -> bool:

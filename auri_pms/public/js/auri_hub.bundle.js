@@ -230,7 +230,8 @@ ui.riskTable = (rows, with_project) =>
 ui.heatmap = (matrix) => {
 	const cell = (p, i, n) => {
 		const score = p * i;
-		const level = score >= 15 ? "critical" : score >= 10 ? "high" : score >= 5 ? "medium" : "low";
+		const limits = frappe.boot.auri_pms_risk_thresholds || { medium: 5, high: 10, critical: 15 };
+		const level = score >= limits.critical ? "critical" : score >= limits.high ? "high" : score >= limits.medium ? "medium" : "low";
 		return `<div class="hub-heat-cell hub-heat-${level} ${n ? "has" : ""}" title="${__("Probability {0} x Impact {1}", [p, i])}">${n || ""}</div>`;
 	};
 	const rows = matrix.map((row, idx) => `<div class="hub-heat-axis">${5 - idx}</div>${row.map((n, col) => cell(5 - idx, col + 1, n)).join("")}`).join("");
@@ -292,6 +293,9 @@ ui.injectStyle = () => {
 				-webkit-backdrop-filter: blur(var(--blur)) saturate(160%); backdrop-filter: blur(var(--blur)) saturate(160%);
 				box-shadow: var(--n-raised);
 			}
+			/* backdrop-filter gives every panel its own stacking context: lift the panel whose search dropdown is open above its neighbours */
+			.hub-panel:focus-within { position: relative; z-index: 30; }
+			.hub-panel .awesomplete > ul { z-index: 40; }
 			.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; grid-auto-rows: 1fr; }
 			.hub-card { padding: 18px 20px; cursor: pointer; transition: transform .18s ease; display: flex; flex-direction: column; }
 			.hub-card .hub-stats { margin-bottom: auto; } .hub-card .hub-sprint, .hub-card .hub-nosprint { margin-top: 14px; min-height: 40px; }

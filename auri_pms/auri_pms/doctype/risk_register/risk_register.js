@@ -16,6 +16,7 @@ frappe.ui.form.on("Risk Register", {
 		const value = (s) => cint((s || "0").split(" ")[0]);
 		const score = value(frm.doc.probability) * value(frm.doc.impact);
 		frm.set_value("risk_score", score);
-		frm.set_value("risk_level", score >= 15 ? "Critical" : score >= 10 ? "High" : score >= 5 ? "Medium" : score ? "Low" : "");
+		const limits = frappe.boot.auri_pms_risk_thresholds || { medium: 5, high: 10, critical: 15 };
+		frm.set_value("risk_level", score >= limits.critical ? "Critical" : score >= limits.high ? "High" : score >= limits.medium ? "Medium" : score ? "Low" : "");
 	},
 });

@@ -467,17 +467,76 @@ def get_quality(project: str | None = None, period: str = "3m") -> dict:
 	return get_quality_data(project or None, period)
 
 
-@frappe.whitelist()
-def get_status_report_html(project: str, from_date: str, to_date: str, note: str | None = None) -> dict:
-	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
-	from auri_pms.auri_pms.status_report import build_report, default_subject, render_html
+def parse_excluded(exclude: str | list | None) -> list[str]:
+	"""Ticket names the user removed from one report (a JSON list from the client)."""
+	names = frappe.parse_json(exclude) if isinstance(exclude, str) else exclude
+	return [str(n) for n in (names or []) if n][:500]
 
-	report = build_report(project, from_date, to_date)
+
+def parse_included(include: str | dict | list | None) -> dict[str, str]:
+	"""Tickets added to one report with their note for the client (a JSON object name -> note)."""
+	values = frappe.parse_json(include) if isinstance(include, str) else include
+	if isinstance(values, list):
+		values = dict.fromkeys(values, "")
+	return {str(k): str(v or "")[:500] for k, v in list((values or {}).items())[:200] if k}
+
+
+def parse_order(order: str | list | None) -> list[str]:
+	"""Section keys in the order chosen for one report (a JSON list from the client); unknown keys are dropped."""
+	from auri_pms.auri_pms.status_report import SECTION_LABELS
+
+	values = frappe.parse_json(order) if isinstance(order, str) else order
+	return [str(k) for k in (values or []) if k in SECTION_LABELS]
+
+
+def parse_sections(sections: str | dict | None) -> dict[str, int]:
+	"""Section switches chosen for one report (a JSON object from the client); unknown keys are ignored."""
+	from auri_pms.auri_pms.status_report import REPORT_SECTIONS
+
+	values = frappe.parse_json(sections) if isinstance(sections, str) else sections
+	return {k: cint(v) for k, v in (values or {}).items() if k in REPORT_SECTIONS}
+
+
+@frappe.whitelist()
+def get_status_report_html(
+	project: str,
+	from_date: str,
+	to_date: str,
+	note: str | None = None,
+	exclude: str | None = None,
+	template: str | None = None,
+	include: str | None = None,
+	sections: str | None = None,
+	order: str | None = None,
+) -> dict:
+	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
+	from auri_pms.auri_pms.status_report import (
+		build_report,
+		default_subject,
+		render_html,
+		current_order,
+		merge_recipients,
+		section_switches,
+		visible_tickets,
+	)
+	from auri_pms.auri_pms.health import status_for_sections
+
+	report = build_report(project, from_date, to_date, parse_excluded(exclude), parse_included(include))
+	switches = section_switches(parse_sections(sections))
+	chosen_order = parse_order(order)
 	return {
-		"html": render_html(report, note),
-		"subject": default_subject(report),
-		"status": report.status,
-		"recipients": frappe.db.get_value("Project", project, "tracker_report_recipients") or "",
+		"html": render_html(report, note, template or None, parse_sections(sections), chosen_order),
+		"order": current_order(template or None, chosen_order),
+		"sections": switches,
+		"tickets": visible_tickets(report.tickets, switches, current_order(template or None, chosen_order)),
+		"added": [{"name": i.name, "subject": i.subject} for i in report.extra],
+		"subject": default_subject(report, template or None),
+		"default_template": frappe.db.get_single_value("PMS Settings", "report_email_template") or "",
+		"status": status_for_sections(report.status, switches),
+		"recipients": merge_recipients(
+			frappe.db.get_value("Project", project, "tracker_report_recipients"),
+			frappe.db.get_single_value("PMS Settings", "report_default_recipients"),
+		),
 		"can_send": bool(get_capabilities(project)["can_manage_releases"]),
 	}
 
@@ -490,20 +549,57 @@ def email_status_report(
 	recipients: str,
 	subject: str | None = None,
 	note: str | None = None,
+	exclude: str | None = None,
+	template: str | None = None,
+	include: str | None = None,
+	sections: str | None = None,
+	order: str | None = None,
 ) -> str:
 	"""Email the status report to ``recipients`` and log it; returns the Project Status Report name."""
 	from auri_pms.auri_pms.status_report import send_report
 
-	return send_report(project, from_date, to_date, recipients, subject, note)
+	return send_report(
+		project,
+		from_date,
+		to_date,
+		recipients,
+		subject,
+		note,
+		exclude=parse_excluded(exclude),
+		template=template or None,
+		include=parse_included(include),
+		sections=parse_sections(sections),
+		order=parse_order(order),
+	)
 
 
 @frappe.whitelist()
-def status_report_pdf(project: str, from_date: str, to_date: str, note: str | None = None) -> None:
+def status_report_pdf(
+	project: str,
+	from_date: str,
+	to_date: str,
+	note: str | None = None,
+	exclude: str | None = None,
+	template: str | None = None,
+	include: str | None = None,
+	sections: str | None = None,
+	order: str | None = None,
+) -> None:
 	"""Download the status report as a PDF."""
 	from auri_pms.auri_pms.status_report import get_pdf_bytes
 
 	frappe.local.response.filename = f"status-report-{project}-{from_date}-{to_date}.pdf"
-	frappe.local.response.filecontent = get_pdf_bytes(project, from_date, to_date, note)
+	frappe.local.response.filecontent = get_pdf_bytes(
+		project,
+		from_date,
+		to_date,
+		note,
+		parse_excluded(exclude),
+		template or None,
+		parse_included(include),
+		parse_sections(sections),
+		parse_order(order),
+	)
 	frappe.local.response.type = "pdf"
 
 
