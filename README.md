@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml/badge.svg)](https://github.com/anoopverma-collab/Auri_PMS/actions/workflows/ci.yml)
 
-A centralized platform for project planning, task management, timelines, effort tracking, team collaboration and delivery monitoring, built for **ERPNext v16**. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals and management dashboards. Log, assign, track and close work items (bugs, features, tasks, support requests) against ERPNext Projects, plan them into sprints and releases, log time against them and report progress to clients. One screen to create an item, one list to work from, and no configuration beyond adding project members.
+A centralized platform for project planning, task management, timelines, effort tracking, team collaboration and delivery monitoring, built for **ERPNext v16**. Suitable for projects, tasks, milestones, timesheets, estimates versus actuals and management dashboards, with a risk register, project health status and client status reports (choice of email layouts, sections you can switch and reorder, defaults in PMS Settings, PDF and delivery tracking). Log, assign, track and close work items (bugs, features, tasks, support requests) against ERPNext Projects, plan them into sprints and releases, log time against them and report progress to clients. One screen to create an item, one list to work from, and no configuration beyond adding project members.
 
 * Frappe v16 + ERPNext v16 (required app), standard Desk UI only, Frappe Cloud compatible
   (no OS packages, no custom bench commands at runtime).
