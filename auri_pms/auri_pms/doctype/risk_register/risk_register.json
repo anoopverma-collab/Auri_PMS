@@ -189,15 +189,13 @@
 			"fieldname": "closed_on",
 			"fieldtype": "Date",
 			"label": "Closed On",
-			"depends_on": "eval:doc.status=='Closed'",
-			"mandatory_depends_on": "eval:doc.status=='Closed'"
+			"depends_on": "eval:doc.status=='Closed'"
 		},
 		{
 			"fieldname": "closing_remark",
 			"fieldtype": "Small Text",
 			"label": "Closing Remark",
-			"depends_on": "eval:doc.status=='Closed'",
-			"mandatory_depends_on": "eval:doc.status=='Closed'"
+			"depends_on": "eval:doc.status=='Closed'"
 		},
 		{
 			"fieldname": "column_break_main_1",

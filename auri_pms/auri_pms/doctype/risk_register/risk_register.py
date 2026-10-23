@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import getseries
-from frappe.utils import getdate, today
+from frappe.utils import cint, getdate, today
 
 from auri_pms.auri_pms.risk import risk_level, scale_value
 from auri_pms.auri_pms.utils import ensure_pms_project, has_capability
@@ -23,7 +23,22 @@ class RiskRegister(Document):
 		"""Number the risks of every project separately: ALP-RISK-0001, ALP-RISK-0002, BET-RISK-0001 ..."""
 		self.set_project_identifier()
 		prefix = f"{self.project_identifier}-RISK-"
+		self.sync_series(prefix)
 		self.name = prefix + getseries(prefix, 4)
+
+	@staticmethod
+	def sync_series(prefix: str) -> None:
+		"""Lift the naming counter to the highest number in use, so a missing or stale counter cannot repeat a name."""
+		used = frappe.db.sql(
+			"select max(cast(substring(name, %s) as unsigned)) from `tabRisk Register` where name like %s",
+			(len(prefix) + 1, f"{prefix}%"),
+		)[0][0]
+		used = cint(used)
+		current = frappe.db.get_value("Series", prefix, "current", order_by=None)
+		if current is None:
+			frappe.db.sql("insert into `tabSeries` (name, current) values (%s, %s)", (prefix, used))
+		elif cint(current) < used:
+			frappe.db.sql("update `tabSeries` set current = %s where name = %s", (used, prefix))
 
 	def validate(self) -> None:
 		"""Capability, work item project, score and level, and the closing date."""
@@ -31,6 +46,7 @@ class RiskRegister(Document):
 		self.validate_can_edit()
 		self.validate_work_item()
 		self.validate_dates()
+		self.validate_closing()
 		self.score()
 		self.log_assessment()
 		self.stamp_closed_on()
@@ -57,6 +73,14 @@ class RiskRegister(Document):
 			frappe.throw(
 				_("Work Item {0} does not belong to Project {1}").format(self.related_work_item, self.project)
 			)
+
+	def validate_closing(self) -> None:
+		"""Closing a saved risk needs a remark; risks that were already closed (or are created closed) save without one."""
+		if self.status != "Closed" or self.closing_remark:
+			return
+		old = self.get_doc_before_save()
+		if old and old.status != "Closed":
+			frappe.throw(_("Closing Remark is required to close a risk"), title=_("Closing Remark"))
 
 	def validate_dates(self) -> None:
 		"""A mitigation cannot be due before the risk was identified."""

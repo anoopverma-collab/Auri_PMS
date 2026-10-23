@@ -29,7 +29,9 @@ def get_summary(data: list[dict]) -> list[dict]:
 	return [
 		summary_card(total, _("Total Hours"), "Float", "Blue"),
 		summary_card(billable, _("Billable Hours"), "Float", "Green"),
-		summary_card(billable / total * 100 if total else 0, _("Billable Share"), "Percent", "Green"),
+		summary_card(
+			round(billable / total * 100, 1) if total else 0, _("Billable Share"), "Percent", "Green"
+		),
 		summary_card(sum(r["entries"] for r in data), _("Entries"), indicator="Gray"),
 	]
 

@@ -5,6 +5,8 @@ const RISK_COLORS = { Critical: "red", High: "orange", Medium: "yellow", Low: "g
 
 frappe.ui.form.on("Risk Register", {
 	refresh(frm) {
+		frm.status_on_load = frm.doc.status;
+		frm.set_df_property("closing_remark", "reqd", 0);
 		frm.trigger("load_radar");
 		frm.trigger("render_guide");
 		if (frm.is_new()) return;
@@ -13,11 +15,16 @@ frappe.ui.form.on("Risk Register", {
 		frm.dashboard.clear_headline();
 		if (level) frm.dashboard.set_headline(`<span class="indicator-pill ${RISK_COLORS[level] || "gray"}">${__(level)} · ${__("score")} ${frm.doc.risk_score}</span>`);
 		if (frm.doc.status !== "Closed" && frm.perm[0].write) {
-			frm.add_custom_button(__("Close Risk"), () => frm.events.close_risk(frm)).addClass("btn-primary");
+			frm.add_custom_button(__("Close Risk"), () => frm.trigger("close_risk")).addClass("btn-primary");
 		}
 		frm.add_custom_button(__("Project Health"), () => frappe.set_route("project-hub", frm.doc.project, "health"), __("View"));
 	},
 	project: (frm) => frm.trigger("load_radar"),
+	status(frm) {
+		// closing through the dropdown needs the remark; a risk that was already closed does not
+		const closing = frm.doc.status === "Closed" && frm.status_on_load !== "Closed";
+		frm.set_df_property("closing_remark", "reqd", closing ? 1 : 0);
+	},
 	probability: (frm) => frm.trigger("preview_score"),
 	impact: (frm) => frm.trigger("preview_score"),
 	// The 5 x 5 matrix: score = probability x impact, coloured by the PMS Settings thresholds; this risk's cell is outlined.
@@ -60,7 +67,7 @@ frappe.ui.form.on("Risk Register", {
 		const dialog = new frappe.ui.Dialog({
 			title: __("Close Risk {0}", [frm.doc.name]),
 			fields: [
-				{ fieldname: "closed_on", fieldtype: "Date", label: __("Closed On"), reqd: 1, default: frappe.datetime.get_today(), max_date: frappe.datetime.get_today() },
+				{ fieldname: "closed_on", fieldtype: "Date", label: __("Closed On"), reqd: 1, default: frappe.datetime.get_today(), max_date: new Date() },
 				{ fieldname: "closing_remark", fieldtype: "Small Text", label: __("Closing Remark"), reqd: 1 },
 			],
 			primary_action_label: __("Close Risk"),
