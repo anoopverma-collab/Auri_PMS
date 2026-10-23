@@ -11,10 +11,10 @@
  "page_name": "quality-dashboard",
  "roles": [
   {
-   "role": "Tracker User"
+   "role": "Auri PMS User"
   },
   {
-   "role": "Tracker Manager"
+   "role": "Auri PMS Manager"
   },
   {
    "role": "System Manager"

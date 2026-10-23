@@ -57,8 +57,13 @@ class Portfolio {
 						level: worst,
 						score: k.avg_score,
 						label: worst === "green" ? __("All {0} projects are On Track", [visible.length]) : __("Attention needed on {0} of {1} projects", [k.red + k.amber, visible.length]),
+						calc: (visible.find((p) => p.calc) || {}).calc || null,
+						calc_lines: [
+							...visible.map((p) => `${p.project_name}: ${ui.scoreCalc(p.calc, p.score)}`),
+							...(visible.length > 1 ? [__("Average of {0} projects = {1}", [visible.length, k.avg_score])] : []),
+						],
 						// every reason of every shown project, the same ones the project's own banner and the client report list
-						reasons: visible.flatMap((p) => (p.reason_list || []).map((r) => ({ level: r.level, text: `${p.project_name}: ${r.text}` }))),
+						reasons: visible.flatMap((p) => (p.reason_list || []).map((r) => ({ level: r.level, text: `${p.project_name}: ${r.text}`, link: r.link }))),
 					},
 					__("health")
 				)

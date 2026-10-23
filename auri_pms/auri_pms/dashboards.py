@@ -127,7 +127,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 			series[key] = [a + b for a, b in zip(series[key], source, strict=True)]
 		reasons = [r for r in status["reasons"] if r["level"] in ("red", "amber")]
 		hidden = not show_status.get(project.name)
-		all_reasons = [] if hidden else [{"level": r["level"], "text": r["text"]} for r in status["reasons"]]
+		calc = None if hidden else status.get("calc")
+		all_reasons = (
+			[]
+			if hidden
+			else [{"level": r["level"], "text": r["text"], "link": r.get("link")} for r in status["reasons"]]
+		)
 		if hidden:
 			# the project owner chose not to show the health status here: the numbers stay, the verdict does not
 			status = {"level": "none", "label": _("Hidden"), "score": None}
@@ -143,6 +148,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 				"health_hidden": hidden,
 				"label": status["label"],
 				"score": status["score"],
+				"calc": calc,
 				"headline": reasons[0]["text"] if reasons else "",
 				"reasons": len(reasons),
 				"reason_list": all_reasons,

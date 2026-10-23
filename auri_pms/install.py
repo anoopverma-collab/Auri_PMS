@@ -64,17 +64,21 @@ def after_install() -> None:
 
 
 def ensure_workspace_docs() -> None:
-	"""Make sure the sidebar and the app icon exist right after install (a missing one is imported, never overwritten)."""
+	"""Make the sidebar and the app icon match the files in this app on every install and migrate.
+
+	The files are the source of truth, so a site that holds an older or edited copy gets the same workspace as every
+	other site (a plain Frappe sync only replaces a copy when the file's modified time is newer).
+	"""
 	from frappe.modules.import_file import import_file_by_path
 
-	for folder, doctype in (("workspace_sidebar", "Workspace Sidebar"), ("desktop_icon", "Desktop Icon")):
-		path = frappe.get_app_path("auri_pms", folder, "auri_pms.json")
-		if not frappe.db.exists(doctype, "Auri PMS"):
-			import_file_by_path(path, force=True, ignore_version=True)
+	for folder in ("workspace_sidebar", "desktop_icon"):
+		import_file_by_path(
+			frappe.get_app_path("auri_pms", folder, "auri_pms.json"), force=True, ignore_version=True
+		)
 
 
 def after_migrate() -> None:
-	"""Keep Project permissions, the sidebar and the app icon in place after migrate; master data is never touched."""
+	"""Keep Project permissions, the sidebar and the app icon in line with the code after migrate; master data is never touched."""
 	ensure_project_permissions()
 	ensure_workspace_docs()
 	ensure_email_templates()
@@ -269,13 +273,13 @@ def add_status_column(status: str) -> None:
 # ERPNext DocTypes the tracker roles need, granted as Custom DocPerm (no core files are touched).
 ERPNEXT_PERMISSIONS = {
 	"Project": {
-		"Tracker Manager": ("read", "write", "create", "report"),
-		"System Manager": ("read", "write", "create", "report"),  # inherits Tracker Manager rights
-		"Tracker User": ("read", "write"),
+		"Auri PMS Manager": ("read", "write", "create", "report"),
+		"System Manager": ("read", "write", "create", "report"),  # inherits Auri PMS Manager rights
+		"Auri PMS User": ("read", "write"),
 	},
 	"Activity Type": {  # needed to pick an activity when logging time
-		"Tracker Manager": ("read",),
-		"Tracker User": ("read",),
+		"Auri PMS Manager": ("read",),
+		"Auri PMS User": ("read",),
 	},
 }
 
@@ -284,9 +288,9 @@ ERPNEXT_PERMISSIONS = {
 PMS_SWITCH_PERMLEVEL = 2
 PMS_SWITCH_PERMISSIONS = {
 	"System Manager": ("read", "write"),
-	"Tracker Manager": ("read", "write"),
+	"Auri PMS Manager": ("read", "write"),
 	"Projects Manager": ("read", "write"),
-	"Tracker User": ("read",),
+	"Auri PMS User": ("read",),
 	"Projects User": ("read",),
 }
 

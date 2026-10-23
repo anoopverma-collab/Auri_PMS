@@ -19,7 +19,7 @@ CAPABILITY_FIELDS: tuple[str, ...] = (
 	"can_manage_members",
 	"can_be_assigned",
 )
-MANAGER_ROLES = frozenset({"Tracker Manager", "System Manager"})
+MANAGER_ROLES = frozenset({"Auri PMS Manager", "System Manager"})
 # ERPNext roles that already have their own view of every Project; Project visibility is not narrowed for them.
 ERPNEXT_PROJECT_ROLES = frozenset({"Projects Manager", "Projects User"})
 
@@ -45,7 +45,7 @@ def ensure_pms_project(project: str | None, action: str) -> None:
 
 
 def is_manager(user: str | None = None) -> bool:
-	"""Return True for Administrator, Tracker Manager and System Manager."""
+	"""Return True for Administrator, Auri PMS Manager and System Manager."""
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return True
@@ -334,6 +334,21 @@ def follow_work_item(work_item: str, user: str | None) -> None:
 	filters = {"ref_doctype": "Work Item", "ref_docname": work_item, "user": user}
 	if not frappe.db.exists("Document Follow", filters):
 		frappe.get_doc({"doctype": "Document Follow", **filters}).insert(ignore_permissions=True)
+
+
+def list_target(doctype: str, filters: dict) -> dict:
+	"""Where a dashboard line leads: the list of ``doctype`` with these filters."""
+	return {"route": ["List", doctype, "List"], "filters": filters}
+
+
+def form_target(doctype: str, name: str) -> dict:
+	"""Where a dashboard line leads: one record."""
+	return {"route": ["Form", doctype, name], "filters": {}}
+
+
+def report_target(report: str, filters: dict) -> dict:
+	"""Where a dashboard line leads: a query report with these filters."""
+	return {"route": ["query-report", report], "filters": filters}
 
 
 def summary_card(value, label: str, datatype: str = "Int", indicator: str | None = None) -> dict:

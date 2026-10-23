@@ -4,6 +4,6 @@
 frappe.listview_settings["Ticket Type"] = {
 	add_fields: ["color", "is_active"],
 	formatters: {
-		tracker_name: (value, df, doc) => auri_pms.ui.dot(doc && doc.color, value),
+		color: (value) => (value ? auri_pms.ui.dot(value, value) : ""),
 	},
 };

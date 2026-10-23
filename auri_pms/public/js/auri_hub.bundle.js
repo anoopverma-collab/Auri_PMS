@@ -167,8 +167,24 @@ ui.goAttr = (target) => `data-go="${frappe.utils.escape_html(JSON.stringify(targ
 ui.OPEN_RISK = ["Identified", "Mitigating", "Monitoring"];
 ui.goReport = (report, filters) => ({ route: ["query-report", report], filters: filters || {} });
 ui.openTarget = (target) => {
-	// a list reopens with its last saved filters unless they are cleared, which would mix an old filter into the tile's
-	if (target.route[0] === "List") frappe.model.user_settings.save(target.route[1], "filters", []);
+	// a list reopens with its last saved filters unless they are cleared, which would mix an old filter into the tile's;
+	// the list view keeps them under its own name (List or Report), so clear those too
+	if (target.route[0] === "List") {
+		const doctype = target.route[1];
+		const saved = frappe.get_user_settings(doctype);
+		frappe.model.user_settings.save(doctype, "filters", []);
+		["List", "Report"].forEach((view) => {
+			if (saved[view] && (saved[view].filters || []).length) frappe.model.user_settings.save(doctype, view, { ...saved[view], filters: [] });
+		});
+		// a list that was opened before keeps its filter boxes (Sprint, Status ...) in memory: empty them as well
+		Object.values(frappe.views.list_view || {}).forEach((view) => {
+			try {
+				if (view && view.doctype === doctype && view.filter_area) view.filter_area.clear(false);
+			} catch (e) {
+				// nothing to clear
+			}
+		});
+	}
 	frappe.route_options = target.filters;
 	frappe.set_route(...target.route);
 };
@@ -218,12 +234,12 @@ ui.projectDates = (info) => {
 	const [start, end] = [info.expected_start_date, info.expected_end_date];
 	if (!start && !end) return "";
 	const left = end ? frappe.datetime.get_diff(end, frappe.datetime.get_today()) : null;
-	const parts = [
+	const dates = [
 		start ? `${__("Start")} ${frappe.datetime.str_to_user(start)}` : "",
 		end ? `${__("End")} ${frappe.datetime.str_to_user(end)}` : "",
-		left === null ? "" : left < 0 ? __("{0} days overdue", [-left]) : __("{0} days left", [left]),
 	].filter(Boolean);
-	return `<span class="text-muted" style="margin-left:12px">${parts.join(" · ")}</span>`;
+	const days = left === null ? "" : left < 0 ? __("{0} days overdue", [-left]) : __("{0} days left", [left]);
+	return `<span class="hub-dates text-muted"><span>${dates.join(" · ")}</span>${days ? `<em class="${left < 0 ? "text-danger" : ""}">${days}</em>` : ""}</span>`;
 };
 
 ui.riskBadge = (level, score) => `<span class="hub-badge hub-rb hub-rb-${String(level || "low").toLowerCase()}">${__(level || "Low")}${score ? ` · ${score}` : ""}</span>`;
@@ -271,10 +287,18 @@ ui.chart = ($root, selector, config, onPick) => {
 };
 
 // Traffic-light banner: {level, label, score, reasons: [{level, text}]}
+// "100 - 3 off track x 15 - 3 at risk x 5 = 40": how a health score is worked out (calc comes from the server)
+ui.scoreCalc = (calc, score) => {
+	if (!calc) return "";
+	const raw = 100 - calc.red * calc.red_penalty - calc.amber * calc.amber_penalty;
+	return __("100 − {0} off track × {1} − {2} at risk × {3} = {4}", [calc.red, calc.red_penalty, calc.amber, calc.amber_penalty, raw < 0 ? `${raw}, ${__("shown as")} ${score}` : score]);
+};
+
 ui.statusBanner = (st, scoreLabel) =>
 	`<div class="hub-status hub-${st.level}">
 		<div class="hub-status-dial"><b>${st.score === null || st.score === undefined ? "-" : st.score}</b><span><strong style="font-weight:800;font-size:10px;color:inherit">${scoreLabel || __("health")}</strong></span></div>
-		<div><h5>${ui.esc(st.label)}</h5><ul>${(st.reasons || []).map((r) => `<li class="hub-reason hub-${r.level}"><i></i>${ui.esc(r.text)}</li>`).join("")}</ul></div>
+		<div><h5>${ui.esc(st.label)}</h5><ul>${(st.reasons || []).map((r) => `<li class="hub-reason hub-${r.level}" ${r.link ? ui.goAttr(r.link) : ""}><i></i>${ui.esc(r.text)}${st.calc && (r.level === "red" || r.level === "amber") ? `<span class="hub-pts" title="${__("Points taken off the score")}">−${r.level === "red" ? st.calc.red_penalty : st.calc.amber_penalty}</span>` : ""}</li>`).join("")}</ul>
+			${st.calc_lines && st.calc_lines.length ? `<div class="hub-calc"><b>${__("How the score is worked out")}</b>${st.calc_lines.map((l) => `<div>${ui.esc(l)}</div>`).join("")}${st.calc ? `<div class="hub-calc-note">${ui.esc(__("The score starts at 100. Each Off Track (red) reason takes off {0} points (PMS Settings: Health Score Penalty per Off Track Reason) and each At Risk (amber) reason takes off {1} (Health Score Penalty per At Risk Reason).", [st.calc.red_penalty, st.calc.amber_penalty])).replace("PMS Settings", `<a href="/desk/pms-settings">PMS Settings</a>`)}</div>` : ""}</div>` : ""}</div>
 	</div>`;
 
 // Creates the app page and the themed container every dashboard renders into.
@@ -304,6 +328,7 @@ ui.injectStyle = () => {
 			.auri-hub a { color: var(--acc); font-weight: 500; }
 
 			.hub-title { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+			.hub-dates { margin-left: auto; display: grid; justify-items: end; gap: 2px; font-size: 12px; line-height: 1.4; white-space: nowrap; } .hub-dates em { font-style: normal; font-weight: 700; }
 			.hub-title h4 { margin: 0; font-weight: 700; letter-spacing: -.01em; color: var(--g-text); }
 			.hub-ident { font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 4px 12px; border-radius: 999px; color: var(--acc);
 				background: var(--g-glass-strong); border: 1px solid var(--g-border); box-shadow: var(--n-soft); }
@@ -401,6 +426,9 @@ ui.injectStyle = () => {
 			.mw-flag { justify-self: start; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; } .mw-flag-bad { color: #dc2626; background: rgba(239, 68, 68, .12); } .mw-flag-warn { color: #b45309; background: rgba(245, 158, 11, .16); }
 			.mw-due { font-size: 12px; color: var(--g-muted); min-width: 64px; text-align: right; white-space: nowrap; } .mw-due-late { color: #dc2626; font-weight: 700; } .mw-due-today { color: #b45309; font-weight: 700; }
 			@media (max-width: 700px) { .mw-row { grid-template-columns: 10px minmax(0, 1fr) 92px; } .mw-flag, .mw-row .hub-btn, .mw-head span:nth-child(3), .mw-head span:nth-child(5) { display: none; } }
+			.hub-calc { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--g-border); font-size: 12px; color: var(--g-muted); } .hub-reason[data-go]:hover { text-decoration: underline; }
+			.hub-pts { margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--g-muted); } .hub-calc-note { margin-top: 6px; max-width: 760px; font-size: 11.5px; line-height: 1.45; }
+			.hub-calc b { display: block; color: var(--g-text); margin-bottom: 3px; }
 			.hub-meter { display: flex; height: 22px; border-radius: 999px; overflow: hidden; box-shadow: var(--n-inset); margin-bottom: 12px; border: 1px solid var(--g-border); }
 			.hub-meter i, .hub-stack i { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; text-align: center; line-height: 22px; min-width: 0; }
 			.seg-blue { background: #3b82f6; } .seg-green { background: #10b981; } .seg-orange { background: #f59e0b; } .seg-red { background: #ef4444; } .seg-yellow { background: #eab308; }

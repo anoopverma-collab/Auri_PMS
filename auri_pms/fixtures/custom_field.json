@@ -68,7 +68,7 @@
  {
   "default": "0",
   "depends_on": "eval:doc.pms_enabled",
-  "description": "Visible to all Tracker Users",
+  "description": "Visible to all Auri PMS Users",
   "doctype": "Custom Field",
   "dt": "Project",
   "fieldname": "is_public",
@@ -99,7 +99,7 @@
   "dt": "Project",
   "fieldname": "pms_enabled",
   "fieldtype": "Check",
-  "in_standard_filter": 1,
+  "in_standard_filter": 0,
   "insert_after": "tab_tracker",
   "is_system_generated": 0,
   "label": "Enable Auri PMS",

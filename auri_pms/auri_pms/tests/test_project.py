@@ -39,13 +39,13 @@ class TestProject(TrackerTestCase):
 		self.assertThrows("Value cannot be changed", doc.save)
 
 	def test_t013_member_gains_tracker_user(self):
-		"""T-013: a member without a tracker role gets Tracker User and a message."""
+		"""T-013: a member without a tracker role gets Auri PMS User and a message."""
 		make_user("plain@test.com", ())
 		frappe.local.message_log = []
 		doc = frappe.get_doc("Project", self.BET)
 		doc.append("tracker_members", {"user": "plain@test.com", "project_role": "Reporter"})
 		doc.save()
-		self.assertIn("Tracker User", frappe.get_roles("plain@test.com"))
+		self.assertIn("Auri PMS User", frappe.get_roles("plain@test.com"))
 		self.assertTrue(any("plain@test.com" in str(m) for m in frappe.local.message_log))
 
 	def test_t014_non_manager_cannot_edit_members(self):

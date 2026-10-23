@@ -35,7 +35,8 @@
 			"description": "Indicator colour in list view",
 			"fieldname": "color",
 			"fieldtype": "Color",
-			"label": "Color"
+			"label": "Color",
+			"in_list_view": 1
 		},
 		{
 			"default": "0",
@@ -77,9 +78,10 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Tracker Manager",
+			"role": "Auri PMS Manager",
 			"share": 1,
-			"write": 1
+			"write": 1,
+			"import": 1
 		},
 		{
 			"create": 1,
@@ -95,12 +97,13 @@
 		},
 		{
 			"read": 1,
-			"role": "Tracker User"
+			"role": "Auri PMS User"
 		}
 	],
 	"search_fields": "status_name,sequence",
 	"sort_field": "sequence",
 	"sort_order": "ASC",
 	"states": [],
-	"title_field": "status_name"
+	"title_field": "status_name",
+	"allow_import": 1
 }

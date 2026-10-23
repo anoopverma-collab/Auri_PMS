@@ -136,6 +136,18 @@ class TestProjectHealth(TrackerTestCase):
 		self.assertEqual(releases[release]["risk"], "late")
 		self.assertEqual(self.health().status.level, "red")
 
+	def test_status_carries_the_working_of_its_score(self):
+		from auri_pms.auri_pms.health import status_from_reasons
+
+		status = status_from_reasons(
+			[{"level": "red", "text": "a"}, {"level": "amber", "text": "b"}, {"level": "amber", "text": "c"}]
+		)
+		self.assertEqual(status["calc"], {"red": 1, "amber": 2, "red_penalty": 25, "amber_penalty": 10})
+		self.assertEqual(status["score"], 100 - 25 - 2 * 10)
+		# below zero the score stops at 0
+		many = status_from_reasons([{"level": "red", "text": str(i)} for i in range(6)])
+		self.assertEqual((many["score"], many["calc"]["red"]), (0, 6))
+
 	def test_velocity_of_completed_sprints(self):
 		"""Completed sprints report the tickets and hours they delivered."""
 		with self.as_user(MGR):

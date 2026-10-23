@@ -241,7 +241,7 @@ before sending; use **Download PDF** for very large reports.
 **PDF.** The PDF fills an A4 sheet edge to edge with the report's own colour on every page. For Calibri text in the PDF install the
 Carlito font on the server (`fonts-crosextra-carlito`).
 
-Roles: **Tracker Manager** (and System Manager) administer everything; **Tracker User** sees only the
+Roles: **Auri PMS Manager** (and System Manager) administer everything; **Auri PMS User** sees only the
 projects they are a member of, plus public projects. Inside a project the member's **Project Role**
 decides what they can do.
 

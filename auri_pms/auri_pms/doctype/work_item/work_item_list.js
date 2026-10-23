@@ -1,10 +1,10 @@
 // Copyright (c) 2026, Anoop Verma and contributors
 // For license information, please see license.txt
 
-// Plain Tracker Users start on their open items; Frappe applies `filters` only when the user has no saved filters.
+// Plain Auri PMS Users start on their open items; Frappe applies `filters` only when the user has no saved filters.
 const wi_is_plain_user =
-	frappe.user.has_role("Tracker User") &&
-	!frappe.user.has_role("Tracker Manager") &&
+	frappe.user.has_role("Auri PMS User") &&
+	!frappe.user.has_role("Auri PMS Manager") &&
 	!frappe.user.has_role("System Manager");
 
 frappe.listview_settings["Work Item"] = {

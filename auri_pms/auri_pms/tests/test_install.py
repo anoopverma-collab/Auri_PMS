@@ -37,7 +37,7 @@ class TestInstall(IntegrationTestCase):
 
 	def test_t003_fixtures_exist(self):
 		"""T-003: roles, custom fields, workspace and Kanban board exist."""
-		for role in ("Tracker Manager", "Tracker User"):
+		for role in ("Auri PMS Manager", "Auri PMS User"):
 			self.assertTrue(frappe.db.exists("Role", role), role)
 		for fieldname in (
 			"tab_tracker",
@@ -60,15 +60,15 @@ class TestInstall(IntegrationTestCase):
 		self.assertEqual([c.column_name for c in board.columns], [s[0] for s in install.STATUSES])
 
 	def test_tracker_roles_can_use_erpnext_doctypes(self):
-		"""Tracker roles may read Project and Activity Type (needed to log time) and Tracker Users may edit Project."""
+		"""Tracker roles may read Project and Activity Type (needed to log time) and Auri PMS Users may edit Project."""
 		for doctype, role, ptype in (
-			("Project", "Tracker User", "read"),
-			("Project", "Tracker User", "write"),
-			("Project", "Tracker Manager", "create"),
+			("Project", "Auri PMS User", "read"),
+			("Project", "Auri PMS User", "write"),
+			("Project", "Auri PMS Manager", "create"),
 			("Project", "System Manager", "read"),
 			("Project", "System Manager", "create"),
-			("Activity Type", "Tracker User", "read"),
-			("Activity Type", "Tracker Manager", "read"),
+			("Activity Type", "Auri PMS User", "read"),
+			("Activity Type", "Auri PMS Manager", "read"),
 		):
 			self.assertTrue(
 				frappe.db.get_value(

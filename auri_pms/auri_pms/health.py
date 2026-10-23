@@ -11,7 +11,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.risk import risk_reasons
-from auri_pms.auri_pms.utils import get_burndown, setting
+from auri_pms.auri_pms.utils import form_target, get_burndown, list_target, report_target, setting
 
 AGE_BUCKETS = (
 	(7, "0-7d"),
@@ -497,12 +497,17 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 	"""Traffic-light status with the reasons behind it."""
 	reasons: list[dict] = []
 
-	def add(level: str, text: str, section: str | None = None) -> None:
-		"""``section`` is the status report section the reason belongs to (None: always shown)."""
-		reasons.append({"level": level, "text": text, "section": section})
+	def add(level: str, text: str, section: str | None = None, link: dict | None = None) -> None:
+		"""``section`` is the status report section the reason belongs to (None: always shown); ``link`` is where
+		clicking the line on a dashboard leads."""
+		reasons.append({"level": level, "text": text, "section": section, "link": link})
 
 	if not flow["total"]:
 		return {"level": "none", "label": _("No data yet"), "score": None, "reasons": []}
+	overdue_link = list_target(
+		"Work Item",
+		{"project": project, "is_closed": 0, "dependent_on_client": 0, "due_date": ["<", str(today_)]},
+	)
 	if flow["overdue_delivery_pct"] > cint(setting("overdue_red_pct")):
 		add(
 			"red",
@@ -510,6 +515,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 				flow["overdue_delivery_pct"], flow["overdue_delivery"]
 			),
 			"issues",
+			overdue_link,
 		)
 	elif flow["overdue_delivery_pct"] > cint(setting("overdue_amber_pct")):
 		add(
@@ -518,6 +524,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 				flow["overdue_delivery_pct"], flow["overdue_delivery"]
 			),
 			"issues",
+			overdue_link,
 		)
 	sprint = frappe.db.get_value("Sprint", {"project": project, "status": "Active"}, "name")
 	if sprint:
@@ -526,13 +533,28 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 		if rows and scope:
 			gap = (rows[-1]["actual"] - rows[-1]["ideal"]) / scope
 			if gap > cint(setting("burndown_red_pct")) / 100:
-				add("red", _("Active sprint is well behind the ideal burndown"), "plan")
+				add(
+					"red",
+					_("Active sprint is well behind the ideal burndown"),
+					"plan",
+					form_target("Sprint", sprint),
+				)
 			elif gap > cint(setting("burndown_amber_pct")) / 100:
-				add("amber", _("Active sprint is slightly behind the ideal burndown"), "plan")
+				add(
+					"amber",
+					_("Active sprint is slightly behind the ideal burndown"),
+					"plan",
+					form_target("Sprint", sprint),
+				)
 	if time["burn_pct"] is not None:
 		done_share = flow["estimated_closed_hours"] * 100 / time["estimated"] if time["estimated"] else 0
 		if time["burn_pct"] > 100:
-			add("red", _("Spent hours exceed the estimate ({0}%)").format(time["burn_pct"]), "time")
+			add(
+				"red",
+				_("Spent hours exceed the estimate ({0}%)").format(time["burn_pct"]),
+				"time",
+				list_target("Time Entry", {"project": project}),
+			)
 		elif time["burn_pct"] - done_share > cint(setting("effort_ahead_amber_pct")):
 			add(
 				"amber",
@@ -540,6 +562,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 					time["burn_pct"], flt(done_share, 0)
 				),
 				"time",
+				list_target("Time Entry", {"project": project}),
 			)
 	for release in release_health(project, today_):
 		if release["risk"] == "late":
@@ -549,6 +572,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 					release["label"], flt(release["percent"], 0)
 				),
 				"plan",
+				form_target("Release", release["name"]),
 			)
 		elif release["risk"] == "risk":
 			add(
@@ -557,13 +581,21 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 					release["label"], flt(release["percent"], 0)
 				),
 				"plan",
+				form_target("Release", release["name"]),
 			)
 	for reason in risk_reasons(project):
-		add(reason["level"], reason["text"], "risks")
+		add(reason["level"], reason["text"], "risks", reason.get("link"))
 	if flow["created_4w"] > flow["resolved_4w"] * flt(setting("backlog_growth_ratio")) and flow[
 		"created_4w"
 	] >= cint(setting("backlog_growth_min_created")):
-		add("amber", _("The backlog grew over the last 4 weeks (more created than resolved)"), "in_progress")
+		add(
+			"amber",
+			_("The backlog grew over the last 4 weeks (more created than resolved)"),
+			"in_progress",
+			list_target(
+				"Work Item", {"project": project, "creation": [">=", str(today_ - timedelta(days=28))]}
+			),
+		)
 	if flow["client_dependent"]:  # informational: shown, but neither the level nor the score changes
 		waiting, oldest = flow["client_dependent"], flow["client_oldest_days"] or 0
 		if waiting == 1:
@@ -572,7 +604,7 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 			)
 		else:
 			text = _("{0} tickets are waiting on the client (oldest {1} days)").format(waiting, oldest)
-		add("info", text, "waiting")
+		add("info", text, "waiting", report_target("Client Dependencies", {"project": project}))
 	return status_from_reasons(reasons)
 
 
@@ -586,12 +618,13 @@ def status_from_reasons(reasons: list[dict]) -> dict:
 		if any(r["level"] == "amber" for r in reasons)
 		else "green"
 	)
-	score = max(
-		0,
-		100
-		- cint(setting("score_red_penalty")) * sum(r["level"] == "red" for r in reasons)
-		- cint(setting("score_amber_penalty")) * sum(r["level"] == "amber" for r in reasons),
-	)
+	calc = {
+		"red": sum(r["level"] == "red" for r in reasons),
+		"amber": sum(r["level"] == "amber" for r in reasons),
+		"red_penalty": cint(setting("score_red_penalty")),
+		"amber_penalty": cint(setting("score_amber_penalty")),
+	}
+	score = max(0, 100 - calc["red"] * calc["red_penalty"] - calc["amber"] * calc["amber_penalty"])
 	label_ = {"green": _("On Track"), "amber": _("At Risk"), "red": _("Off Track")}[level]
 	if level == "green":
 		reasons = [
@@ -602,7 +635,7 @@ def status_from_reasons(reasons: list[dict]) -> dict:
 				"section": None,
 			},
 		]
-	return {"level": level, "label": label_, "score": score, "reasons": reasons}
+	return {"level": level, "label": label_, "score": score, "reasons": reasons, "calc": calc}
 
 
 def status_for_sections(status: dict, switches: dict) -> dict:

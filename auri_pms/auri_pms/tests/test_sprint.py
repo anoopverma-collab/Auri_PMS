@@ -180,7 +180,7 @@ class TestSprint(TrackerTestCase):
 			)
 
 	def test_sp16_delete_rules(self):
-		"""SP-16: a sprint with items cannot be deleted; Tracker Users cannot delete sprints at all."""
+		"""SP-16: a sprint with items cannot be deleted; Auri PMS Users cannot delete sprints at all."""
 		sprint = self.sprint()
 		self.new_item(MGR, sprint=sprint.name)
 		with self.as_user(TM):

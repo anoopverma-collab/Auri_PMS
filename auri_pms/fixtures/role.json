@@ -4,15 +4,15 @@
 		"disabled": 0,
 		"doctype": "Role",
 		"is_custom": 1,
-		"name": "Tracker Manager",
-		"role_name": "Tracker Manager"
+		"name": "Auri PMS Manager",
+		"role_name": "Auri PMS Manager"
 	},
 	{
 		"desk_access": 1,
 		"disabled": 0,
 		"doctype": "Role",
 		"is_custom": 1,
-		"name": "Tracker User",
-		"role_name": "Tracker User"
+		"name": "Auri PMS User",
+		"role_name": "Auri PMS User"
 	}
 ]

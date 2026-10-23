@@ -19,7 +19,7 @@ from auri_pms.auri_pms.utils import (
 )
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{1,9}$")
-TRACKER_ROLES = {"Tracker User", "Tracker Manager"}
+TRACKER_ROLES = {"Auri PMS User", "Auri PMS Manager"}
 PROJECT_RECORDS = ("Work Item", "Release", "Risk Register", "Sprint", "Time Entry")
 # Filters that select the still-open records; Time Entry has no open/closed state.
 OPEN_FILTERS = {
@@ -52,7 +52,7 @@ def validate(doc, method: str | None = None) -> None:
 
 
 def on_update(doc, method: str | None = None) -> None:
-	"""Project.on_update hook: give members the Tracker User role, release removed members' items, refresh caches."""
+	"""Project.on_update hook: give members the Auri PMS User role, release removed members' items, refresh caches."""
 	clear_cache()
 	release_removed_members(doc)
 	added = []
@@ -61,11 +61,11 @@ def on_update(doc, method: str | None = None) -> None:
 			continue
 		user = frappe.get_doc("User", row.user)
 		user.flags.ignore_permissions = True
-		user.add_roles("Tracker User")
+		user.add_roles("Auri PMS User")
 		added.append(row.user)
 	if added:
 		frappe.msgprint(
-			_("The Tracker User role was added to: {0}").format(", ".join(added)),
+			_("The Auri PMS User role was added to: {0}").format(", ".join(added)),
 			indicator="blue",
 			alert=True,
 		)
@@ -230,7 +230,7 @@ def validate_tracker_permissions(doc, old) -> None:
 				)
 			)
 	if old and not has_unrestricted_project_view(frappe.session.user):
-		# A pure Tracker User may only change the tracker fields of an ERPNext Project.
+		# A pure Auri PMS User may only change the tracker fields of an ERPNext Project.
 		for df in doc.meta.fields:
 			if df.read_only or df.fieldtype in LAYOUT_FIELDTYPES or df.fieldname in TRACKER_FIELDS:
 				continue

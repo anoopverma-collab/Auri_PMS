@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, today
 
-from auri_pms.auri_pms.utils import setting
+from auri_pms.auri_pms.utils import list_target, setting
 
 OPEN_STATUSES = ("Identified", "Mitigating", "Monitoring")
 LEVELS = ("Critical", "High", "Medium", "Low")
@@ -204,6 +204,7 @@ def risk_reasons(project: str) -> list[dict]:
 	critical = sum(r.risk_level == "Critical" for r in rows)
 	high = sum(r.risk_level == "High" for r in rows)
 	overdue = sum(is_overdue(r) for r in rows)
+	open_risks = {"project": project, "status": ["in", list(OPEN_STATUSES)]}
 	reasons: list[dict] = []
 	if critical:
 		reasons.append(
@@ -212,6 +213,7 @@ def risk_reasons(project: str) -> list[dict]:
 				"text": _("{0} {1} open in the risk register").format(
 					critical, _plural(critical, _("critical risk is"), _("critical risks are"))
 				),
+				"link": list_target("Risk Register", {**open_risks, "risk_level": "Critical"}),
 			}
 		)
 	elif high:
@@ -221,6 +223,7 @@ def risk_reasons(project: str) -> list[dict]:
 				"text": _("{0} {1} open in the risk register").format(
 					high, _plural(high, _("high risk is"), _("high risks are"))
 				),
+				"link": list_target("Risk Register", {**open_risks, "risk_level": "High"}),
 			}
 		)
 	if overdue:
@@ -230,6 +233,7 @@ def risk_reasons(project: str) -> list[dict]:
 				"text": _("{0} {1} past the mitigation date").format(
 					overdue, _plural(overdue, _("risk is"), _("risks are"))
 				),
+				"link": list_target("Risk Register", {**open_risks, "mitigation_due": ["<", today()]}),
 			}
 		)
 	return reasons
