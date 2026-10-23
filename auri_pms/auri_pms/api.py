@@ -287,7 +287,15 @@ def get_project_hub(project: str) -> dict:
 	info = frappe.db.get_value(
 		"Project",
 		project,
-		["name", "project_name", "tracker_identifier", "status", "is_public"],
+		[
+			"name",
+			"project_name",
+			"tracker_identifier",
+			"status",
+			"is_public",
+			"expected_start_date",
+			"expected_end_date",
+		],
 		as_dict=True,
 	)
 	caps = get_capabilities(project)

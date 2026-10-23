@@ -18,7 +18,9 @@ def execute(filters: dict | None = None) -> tuple:
 
 def get_summary(data: list[dict]) -> list[dict]:
 	"""Releases, average completion, releases past their due date and the items still open."""
-	late = sum(1 for r in data if r.days_left is not None and r.days_left < 0 and flt(r.percent_complete) < 100)
+	late = sum(
+		1 for r in data if r.days_left is not None and r.days_left < 0 and flt(r.percent_complete) < 100
+	)
 	return [
 		summary_card(len(data), _("Releases"), indicator="Blue"),
 		summary_card(

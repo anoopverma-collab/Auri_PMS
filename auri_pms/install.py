@@ -28,7 +28,13 @@ PROJECT_ROLES = {
 	"Manager": _FLAGS_ALL,
 	"Developer": ["can_create_items", "can_edit_any_item", "can_log_time", "can_be_assigned"],
 	"Reporter": ["can_create_items", "can_log_time"],
-	"Functional": ["can_create_items", "can_edit_any_item", "can_manage_categories", "can_log_time", "can_be_assigned"],
+	"Functional": [
+		"can_create_items",
+		"can_edit_any_item",
+		"can_manage_categories",
+		"can_log_time",
+		"can_be_assigned",
+	],
 }
 
 BUG_WORKFLOW = [

@@ -85,9 +85,9 @@ def validate_enabled(doc, old) -> None:
 			doc.name
 		):
 			frappe.throw(
-				_("Auri PMS cannot be disabled on Project {0} until you confirm: it still has records").format(
-					doc.name
-				)
+				_(
+					"Auri PMS cannot be disabled on Project {0} until you confirm: it still has records"
+				).format(doc.name)
 			)
 
 
@@ -291,9 +291,9 @@ def _unassign(work_item: str, user: str, project: str) -> None:
 def _tell_removed_member(user: str, project: str, items: list[str]) -> None:
 	"""In-app notification and email to the removed member; the list is empty when nothing was assigned."""
 	if items:
-		subject = _("You were removed from Project {0}. These open items were unassigned from you: {1}").format(
-			frappe.bold(project), ", ".join(items)
-		)
+		subject = _(
+			"You were removed from Project {0}. These open items were unassigned from you: {1}"
+		).format(frappe.bold(project), ", ".join(items))
 	else:
 		subject = _("You were removed from Project {0}").format(frappe.bold(project))
 	if frappe.db.get_value("User", user, "enabled"):
@@ -324,9 +324,9 @@ def _tell_managers(doc, released: dict[str, list[str]]) -> None:
 			"type": "Alert",
 			"document_type": "Project",
 			"document_name": doc.name,
-			"subject": _("Members were removed from Project {0}; their open items were unassigned. {1}").format(
-				frappe.bold(doc.name), lines
-			),
+			"subject": _(
+				"Members were removed from Project {0}; their open items were unassigned. {1}"
+			).format(frappe.bold(doc.name), lines),
 			"from_user": frappe.session.user,
 		},
 	)

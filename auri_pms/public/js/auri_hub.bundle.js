@@ -163,16 +163,18 @@ ui.tile = (value, label, cls, sub, route) => {
 
 // where a tile leads: a Desk list (ui.go("Work Item", {is_closed: 0})) or a query report (ui.goReport("Client Dependencies", {...}))
 ui.go = (doctype, filters) => ({ route: ["List", doctype, "List"], filters: filters && Object.keys(filters).length ? filters : { docstatus: ["<", 2] } });
+ui.goAttr = (target) => `data-go="${frappe.utils.escape_html(JSON.stringify(target))}" tabindex="0" role="link"`;
+ui.OPEN_RISK = ["Identified", "Mitigating", "Monitoring"];
 ui.goReport = (report, filters) => ({ route: ["query-report", report], filters: filters || {} });
+ui.openTarget = (target) => {
+	// a list reopens with its last saved filters unless they are cleared, which would mix an old filter into the tile's
+	if (target.route[0] === "List") frappe.model.user_settings.save(target.route[1], "filters", []);
+	frappe.route_options = target.filters;
+	frappe.set_route(...target.route);
+};
 ui.bindTiles = ($body) => {
-	const open = (el) => {
-		const target = JSON.parse(el.getAttribute("data-go"));
-		// a list reopens with its last saved filters unless they are cleared, which would mix an old filter into the tile's
-		if (target.route[0] === "List") frappe.model.user_settings.save(target.route[1], "filters", []);
-		frappe.route_options = target.filters;
-		frappe.set_route(...target.route);
-	};
-	$body.find(".hub-tile[data-go]").on("click", (e) => open(e.currentTarget)).on("keydown", (e) => {
+	const open = (el) => ui.openTarget(JSON.parse(el.getAttribute("data-go")));
+	$body.find("[data-go]").on("click", (e) => open(e.currentTarget)).on("keydown", (e) => {
 		if (e.key === "Enter" || e.key === " ") {
 			e.preventDefault();
 			open(e.currentTarget);
@@ -186,7 +188,7 @@ ui.bar = (label, value, max, cls) =>
 	`<div class="hub-bar"><span>${ui.esc(label)}</span><div><i class="${cls || ""}" style="width:${max ? (value / max) * 100 : 0}%"></i></div><b>${flt(value, 1)}</b></div>`;
 
 // Stacked rows with full labels (charts truncate long names): rows are [label, value1, value2, ...], one value per segment.
-ui.stack = (rows, names, classes) => {
+ui.stack = (rows, names, classes, routes) => {
 	const sum = (r) => r.slice(1).reduce((a, b) => a + b, 0);
 	const max = Math.max(1, ...rows.map(sum));
 	const legend = `<div class="hub-legend">${names.map((n, i) => `<span><i class="${classes[i]}"></i>${n}</span>`).join("")}</div>`;
@@ -195,7 +197,7 @@ ui.stack = (rows, names, classes) => {
 		(rows.length
 			? rows
 					.map(
-						(r) => `<div class="hub-stack"><span title="${ui.esc(r[0])}">${ui.esc(r[0])}</span><div>${r
+						(r, k) => `<div class="hub-stack" ${routes && routes[k] ? ui.goAttr(routes[k]) : ""}><span title="${ui.esc(r[0])}">${ui.esc(r[0])}</span><div>${r
 							.slice(1)
 							.map((v, i) => `<i class="${classes[i]}" style="width:${(v / max) * 100}%"></i>`)
 							.join("")}</div><b>${flt(sum(r), 1)}</b></div>`
@@ -211,10 +213,23 @@ ui.table = (rows, head, cells) =>
 		: `<div class="text-muted small">${__("None yet")}</div>`;
 
 // Risk Register helpers shared by the hub, My Work and Portfolio.
+// "Start 10 Sep 2026 · End 24 Dec 2026 · 62 days left" from the Project's expected dates; empty when neither is set.
+ui.projectDates = (info) => {
+	const [start, end] = [info.expected_start_date, info.expected_end_date];
+	if (!start && !end) return "";
+	const left = end ? frappe.datetime.get_diff(end, frappe.datetime.get_today()) : null;
+	const parts = [
+		start ? `${__("Start")} ${frappe.datetime.str_to_user(start)}` : "",
+		end ? `${__("End")} ${frappe.datetime.str_to_user(end)}` : "",
+		left === null ? "" : left < 0 ? __("{0} days overdue", [-left]) : __("{0} days left", [left]),
+	].filter(Boolean);
+	return `<span class="text-muted" style="margin-left:12px">${parts.join(" · ")}</span>`;
+};
+
 ui.riskBadge = (level, score) => `<span class="hub-badge hub-rb hub-rb-${String(level || "low").toLowerCase()}">${__(level || "Low")}${score ? ` · ${score}` : ""}</span>`;
 
-ui.riskLevelCounts = (by_level) =>
-	`<div class="hub-risk-levels">${["Critical", "High", "Medium", "Low"].map((l) => `<span class="hub-rb hub-rb-${l.toLowerCase()}"><b>${cint((by_level || {})[l])}</b> ${__(l)}</span>`).join("")}</div>`;
+ui.riskLevelCounts = (by_level, project) =>
+	`<div class="hub-risk-levels">${["Critical", "High", "Medium", "Low"].map((l) => `<span class="hub-rb hub-rb-${l.toLowerCase()}" ${project ? ui.goAttr(ui.go("Risk Register", { project, risk_level: l, status: ["in", ui.OPEN_RISK] })) : ""}><b>${cint((by_level || {})[l])}</b> ${__(l)}</span>`).join("")}</div>`;
 
 ui.riskTable = (rows, with_project) =>
 	ui.table(
@@ -227,12 +242,13 @@ ui.riskTable = (rows, with_project) =>
 	);
 
 // 5 x 5 probability / impact matrix; ``matrix[0]`` is probability 5 and the columns are impact 1..5.
-ui.heatmap = (matrix) => {
+ui.heatmap = (matrix, project) => {
 	const cell = (p, i, n) => {
 		const score = p * i;
 		const limits = frappe.boot.auri_pms_risk_thresholds || { medium: 5, high: 10, critical: 15 };
 		const level = score >= limits.critical ? "critical" : score >= limits.high ? "high" : score >= limits.medium ? "medium" : "low";
-		return `<div class="hub-heat-cell hub-heat-${level} ${n ? "has" : ""}" title="${__("Probability {0} x Impact {1}", [p, i])}">${n || ""}</div>`;
+		const go = project && n ? ui.goAttr(ui.go("Risk Register", { project, probability: ["like", `${p} - %`], impact: ["like", `${i} - %`], status: ["in", ui.OPEN_RISK] })) : "";
+		return `<div class="hub-heat-cell hub-heat-${level} ${n ? "has" : ""}" title="${__("Probability {0} x Impact {1}", [p, i])}" ${go}>${n || ""}</div>`;
 	};
 	const rows = matrix.map((row, idx) => `<div class="hub-heat-axis">${5 - idx}</div>${row.map((n, col) => cell(5 - idx, col + 1, n)).join("")}`).join("");
 	return `<div class="hub-heat"><div class="hub-heat-axis"></div>${[1, 2, 3, 4, 5].map((i) => `<div class="hub-heat-axis">${i}</div>`).join("")}${rows}</div>
@@ -241,9 +257,17 @@ ui.heatmap = (matrix) => {
 
 ui.link = (doctype, name, label) => `<a href="/desk/${frappe.router.slug(doctype)}/${encodeURIComponent(name)}">${ui.esc(label || name)}</a>`;
 
-ui.chart = ($root, selector, config) => {
+// onPick(index): called with the position of the bar or point that was clicked
+ui.chart = ($root, selector, config, onPick) => {
 	const el = $root.find(selector)[0];
-	if (el) new frappe.Chart(el, { height: 230, ...config });
+	if (!el) return;
+	new frappe.Chart(el, { height: 230, ...config });
+	if (!onPick) return;
+	el.style.cursor = "pointer";
+	el.addEventListener("click", (e) => {
+		const unit = e.target.closest && e.target.closest("[data-point-index]");
+		if (unit) onPick(cint(unit.getAttribute("data-point-index")));
+	});
 };
 
 // Traffic-light banner: {level, label, score, reasons: [{level, text}]}
@@ -322,7 +346,7 @@ ui.injectStyle = () => {
 			/* overview rows: panels side by side share one height, so nothing drifts further down than its neighbour */
 			.hub-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 22px; align-items: stretch; margin-bottom: 22px; }
 			.hub-row > .hub-panel { margin-bottom: 0; height: 100%; }
-			.hub-row-even { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-risk-split { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 28px; align-items: start; } @media (max-width: 992px) { .hub-risk-split { grid-template-columns: 1fr; } }
+			.hub-row-even { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-risk-split { display: grid; grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); gap: 18px; align-items: stretch; } .hub-risk-split > div:first-child { display: flex; flex-direction: column; } .hub-risk-split .hub-heat { flex: 1; max-width: none; grid-template-rows: auto repeat(5, minmax(24px, 1fr)); } .hub-risk-split .hub-heat-cell { aspect-ratio: auto; } .hub-risk-split .hub-table { width: 100%; font-size: 11px; } .hub-risk-split .hub-table td, .hub-risk-split .hub-table th { padding: 4px 8px; } .hub-risk-split .hub-heat-cell { font-size: 12px; } @media (max-width: 992px) { .hub-risk-split { grid-template-columns: 1fr; } }
 			.hub-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hub-row-one { grid-template-columns: minmax(0, 1fr); }
 			@media (max-width: 992px) { .hub-row, .hub-row-3 { grid-template-columns: 1fr; } }
 			/* both columns end on the same line: the last panel of the shorter column grows to fill the gap */
@@ -361,6 +385,22 @@ ui.injectStyle = () => {
 			.hub-reason { font-size: 13px; margin: 3px 0; display: flex; align-items: center; gap: 8px; }
 			.hub-reason i { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; flex: 0 0 auto; }
 			.hub-reason.hub-red i { background: #ef4444; } .hub-reason.hub-amber i { background: #f59e0b; } .hub-reason.hub-green i { background: #10b981; }
+			/* My Work timeline tables: fixed column widths, numbers right-aligned, headers aligned with their values. */
+			.mw-table .hub-table { table-layout: fixed; width: 100%; } .mw-table .hub-table th, .mw-table .hub-table td { padding: 8px 10px; vertical-align: top; overflow-wrap: anywhere; }
+			.mw-table .hub-table th:first-child, .mw-table .hub-table td:first-child { padding-left: 0; } .mw-table .hub-table th:last-child, .mw-table .hub-table td:last-child { padding-right: 0; }
+			.mw-blocking col:nth-child(1) { width: 46%; } .mw-blocking col:nth-child(2) { width: 18%; } .mw-blocking col:nth-child(3) { width: 36%; }
+			.mw-releases col:nth-child(1) { width: 28%; } .mw-releases col:nth-child(2) { width: 20%; } .mw-releases col:nth-child(3) { width: 14%; } .mw-releases col:nth-child(4) { width: 24%; } .mw-releases col:nth-child(5) { width: 14%; }
+			.mw-projects col:nth-child(1) { width: 32%; } .mw-projects col:nth-child(2) { width: 24%; } .mw-projects col:nth-child(3) { width: 12%; } .mw-projects col:nth-child(4) { width: 14%; } .mw-projects col:nth-child(5) { width: 18%; }
+			.mw-releases :is(th, td):nth-child(3), .mw-releases :is(th, td):nth-child(4), .mw-projects :is(th, td):nth-child(n+3) { text-align: right; white-space: nowrap; }
+			.mw-releases :is(th, td):nth-child(5) { text-align: center; white-space: nowrap; } .mw-blocking :is(th, td):nth-child(2) { white-space: nowrap; }
+			/* My Work: one compact line per ticket. */
+			.mw-list { display: grid; } .mw-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) 72px 92px 84px; gap: 12px; align-items: center; padding: 9px 2px; border-top: 1px solid var(--g-border); font-size: 13px; } .mw-row:first-child { border-top: 0; }
+			.mw-head { padding: 4px 2px 6px; border-top: 0 !important; font-size: 10px; font-weight: 700; color: var(--g-muted); text-transform: uppercase; letter-spacing: .06em; } .mw-head .mw-due { font-size: 10px; color: var(--g-muted); }
+			.mw-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; } .mw-dot-red { background: #ef4444; } .mw-dot-orange { background: #f59e0b; } .mw-dot-blue { background: #3b82f6; } .mw-dot-grey { background: #cbd5e1; }
+			.mw-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .mw-text span { font-weight: 600; margin-right: 6px; } .mw-text em { font-style: normal; font-size: 11px; color: var(--g-muted); margin-left: 8px; }
+			.mw-flag { justify-self: start; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; } .mw-flag-bad { color: #dc2626; background: rgba(239, 68, 68, .12); } .mw-flag-warn { color: #b45309; background: rgba(245, 158, 11, .16); }
+			.mw-due { font-size: 12px; color: var(--g-muted); min-width: 64px; text-align: right; white-space: nowrap; } .mw-due-late { color: #dc2626; font-weight: 700; } .mw-due-today { color: #b45309; font-weight: 700; }
+			@media (max-width: 700px) { .mw-row { grid-template-columns: 10px minmax(0, 1fr) 92px; } .mw-flag, .mw-row .hub-btn, .mw-head span:nth-child(3), .mw-head span:nth-child(5) { display: none; } }
 			.hub-meter { display: flex; height: 22px; border-radius: 999px; overflow: hidden; box-shadow: var(--n-inset); margin-bottom: 12px; border: 1px solid var(--g-border); }
 			.hub-meter i, .hub-stack i { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; text-align: center; line-height: 22px; min-width: 0; }
 			.seg-blue { background: #3b82f6; } .seg-green { background: #10b981; } .seg-orange { background: #f59e0b; } .seg-red { background: #ef4444; } .seg-yellow { background: #eab308; }
@@ -411,6 +451,7 @@ ui.injectStyle = () => {
 			.hub-heat-axis { font-size: 11px; color: var(--g-muted); text-align: center; align-self: center; }
 			.hub-heat-cell { aspect-ratio: 1.25; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; opacity: .28; }
 			.hub-heat-cell.has { opacity: 1; }
+			.auri-hub [data-go] { cursor: pointer; } .auri-hub .hub-stack[data-go]:hover, .auri-hub .hub-rb[data-go]:hover { filter: brightness(.95); outline: 1px solid var(--g-border); border-radius: 6px; } .auri-hub .hub-heat-cell[data-go]:hover { outline: 2px solid var(--g-text); }
 			.hub-heat-critical { background: #ef4444; } .hub-heat-high { background: #f97316; } .hub-heat-medium { background: #eab308; } .hub-heat-low { background: #10b981; }
 			.hub-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 			.hub-chip { font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 999px; cursor: pointer; user-select: none;

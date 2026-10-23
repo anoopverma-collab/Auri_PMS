@@ -245,6 +245,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 			"project_module",
 			"estimated_hours",
 			"spent_hours",
+			"release",
 			"done_percent",
 			"dependent_on_client",
 			"client_dependency_note",
@@ -367,8 +368,134 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 			"sprints": my_sprints(user),
 			"closed_weekly": closed_weekly,
 			"closed_recent": closed[:5],
+			"impact": timeline_impact(items, today_, capacity / 5),
 		}
 	)
+
+
+def workdays_between(start: date, end: date) -> int:
+	"""Monday to Friday days from start up to and including end (0 when end is before start)."""
+	return sum(1 for n in range((end - start).days + 1) if (start + timedelta(days=n)).weekday() < 5)
+
+
+def timeline_impact(items: list, today_: date, hours_per_day: float) -> dict:
+	"""What the user's open tickets hold up: tickets they block, releases and projects with the work they still owe."""
+	names = [i.name for i in items]
+	hours_left = {i.name: max(flt(i.estimated_hours) - flt(i.spent_hours), 0) for i in items}
+
+	# tickets other people cannot finish until one of mine is done (a "Blocks" relation on mine or "Blocked by" on theirs)
+	pairs: set[tuple[str, str]] = set()
+	if names:
+		for row in frappe.get_all(
+			"Work Item Relation",
+			filters={"parent": ["in", names], "parenttype": "Work Item", "relation_type": "Blocks"},
+			fields=["parent", "related_work_item"],
+		):
+			pairs.add((row.parent, row.related_work_item))
+		for row in frappe.get_all(
+			"Work Item Relation",
+			filters={
+				"related_work_item": ["in", names],
+				"parenttype": "Work Item",
+				"relation_type": "Blocked by",
+			},
+			fields=["parent", "related_work_item"],
+		):
+			pairs.add((row.related_work_item, row.parent))
+	waiting = {
+		w.name: w
+		for w in frappe.get_list(
+			"Work Item",
+			filters={"name": ["in", [blocked for _mine, blocked in pairs] or [""]], "is_closed": 0},
+			fields=["name", "subject", "assigned_to", "project"],
+			limit_page_length=0,
+		)
+	}
+	people = full_names([w.assigned_to for w in waiting.values() if w.assigned_to])
+	mine = {i.name: i for i in items}
+	blocking: dict[str, dict] = {}
+	for mine_name, blocked_name in sorted(pairs):
+		if blocked_name not in waiting or mine_name not in mine:
+			continue
+		item = mine[mine_name]
+		due = getdate(item.due_date) if item.due_date else None
+		row = blocking.setdefault(
+			mine_name,
+			{
+				"name": mine_name,
+				"subject": item.subject,
+				"project": item.project,
+				"due_date": str(due) if due else None,
+				"days_overdue": (today_ - due).days if due and due < today_ else 0,
+				"blocks": [],
+			},
+		)
+		w = waiting[blocked_name]
+		row["blocks"].append(
+			{
+				"name": w.name,
+				"subject": w.subject,
+				"assignee_name": people.get(w.assigned_to, w.assigned_to)
+				if w.assigned_to
+				else _("Unassigned"),
+			}
+		)
+	blocking_rows = sorted(
+		blocking.values(), key=lambda r: (-len(r["blocks"]), -r["days_overdue"], r["name"])
+	)
+
+	# releases that still depend on my tickets: hours I owe against the working days left
+	release_names = {i.release for i in items if i.get("release")}
+	releases = []
+	for rel in frappe.get_list(
+		"Release",
+		filters={"name": ["in", list(release_names) or [""]], "status": ["!=", "Closed"]},
+		fields=["name", "project", "due_date"],
+		limit_page_length=0,
+	):
+		mine_here = [i for i in items if i.get("release") == rel.name]
+		owed = sum(hours_left[i.name] for i in mine_here)
+		due = getdate(rel.due_date) if rel.due_date else None
+		days_left = (due - today_).days if due else None
+		capacity = workdays_between(today_, due) * hours_per_day if due and due >= today_ else 0
+		state = "none" if not due else "late" if days_left < 0 else "tight" if owed > capacity else "ok"
+		releases.append(
+			{
+				"name": rel.name,
+				"project": rel.project,
+				"due_date": str(due) if due else None,
+				"days_left": days_left,
+				"open_items": len(mine_here),
+				"hours_owed": flt(owed, 1),
+				"hours_available": flt(capacity, 1),
+				"state": state,
+			}
+		)
+	releases.sort(key=lambda r: (r["due_date"] is None, r["due_date"] or ""))
+
+	# projects I work in, with the project's expected end date
+	project_names = sorted({i.project for i in items})
+	projects = []
+	for proj in frappe.get_all(
+		"Project",
+		filters={"name": ["in", project_names or [""]]},
+		fields=["name", "project_name", "expected_end_date"],
+	):
+		mine_here = [i for i in items if i.project == proj.name]
+		end = getdate(proj.expected_end_date) if proj.expected_end_date else None
+		projects.append(
+			{
+				"name": proj.name,
+				"label": proj.project_name or proj.name,
+				"end_date": str(end) if end else None,
+				"days_left": (end - today_).days if end else None,
+				"open_items": len(mine_here),
+				"overdue": sum(1 for i in mine_here if i.due_date and getdate(i.due_date) < today_),
+				"hours_owed": flt(sum(hours_left[i.name] for i in mine_here), 1),
+			}
+		)
+	projects.sort(key=lambda r: (-r["overdue"], -r["hours_owed"], r["name"]))
+	return {"blocking": blocking_rows, "releases": releases, "projects": projects}
 
 
 def blocked_by_open(items: list) -> dict[str, list[str]]:

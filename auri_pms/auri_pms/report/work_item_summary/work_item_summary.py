@@ -45,6 +45,8 @@ def get_columns() -> list[dict]:
 		{"fieldname": "client_waiting", "label": _("Waiting on Client"), "fieldtype": "Int", "width": 140},
 		{"fieldname": "closed_in_period", "label": _("Closed in Period"), "fieldtype": "Int", "width": 130},
 		{"fieldname": "total", "label": _("Total"), "fieldtype": "Int", "width": 90},
+		{"fieldname": "pct_complete", "label": _("% Complete"), "fieldtype": "Percent", "width": 110},
+		{"fieldname": "pct_overdue", "label": _("% of Open Overdue"), "fieldtype": "Percent", "width": 150},
 	]
 
 
@@ -88,6 +90,11 @@ def get_data(filters: frappe._dict) -> list[dict]:
 		row["overdue"] += int(bool(item.due_date and getdate(item.due_date) < getdate(today())))
 		row["unassigned"] += int(not item.assigned_to)
 		row["client_waiting"] += int(bool(cint(item.dependent_on_client)))
+	for row in by_project.values():
+		row["pct_complete"] = (
+			round((row["total"] - row["open"]) / row["total"] * 100, 1) if row["total"] else 0
+		)
+		row["pct_overdue"] = round(row["overdue"] / row["open"] * 100, 1) if row["open"] else 0
 	return sorted(by_project.values(), key=lambda r: r["project"])
 
 

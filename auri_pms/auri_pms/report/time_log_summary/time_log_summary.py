@@ -53,6 +53,7 @@ def get_columns(group_by: str) -> list[dict]:
 			"fieldtype": "Float",
 			"width": 150,
 		},
+		{"fieldname": "pct_billable", "label": _("% Billable"), "fieldtype": "Percent", "width": 110},
 	]
 	if group_by == "Work Item":
 		columns.append(
@@ -89,6 +90,8 @@ def get_data(filters: frappe._dict, group_by: str) -> list[dict]:
 		row["hours"] += flt(entry.hours)
 		row["billable_hours" if entry.is_billable else "non_billable_hours"] += flt(entry.hours)
 		row["entries"] += 1
+	for row in groups.values():
+		row["pct_billable"] = round(row["billable_hours"] / row["hours"] * 100, 1) if row["hours"] else 0
 	rows = sorted(groups.values(), key=lambda r: -r["hours"])
 	if group_by == "Work Item" and rows:
 		estimates = dict(

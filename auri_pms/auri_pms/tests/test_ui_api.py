@@ -93,7 +93,11 @@ class TestUiApi(TrackerTestCase):
 		links = {(l.link_doctype, l.link_fieldname) for l in frappe.get_meta("Work Item").links}
 		self.assertEqual(
 			links,
-			{("Work Item", "parent_work_item"), ("Time Entry", "work_item"), ("Risk Register", "related_work_item")},
+			{
+				("Work Item", "parent_work_item"),
+				("Time Entry", "work_item"),
+				("Risk Register", "related_work_item"),
+			},
 		)
 
 	def test_gantt_events_use_start_and_due_dates(self):
