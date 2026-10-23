@@ -104,7 +104,8 @@
   "is_system_generated": 0,
   "label": "Enable Auri PMS",
   "module": "Auri PMS",
-  "name": "Project-pms_enabled"
+  "name": "Project-pms_enabled",
+  "permlevel": 2
  },
  {
   "default": "0",

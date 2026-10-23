@@ -6,6 +6,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from auri_pms.auri_pms.utils import summary_card
+
 GROUP_FIELDS = {"User": "user", "Project": "project", "Activity": "activity_type", "Work Item": "work_item"}
 GROUP_OPTIONS = {"User": "User", "Project": "Project", "Activity": "Activity Type", "Work Item": "Work Item"}
 
@@ -17,7 +19,21 @@ def execute(filters: dict | None = None) -> tuple:
 		frappe.throw(_("From Date and To Date are required"))
 	group_by = filters.group_by or "User"
 	data = get_data(filters, group_by)
-	return get_columns(group_by), data, None, get_chart(data)
+	return get_columns(group_by), data, None, get_chart(data), get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Total hours, the billable share and the number of entries."""
+	total = sum(r["hours"] for r in data)
+	billable = sum(r["billable_hours"] for r in data)
+	return [
+		summary_card(total, _("Total Hours"), "Float", "Blue"),
+		summary_card(billable, _("Billable Hours"), "Float", "Green"),
+		summary_card(
+			round(billable / total * 100, 1) if total else 0, _("Billable Share"), "Percent", "Green"
+		),
+		summary_card(sum(r["entries"] for r in data), _("Entries"), indicator="Gray"),
+	]
 
 
 def get_columns(group_by: str) -> list[dict]:
@@ -39,6 +55,7 @@ def get_columns(group_by: str) -> list[dict]:
 			"fieldtype": "Float",
 			"width": 150,
 		},
+		{"fieldname": "pct_billable", "label": _("% Billable"), "fieldtype": "Percent", "width": 110},
 	]
 	if group_by == "Work Item":
 		columns.append(
@@ -75,6 +92,8 @@ def get_data(filters: frappe._dict, group_by: str) -> list[dict]:
 		row["hours"] += flt(entry.hours)
 		row["billable_hours" if entry.is_billable else "non_billable_hours"] += flt(entry.hours)
 		row["entries"] += 1
+	for row in groups.values():
+		row["pct_billable"] = round(row["billable_hours"] / row["hours"] * 100, 1) if row["hours"] else 0
 	rows = sorted(groups.values(), key=lambda r: -r["hours"])
 	if group_by == "Work Item" and rows:
 		estimates = dict(

@@ -11,6 +11,11 @@ frappe.listview_settings["Work Item"] = {
 	add_fields: ["status", "priority", "assigned_to", "due_date", "is_closed", "project"],
 	filters: wi_is_plain_user ? [["is_closed", "=", 0]] : [],
 
+	formatters: {
+		priority: (value) => auri_pms.ui.priority(value),
+		due_date: (value, df, doc) => auri_pms.ui.due(value, doc && doc.is_closed),
+	},
+
 	get_indicator(doc) {
 		const colors = frappe.work_item_colors || {};
 		return [__(doc.status), colors[doc.status] || "gray", `status,=,${doc.status}`];

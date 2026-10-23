@@ -65,20 +65,30 @@ class MyWork {
 		);
 	}
 
-	ticket_table(rows) {
+	// One compact line per ticket: priority dot, ID and subject, project, due chip, a flag when blocked or waiting, log time.
+	ticket_rows(rows) {
 		const esc = ui.esc;
-		return `<table class="table table-sm hub-table"><thead><tr><th>${__("Ticket")}</th><th>${__("Summary")}</th><th>${__("Status")}</th><th>${__("Priority")}</th><th>${__("Due")}</th><th></th></tr></thead><tbody>${rows
+		const dot = { Immediate: "red", Urgent: "red", High: "orange", Normal: "blue", Low: "grey" };
+		const head = `<div class="mw-row mw-head"><span></span><span>${__("Ticket")}</span><span>${__("Alert")}</span><span class="mw-due">${__("Due")}</span><span></span></div>`;
+		return `<div class="mw-list">${head}${rows
 			.map((i) => {
-				const badges = [
-					i.blocked_by.length ? `<span class="hub-badge hub-badge-bad" title="${esc(i.blocked_by.join(", "))}">${__("Blocked")}</span>` : "",
-					cint(i.dependent_on_client) ? `<span class="hub-badge hub-badge-warn" title="${esc(i.client_dependency_note || "")}">${__("Waiting on client")}</span>` : "",
-				].join(" ");
-				return `<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td>
-					<td>${esc(i.subject)} ${badges}<div class="hub-sub">${esc(i.project_label)}${i.module ? ` · ${esc(i.module)}` : ""}</div></td><td>${esc(__(i.status))}</td><td>${esc(__(i.priority))}</td>
-					<td class="${i.days_overdue ? "text-danger" : ""}" style="white-space:nowrap">${i.due_date ? frappe.datetime.str_to_user(i.due_date) : ""}${i.days_overdue ? `<div class="hub-sub">${__("{0} days late", [i.days_overdue])}</div>` : ""}</td>
-					<td><button class="hub-btn" data-log="${esc(i.name)}" data-subject="${esc(i.subject)}">${__("Log time")}</button></td></tr>`;
+				const flag = i.blocked_by.length
+					? `<span class="mw-flag mw-flag-bad" title="${esc(i.blocked_by.join(", "))}">${__("Blocked")}</span>`
+					: cint(i.dependent_on_client)
+						? `<span class="mw-flag mw-flag-warn" title="${esc(i.client_dependency_note || "")}">${__("Client")}</span>`
+						: "<span></span>";
+				const due = i.days_overdue
+					? `<span class="mw-due mw-due-late">${__("{0}d late", [i.days_overdue])}</span>`
+					: i.due_date === this.data.today
+						? `<span class="mw-due mw-due-today">${__("Today")}</span>`
+						: `<span class="mw-due">${i.due_date ? frappe.datetime.str_to_user(i.due_date) : ""}</span>`;
+				return `<div class="mw-row">
+					<i class="mw-dot mw-dot-${dot[i.priority] || "blue"}" title="${esc(__(i.priority))}"></i>
+					<div class="mw-text"><span>${ui.link("Work Item", i.name)}</span> ${esc(i.subject)}<em>${esc(i.project_label)}</em></div>
+					${flag}${due}
+					<button class="hub-btn" data-log="${esc(i.name)}" data-subject="${esc(i.subject)}">${__("Log time")}</button></div>`;
 			})
-			.join("")}</tbody></table>`;
+			.join("")}</div>`;
 	}
 
 	render() {
@@ -90,8 +100,8 @@ class MyWork {
 		const blocked = Object.values(d.groups).flat().filter((i) => i.blocked_by.length).map((i) => i.name);
 		const groups = MW_GROUPS.filter(([key]) => d.groups[key].length)
 			.map(
-				([key, label, open], index) =>
-					`<details class="hub-group" ${open || index === 0 ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})</summary>${this.ticket_table(d.groups[key])}</details>`
+				([key, label]) =>
+					`<details class="hub-group" ${key === "overdue" ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})</summary>${this.ticket_rows(d.groups[key])}</details>`
 			)
 			.join("");
 		const sprints = d.sprints.length
@@ -110,6 +120,32 @@ class MyWork {
 			? ui.table(mine_waiting, [__("Ticket"), __("Summary"), __("What we need"), __("Waiting")], (i) =>
 				`<tr><td style="white-space:nowrap">${ui.link("Work Item", i.name)}</td><td>${ui.esc(i.subject)}</td><td>${ui.esc(i.client_dependency_note || "")}</td><td style="white-space:nowrap">${i.client_dependency_since ? ui.days(frappe.datetime.get_diff(d.today, i.client_dependency_since)) : ""}</td></tr>`)
 			: `<div class="text-muted small">${__("None of your tickets is waiting on the client.")}</div>`;
+		const im = d.impact;
+		// fixed-width columns (widths live in the bundle's .mw-* rules)
+		const cols = (html, n) => html.replace(/(<table[^>]*>)/, `$1<colgroup>${"<col>".repeat(n)}</colgroup>`);
+		const state_chip = (state) => ({
+			late: `<span class="hub-badge hub-risk-late">${__("Late")}</span>`,
+			tight: `<span class="hub-badge hub-risk-risk">${__("Tight")}</span>`,
+			ok: `<span class="hub-badge hub-risk-ok">${__("On track")}</span>`,
+		})[state] || "";
+		const blocking = im.blocking.length
+			? cols(ui.table(im.blocking, [__("My ticket"), __("Overdue"), __("Holding up")], (b) =>
+				`<tr><td>${ui.link("Work Item", b.name)}<div class="hub-sub">${ui.esc(b.subject)}</div></td>
+				<td style="white-space:nowrap" class="${b.days_overdue ? "text-danger" : ""}">${b.days_overdue ? ui.days(b.days_overdue) : ""}</td>
+				<td>${b.blocks.map((w) => `<div>${ui.link("Work Item", w.name)} <span class="hub-sub">${ui.esc(w.assignee_name)}</span></div>`).join("")}</td></tr>`), 3)
+			: `<div class="text-muted small">${__("None of your tickets is holding up someone else.")}</div>`;
+		const releases = im.releases.length
+			? cols(ui.table(im.releases, [__("Release"), __("Due"), __("My tickets"), __("Hours owed / available"), ""], (r) =>
+				`<tr><td>${ui.link("Release", r.name)}<div class="hub-sub">${ui.esc(r.project)}</div></td>
+				<td style="white-space:nowrap">${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}<div class="hub-sub">${r.days_left === null ? "" : r.days_left < 0 ? __("{0} days overdue", [-r.days_left]) : __("{0} days left", [r.days_left])}</div></td>
+				<td>${r.open_items}</td><td style="white-space:nowrap">${r.hours_owed} h / ${r.hours_available} h</td><td style="white-space:nowrap">${state_chip(r.state)}</td></tr>`), 5)
+			: `<div class="text-muted small">${__("None of your open tickets is in an open release.")}</div>`;
+		const projects = im.projects.length
+			? cols(ui.table(im.projects, [__("Project"), __("Project ends"), __("Open"), __("Overdue"), __("Hours owed")], (p) =>
+				`<tr><td>${ui.link("Project", p.name, p.label)}</td>
+				<td style="white-space:nowrap">${p.end_date ? frappe.datetime.str_to_user(p.end_date) : ""}<div class="hub-sub">${p.days_left === null ? "" : p.days_left < 0 ? __("{0} days overdue", [-p.days_left]) : __("{0} days left", [p.days_left])}</div></td>
+				<td>${p.open_items}</td><td class="${p.overdue ? "text-danger" : ""}">${p.overdue}</td><td>${p.hours_owed} h</td></tr>`), 5)
+			: "";
 		const missing = d.hours.missing_days.length ? `<div class="hub-badge hub-badge-warn" style="display:inline-block;margin-top:8px">${__("No hours logged on {0}", [d.hours.missing_days.join(", ")])}</div>` : "";
 		this.$body.html(`
 			<div class="hub-title"><h4>${__("My Work")}</h4><span class="text-muted">${ui.esc(frappe.user.full_name())} · ${frappe.datetime.str_to_user(d.today)}</span></div>
@@ -123,6 +159,11 @@ class MyWork {
 				${tile(t.hours_week, __("Hours this week"), "hub-green", __("{0}% of {1} h", [t.capacity_pct, t.capacity]), ui.go("Time Entry", { user: frappe.session.user, date: ["between", [d.week_start, week_end]] }))}
 				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal", "", mine({ is_closed: 1, closed_on: [">=", frappe.datetime.add_days(d.today, -28)] }))}
 			</div>
+			<div class="hub-row hub-row-even">
+				${panel(`${__("Others are waiting on me")} (${im.blocking.length})`, `<div class="mw-table mw-blocking">${blocking}</div>`)}
+				${projects ? panel(__("Projects I am on"), `<div class="mw-table mw-projects">${projects}</div>`) : ""}
+			</div>
+			<div class="hub-row hub-row-one">${panel(__("Releases that depend on me"), `<div class="mw-table mw-releases">${releases}</div>`)}</div>
 			<div class="hub-row hub-row-one">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 			<div class="hub-row hub-row-even">
 				${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}

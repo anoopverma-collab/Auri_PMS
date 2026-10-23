@@ -5,40 +5,48 @@
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
+		"tab_details",
 		"subject",
-		"project",
-		"tracker",
-		"status",
+		"sprint",
 		"priority",
 		"assigned_to",
-		"category",
-		"project_module",
-		"release",
-		"sprint",
-		"parent_work_item",
-		"dependent_on_client",
-		"client_dependency_note",
 		"client_dependency_since",
-		"hide_from_client_report",
-		"author",
-		"column_break_1",
+		"column_break_main_1",
+		"project",
+		"category",
 		"start_date",
+		"dependent_on_client",
+		"column_break_main_2",
+		"tracker",
+		"status",
 		"due_date",
-		"estimated_hours",
-		"done_percent",
-		"spent_hours",
-		"total_spent_hours",
-		"total_estimated_hours",
+		"hide_from_client_report",
+		"client_dependency_note",
 		"section_description",
 		"description",
+		"tab_schedule",
+		"section_schedule",
+		"release",
+		"estimated_hours",
+		"total_estimated_hours",
+		"column_break_section_schedule_1",
+		"project_module",
+		"spent_hours",
+		"total_spent_hours",
+		"column_break_section_schedule_2",
+		"parent_work_item",
+		"done_percent",
+		"tab_related",
 		"section_relations",
 		"relations",
 		"section_meta",
+		"author",
+		"raised_by_email",
 		"is_closed",
+		"column_break_meta_1",
 		"closed_on",
 		"closed_by",
-		"project_identifier",
-		"raised_by_email"
+		"project_identifier"
 	],
 	"fields": [
 		{
@@ -110,8 +118,7 @@
 			"in_standard_filter": 1,
 			"label": "Module",
 			"options": "Project Module",
-			"search_index": 1,
-			"description": "The part of the product this ticket is about"
+			"search_index": 1
 		},
 		{
 			"fieldname": "release",
@@ -174,10 +181,6 @@
 			"read_only": 1
 		},
 		{
-			"fieldname": "column_break_1",
-			"fieldtype": "Column Break"
-		},
-		{
 			"fieldname": "start_date",
 			"fieldtype": "Date",
 			"label": "Start Date"
@@ -233,7 +236,6 @@
 			"label": "Description"
 		},
 		{
-			"collapsible": 1,
 			"fieldname": "section_relations",
 			"fieldtype": "Section Break",
 			"label": "Related Items"
@@ -245,7 +247,6 @@
 			"options": "Work Item Relation"
 		},
 		{
-			"collapsible": 1,
 			"fieldname": "section_meta",
 			"fieldtype": "Section Break",
 			"label": "Status Details"
@@ -289,6 +290,46 @@
 			"label": "Raised By (Email)",
 			"options": "Email",
 			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_main_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_main_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_schedule",
+			"fieldtype": "Section Break",
+			"label": "Schedule & Effort"
+		},
+		{
+			"fieldname": "column_break_section_schedule_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_schedule_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "tab_details",
+			"fieldtype": "Tab Break",
+			"label": "Details"
+		},
+		{
+			"fieldname": "tab_related",
+			"fieldtype": "Tab Break",
+			"label": "Related & Status"
+		},
+		{
+			"fieldname": "tab_schedule",
+			"fieldtype": "Tab Break",
+			"label": "Schedule & Effort"
+		},
+		{
+			"fieldname": "column_break_meta_1",
+			"fieldtype": "Column Break"
 		}
 	],
 	"is_calendar_and_gantt": 1,
@@ -302,9 +343,14 @@
 			"group": "Time",
 			"link_doctype": "Time Entry",
 			"link_fieldname": "work_item"
+		},
+		{
+			"group": "Risks",
+			"link_doctype": "Risk Register",
+			"link_fieldname": "related_work_item"
 		}
 	],
-	"modified": "2026-10-11 19:00:00.000000",
+	"modified": "2026-10-22 19:35:43.730023",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Work Item",

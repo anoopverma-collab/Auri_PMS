@@ -152,7 +152,9 @@ class TestProjectHealth(TrackerTestCase):
 		item = self.new_item(MGR, tracker="Task", sprint=sprint.name, estimated_hours=6)
 		self.save_as(MGR, item, status="Closed")
 		self.save_as(MGR, sprint, status="Completed")
-		self.assertEqual(self.health().velocity, [{"sprint": "S1", "items": 1, "hours": 6.0}])
+		self.assertEqual(
+			self.health().velocity, [{"name": sprint.name, "sprint": "S1", "items": 1, "hours": 6.0}]
+		)
 
 	def test_empty_project_has_no_status(self):
 		"""A project without tickets shows 'No data yet'."""

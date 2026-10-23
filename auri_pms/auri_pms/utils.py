@@ -336,6 +336,14 @@ def follow_work_item(work_item: str, user: str | None) -> None:
 		frappe.get_doc({"doctype": "Document Follow", **filters}).insert(ignore_permissions=True)
 
 
+def summary_card(value, label: str, datatype: str = "Int", indicator: str | None = None) -> dict:
+	"""One figure of a query report's summary row; ``indicator`` is Red, Orange, Green, Blue or Gray."""
+	card = {"value": value, "label": label, "datatype": datatype}
+	if indicator:
+		card["indicator"] = indicator
+	return card
+
+
 def safe_sendmail(**kwargs) -> bool:
 	"""Queue an email without ever blocking the caller; failures are logged. Returns True if queued.
 

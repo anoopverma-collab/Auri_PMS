@@ -449,7 +449,12 @@ def velocity(project: str) -> list[dict]:
 		limit_page_length=0,
 	)
 	return [
-		{"sprint": s.sprint_name, "items": cint(s.closed_items), "hours": flt(s.estimated_hours, 2)}
+		{
+			"name": s.name,
+			"sprint": s.sprint_name,
+			"items": cint(s.closed_items),
+			"hours": flt(s.estimated_hours, 2),
+		}
 		for s in sprints
 	]
 

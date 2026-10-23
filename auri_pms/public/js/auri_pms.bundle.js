@@ -30,6 +30,52 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
+// Small HTML helpers for the list and form look of Auri PMS doctypes (styles: public/css/auri_pms.css).
+frappe.provide("auri_pms.ui");
+Object.assign(auri_pms.ui, {
+	priority(value) {
+		if (!value) return "";
+		return `<span class="auri-priority auri-priority-${frappe.utils.escape_html(value)}">${__(value)}</span>`;
+	},
+	// Date cell: red when overdue, orange when due within 3 days; nothing special once the item is closed.
+	due(date, closed) {
+		if (!date) return `<span class="auri-muted">-</span>`;
+		const text = frappe.datetime.str_to_user(date);
+		if (cint(closed)) return `<span class="auri-muted">${text}</span>`;
+		const days = frappe.datetime.get_diff(date, frappe.datetime.get_today());
+		const css = days < 0 ? "auri-due-overdue" : days <= 3 ? "auri-due-soon" : "";
+		return `<span class="${css}" title="${days < 0 ? __("{0} days overdue", [-days]) : __("Due in {0} days", [days])}">${text}</span>`;
+	},
+	progress(percent) {
+		const value = Math.max(0, Math.min(100, flt(percent)));
+		return `<span class="auri-progress"><span class="auri-progress-track"><span class="auri-progress-fill" style="width:${value}%"></span></span><span class="auri-progress-label">${Math.round(value)}%</span></span>`;
+	},
+	dot(color, label) {
+		return `<span class="auri-dot" style="${color ? `background:${frappe.utils.escape_html(color)}` : ""}"></span>${frappe.utils.escape_html(label || "")}`;
+	},
+	// Query report cells: priority pill, red/orange day counts. Anything else keeps Frappe's own formatting.
+	reportCell(value, row, column, data, default_formatter) {
+		const plain = default_formatter(value, row, column, data);
+		if (!data || value === null || value === undefined || value === "") return plain;
+		const field = column.fieldname;
+		if (field === "priority") return auri_pms.ui.priority(value);
+		if (field === "days_overdue" || field === "days_waiting") {
+			const css = flt(value) > 7 ? "auri-due-overdue" : flt(value) > 0 ? "auri-due-soon" : "";
+			return `<span class="${css}">${plain}</span>`;
+		}
+		if (field === "days_left") {
+			const css = flt(value) < 0 ? "auri-due-overdue" : flt(value) <= 3 ? "auri-due-soon" : "";
+			return `<span class="${css}">${plain}</span>`;
+		}
+		if (field === "overdue" && flt(value) > 0) return `<span class="auri-due-overdue">${plain}</span>`;
+		if (field === "unassigned" && flt(value) > 0) return `<span class="auri-due-soon">${plain}</span>`;
+		return plain;
+	},
+	chips(items) {
+		return `<div class="auri-chips">${items.filter(Boolean).map((html) => `<span class="auri-chip">${html}</span>`).join("")}</div>`;
+	},
+});
+
 // Frappe builds an extra sidebar for every module and the module used to be called "Tracking", so old browsers may remember "Tracking" (or the
 // old name "Tracker") in the top-left corner instead of "Auri PMS". Drop that generated sidebar, repair any remembered choice
 // that points at it, and switch back whenever one of the two names is shown.

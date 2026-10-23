@@ -6,4 +6,5 @@ frappe.query_reports["Sprint Summary"] = {
 		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
 		{fieldname: "status", label: __("Status"), fieldtype: "Select", options: ["", "Planned", "Active", "Completed"]},
 	],
+	formatter: (value, row, column, data, default_formatter) => auri_pms.ui.reportCell(value, row, column, data, default_formatter),
 };

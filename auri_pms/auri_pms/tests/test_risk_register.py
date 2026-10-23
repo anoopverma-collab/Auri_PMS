@@ -36,6 +36,44 @@ class TestRiskRegister(TrackerTestCase):
 			doc = self.risk(**values)
 			self.assertEqual((doc.risk_score, doc.risk_level), (score, level), values)
 
+	def test_assessed_by_is_the_user_who_last_changed_probability_or_impact(self):
+		doc = self.risk(**CRITICAL)
+		self.assertEqual(doc.assessed_by, MGR)
+		with self.as_user(TM):
+			doc.title = "Renamed"
+			doc.save()
+		self.assertEqual(doc.assessed_by, MGR)
+		with self.as_user(TM):
+			doc.update(LOW)
+			doc.save()
+		self.assertEqual(doc.assessed_by, TM)
+
+	def test_closing_a_risk_needs_a_remark_but_closed_risks_keep_saving(self):
+		doc = self.risk(**CRITICAL)
+		with self.as_user(MGR):
+			doc.status = "Closed"
+			with self.assertRaises(frappe.ValidationError):
+				doc.save()
+			doc.reload()
+			doc.status = "Closed"
+			doc.closing_remark = "Mitigated by the vendor patch"
+			doc.save()
+		self.assertEqual(doc.closed_on, today())
+		# a risk closed before the remark existed has none; editing it must not demand one
+		frappe.db.set_value("Risk Register", doc.name, "closing_remark", None)
+		old = frappe.get_doc("Risk Register", doc.name)
+		with self.as_user(MGR):
+			old.title = "Renamed after closing"
+			old.save()
+		self.assertEqual(old.status, "Closed")
+
+	def test_naming_survives_a_missing_counter(self):
+		first = self.risk()
+		frappe.db.delete("Series", {"name": first.name.rsplit("-", 1)[0] + "-"})
+		second = self.risk()
+		self.assertNotEqual(first.name, second.name)
+		self.assertEqual(int(second.name.rsplit("-", 1)[1]), int(first.name.rsplit("-", 1)[1]) + 1)
+
 	def test_name_carries_the_project_identifier_and_numbers_each_project_on_its_own(self):
 		first, second = self.risk(), self.risk()
 		other = self.risk(project=self.BET)
@@ -60,10 +98,11 @@ class TestRiskRegister(TrackerTestCase):
 	def test_closed_on_is_stamped_and_cleared(self):
 		doc = self.risk()
 		self.assertIsNone(doc.closed_on)
-		doc = self.save_as(MGR, doc, status="Closed")
+		doc = self.save_as(MGR, doc, status="Closed", closing_remark="Done and dusted")
 		self.assertEqual(str(doc.closed_on), today())
 		doc = self.save_as(MGR, doc, status="Monitoring")
 		self.assertIsNone(doc.closed_on)
+		self.assertIsNone(doc.closing_remark)
 
 	def test_related_work_item_must_be_in_the_same_project(self):
 		other = self.new_item(MGR, project=self.BET, tracker="Task")

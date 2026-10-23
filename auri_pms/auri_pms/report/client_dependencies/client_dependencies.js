@@ -7,4 +7,5 @@ frappe.query_reports["Client Dependencies"] = {
 		{fieldname: "assigned_to", label: __("Assigned To"), fieldtype: "Link", options: "User"},
 		{fieldname: "min_days", label: __("Waiting at least (days)"), fieldtype: "Int", default: 0},
 	],
+	formatter: (value, row, column, data, default_formatter) => auri_pms.ui.reportCell(value, row, column, data, default_formatter),
 };

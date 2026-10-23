@@ -84,14 +84,21 @@ class TestUiApi(TrackerTestCase):
 		self.assertIn("auri_pms.auri_pms.project_hooks.get_dashboard_data", hooked)
 
 	def test_work_item_connections_and_onload(self):
-		"""The Work Item form links Subtasks and Time Entries; onload flags items with children."""
+		"""The Work Item form links Subtasks, Time Entries and Risks; onload flags items with children."""
 		parent = self.new_item(MGR)
 		self.new_item(MGR, parent_work_item=parent.name)
 		doc = frappe.get_doc("Work Item", parent.name)
 		doc.run_method("onload")
 		self.assertTrue(doc.get_onload("has_children"))
 		links = {(l.link_doctype, l.link_fieldname) for l in frappe.get_meta("Work Item").links}
-		self.assertEqual(links, {("Work Item", "parent_work_item"), ("Time Entry", "work_item")})
+		self.assertEqual(
+			links,
+			{
+				("Work Item", "parent_work_item"),
+				("Time Entry", "work_item"),
+				("Risk Register", "related_work_item"),
+			},
+		)
 
 	def test_gantt_events_use_start_and_due_dates(self):
 		"""Gantt/Calendar field map: start_date -> start, due_date -> end, subject -> title."""

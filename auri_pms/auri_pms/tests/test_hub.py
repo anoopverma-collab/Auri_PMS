@@ -93,7 +93,8 @@ class TestProjectHub(TrackerTestCase):
 		self.assertTrue(self.hub(MGR)["capabilities"]["can_manage_releases"])
 		rep = self.hub(REP)["capabilities"]
 		self.assertTrue(rep["can_create_items"])
-		self.assertFalse(rep["can_manage_releases"] or rep["can_log_time"])
+		self.assertTrue(rep["can_log_time"])
+		self.assertFalse(rep["can_manage_releases"])
 		self.assertTrue(
 			self.hub(OUT, self.BET)["capabilities"]["can_create_items"]
 		)  # public project, Reporter

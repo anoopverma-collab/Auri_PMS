@@ -7,14 +7,16 @@
 		"general_tab",
 		"defaults_section",
 		"default_status",
-		"default_priority",
 		"defaults_col",
+		"default_priority",
+		"column_break_defaults_2",
 		"public_project_role",
 		"ticket_rules_section",
 		"require_children_closed",
 		"require_blockers_closed",
 		"ticket_rules_col",
 		"max_subtask_depth",
+		"column_break_ticket_rules_2",
 		"due_reminder_days",
 		"time_tab",
 		"time_rules_section",
@@ -23,6 +25,7 @@
 		"time_rules_col",
 		"max_hours_per_entry",
 		"max_hours_per_day",
+		"column_break_time_rules_2",
 		"weekly_capacity_hours",
 		"risk_health_tab",
 		"risk_section",
@@ -36,10 +39,11 @@
 		"overdue_red_pct",
 		"burndown_amber_pct",
 		"burndown_red_pct",
-		"effort_ahead_amber_pct",
 		"health_col",
+		"effort_ahead_amber_pct",
 		"release_progress_pct",
 		"release_due_soon_days",
+		"column_break_health_2",
 		"backlog_growth_ratio",
 		"backlog_growth_min_created",
 		"score_red_penalty",
@@ -443,11 +447,27 @@
 			"fieldname": "report_default_subject",
 			"fieldtype": "Data",
 			"label": "Default Subject"
+		},
+		{
+			"fieldname": "column_break_defaults_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_ticket_rules_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_time_rules_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_health_2",
+			"fieldtype": "Column Break"
 		}
 	],
 	"issingle": 1,
 	"istable": 0,
-	"modified": "2026-10-12 18:00:00.000000",
+	"modified": "2026-10-22 16:05:08.404779",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "PMS Settings",

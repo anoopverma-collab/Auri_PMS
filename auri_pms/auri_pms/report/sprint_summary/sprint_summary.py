@@ -4,14 +4,36 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import date_diff, getdate, today
+from frappe.utils import date_diff, flt, getdate, today
+
+from auri_pms.auri_pms.utils import summary_card
 
 
 def execute(filters: dict | None = None) -> tuple:
 	"""Return columns, rows and a stacked bar chart of closed vs open items per sprint."""
 	filters = frappe._dict(filters or {})
 	data = get_data(filters)
-	return get_columns(), data, None, get_chart(data)
+	return get_columns(), data, None, get_chart(data), get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Sprints, how many are active, average completion and hours spent against the estimate."""
+	return [
+		summary_card(len(data), _("Sprints"), indicator="Blue"),
+		summary_card(sum(1 for r in data if r.status == "Active"), _("Active"), indicator="Green"),
+		summary_card(
+			sum(flt(r.percent_complete) for r in data) / len(data) if data else 0,
+			_("Average Complete"),
+			"Percent",
+			"Green",
+		),
+		summary_card(
+			sum(flt(r.spent_hours) for r in data),
+			_("Hours Spent / {0} Estimated").format(round(sum(flt(r.estimated_hours) for r in data), 1)),
+			"Float",
+			"Orange",
+		),
+	]
 
 
 def get_columns() -> list[dict]:

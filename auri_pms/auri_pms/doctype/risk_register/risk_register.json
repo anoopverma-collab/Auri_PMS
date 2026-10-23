@@ -6,29 +6,37 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"title",
-		"project",
-		"project_identifier",
 		"status",
-		"column_break_1",
+		"column_break_main_1",
+		"project",
 		"category",
+		"column_break_main_2",
 		"risk_owner",
+		"project_identifier",
+		"section_timeline",
 		"identified_on",
+		"column_break_section_timeline_1",
 		"mitigation_due",
+		"column_break_section_timeline_2",
+		"closed_on",
+		"closing_remark",
 		"assessment_section",
 		"probability",
-		"impact",
-		"column_break_2",
 		"risk_score",
+		"column_break_assessment_section_1",
+		"impact",
 		"risk_level",
+		"assessed_by",
+		"section_scoring",
+		"scoring_guide",
 		"details_section",
 		"description",
 		"mitigation_plan",
 		"contingency_plan",
 		"links_section",
 		"related_work_item",
-		"column_break_3",
-		"show_in_client_report",
-		"closed_on"
+		"column_break_links_section_1",
+		"show_in_client_report"
 	],
 	"fields": [
 		{
@@ -68,10 +76,6 @@
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 			"search_index": 1
-		},
-		{
-			"fieldname": "column_break_1",
-			"fieldtype": "Column Break"
 		},
 		{
 			"fieldname": "category",
@@ -121,10 +125,6 @@
 			"options": "1 - Negligible\n2 - Minor\n3 - Moderate\n4 - Major\n5 - Severe",
 			"default": "3 - Moderate",
 			"reqd": 1
-		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
 		},
 		{
 			"fieldname": "risk_score",
@@ -179,10 +179,6 @@
 			"options": "Work Item"
 		},
 		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
 			"fieldname": "show_in_client_report",
 			"fieldtype": "Check",
 			"label": "Show in Client Status Report",
@@ -193,12 +189,64 @@
 			"fieldname": "closed_on",
 			"fieldtype": "Date",
 			"label": "Closed On",
+			"depends_on": "eval:doc.status=='Closed'"
+		},
+		{
+			"fieldname": "closing_remark",
+			"fieldtype": "Small Text",
+			"label": "Closing Remark",
+			"depends_on": "eval:doc.status=='Closed'"
+		},
+		{
+			"fieldname": "column_break_main_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_main_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_timeline",
+			"fieldtype": "Section Break",
+			"label": "Timeline"
+		},
+		{
+			"fieldname": "column_break_section_timeline_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_timeline_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_assessment_section_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_links_section_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "assessed_by",
+			"fieldtype": "Link",
+			"label": "Assessed By",
+			"options": "User",
 			"read_only": 1
+		},
+		{
+			"fieldname": "section_scoring",
+			"fieldtype": "Section Break",
+			"label": "Scoring Guide"
+		},
+		{
+			"fieldname": "scoring_guide",
+			"fieldtype": "HTML",
+			"label": "Scoring Guide"
 		}
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-11 21:00:00.000000",
+	"modified": "2026-10-22 19:48:27.954747",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Risk Register",
@@ -243,5 +291,6 @@
 	"sort_order": "DESC",
 	"states": [],
 	"title_field": "title",
-	"track_changes": 1
+	"track_changes": 1,
+	"show_title_field_in_link": 1
 }

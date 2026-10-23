@@ -207,7 +207,7 @@ class ProjectHub {
 		this.$body.html(`
 			<div class="hub-title"><h4>${esc(info.project_name || info.name)}</h4>
 				<span class="hub-ident">${esc(info.tracker_identifier)}</span>
-				<span class="text-muted">${cint(info.is_public) ? __("Public project") : __("Private project")}</span></div>
+				<span class="text-muted">${cint(info.is_public) ? __("Public project") : __("Private project")}</span>${ui.projectDates(info)}</div>
 			<div class="hub-tiles">
 				${tile(n.open, __("Open"), "hub-blue", "open", waiting_text(n.client_dependent))}${tile(n.overdue, __("Overdue"), "hub-red", "overdue")}
 				${tile(n.mine, __("Assigned to me"), "hub-purple", "mine")}${tile(n.unassigned, __("Unassigned"), "hub-orange", "unassigned")}
@@ -282,8 +282,8 @@ class ProjectHub {
 
 
 
-	chart(selector, config) {
-		ui.chart(this.$body, selector, config);
+	chart(selector, config, onPick) {
+		ui.chart(this.$body, selector, config, onPick);
 	}
 
 	render_health(d, h) {
@@ -294,8 +294,8 @@ class ProjectHub {
 		const st = h.status;
 		const per = h.bucket === "month" ? __("monthly") : __("weekly");
 		const { bar, stack, panel, table, link } = ui;
-		const split = (rows) =>
-			stack(rows.map((r) => [__(r.label), r.count - r.client, r.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"]);
+		const split = (rows, field) =>
+			stack(rows.map((r) => [__(r.label), r.count - r.client, r.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"], rows.map((r) => ui.go("Work Item", { project: this.project, is_closed: 0, [field]: r.label })));
 		const waiting_panel = panel(
 			`${__("Waiting on client")} (${f.client_dependent}) <a class="small" style="float:right" href="#" data-open-report>${__("View all")}</a>`,
 			d.client_tickets.length
@@ -305,13 +305,13 @@ class ProjectHub {
 		);
 		const has_modules = f.by_module.some((r) => r.label !== __("(no module)"));
 		const module_panel = has_modules
-			? panel(__("Open vs closed (by module)"), stack(f.by_module.map((r) => [r.label, r.open, r.client, r.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"]))
+			? panel(__("Open vs closed (by module)"), stack(f.by_module.map((r) => [r.label, r.open, r.client, r.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"], f.by_module.map((r) => ui.go("Work Item", { project: this.project, ...(r.label === __("(no module)") ? {} : { project_module: r.label }) }))))
 			: "";
 		const rk = h.risks;
 		const risk_health = panel(
 			`${__("Risk register")} (${rk.open} ${__("open")})<span style="float:right" class="small"><a href="#" data-risk-list>${__("Open register")}</a>${d.capabilities.can_create_items ? ` &middot; <a href="#" data-risk-new>${__("New risk")}</a>` : ""}</span>`,
 			rk.total
-				? `${ui.riskLevelCounts(rk.by_level)}${rk.overdue ? `<div class="hub-sub" style="margin-bottom:8px">${__("{0} past the mitigation date", [rk.overdue])}</div>` : ""}<div class="hub-risk-split"><div>${ui.heatmap(rk.matrix)}</div><div>${ui.riskTable(rk.top.map((r) => ({ ...r, project_label: "" })))}</div></div>`
+				? `${ui.riskLevelCounts(rk.by_level, this.project)}${rk.overdue ? `<div class="hub-sub" style="margin-bottom:8px">${__("{0} past the mitigation date", [rk.overdue])}</div>` : ""}<div class="hub-risk-split"><div>${ui.heatmap(rk.matrix, this.project)}</div><div>${ui.riskTable(rk.top.slice(0, 5).map((r) => ({ ...r, project_label: "" })))}</div></div>`
 				: `<div class="text-muted small">${__("No risks have been registered for this project.")}</div>`
 		);
 		const items = (filters) => ui.go("Work Item", { project: this.project, ...filters });
@@ -321,7 +321,7 @@ class ProjectHub {
 		const releases = h.releases.length
 			? `<table class="table table-sm hub-table"><thead><tr><th>${__("Release")}</th><th>${__("Due")}</th><th>${__("Days left")}</th><th>${__("Progress")}</th><th></th></tr></thead><tbody>${h.releases
 					.map(
-						(r) => `<tr><td>${esc(r.label)}</td><td>${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}</td><td>${r.days_left === null ? "" : r.days_left}</td>
+						(r) => `<tr ${ui.goAttr({ route: ["Form", "Release", r.name], filters: {} })}><td>${esc(r.label)}</td><td>${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}</td><td>${r.days_left === null ? "" : r.days_left}</td>
 						<td style="min-width:120px"><div class="progress"><div class="progress-bar" style="width:${flt(r.percent)}%"></div></div></td><td>${risk_badge(r)}</td></tr>`
 					)
 					.join("")}</tbody></table>`
@@ -330,15 +330,15 @@ class ProjectHub {
 		const pct = (n) => (f.total ? (n / f.total) * 100 : 0);
 		const with_us = f.open - f.client_dependent;
 		const open_closed = `<div class="hub-meter"><i class="seg-blue" style="width:${pct(with_us)}%">${with_us}</i><i class="seg-orange" style="width:${pct(f.client_dependent)}%">${f.client_dependent || ""}</i><i class="seg-green" style="width:${pct(f.closed)}%">${f.closed}</i></div>` +
-			stack(f.by_tracker.map((r) => [__(r.label), r.open, r.client, r.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"]);
+			stack(f.by_tracker.map((r) => [__(r.label), r.open, r.client, r.closed]), [__("Open (with us)"), __("Waiting on client"), __("Closed")], ["seg-blue", "seg-orange", "seg-green"], f.by_tracker.map((r) => ui.go("Work Item", { project: this.project, tracker: r.label })));
 		const people_open = panel(__("Open tickets by person"), h.workload.length ? h.workload.map((w) => bar(w.name, w.open, Math.max(...h.workload.map((x) => x.open)))).join("") : `<div class="text-muted small">${__("Nothing open")}</div>`);
 		const people_hours = panel(__("Hours by person (billable vs non-billable)"), stack(t.by_user.map((u) => [u.name, u.billable, u.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]));
 
 		const p_flow = panel(`${__("Tickets created vs resolved")} (${per})`, `<div class="hub-chart" id="hc-flow"></div><div class="small text-muted mt-2">${__("{0} created · {1} resolved in this range", [f.created_total, f.resolved_total]) + (f.created_waiting ? ` · ${__("{0} of the new tickets are waiting on the client", [f.created_waiting])}` : "")}</div>`);
 		const p_trend = panel(`${__("Open backlog trend")} (${per})`, `<div class="hub-chart" id="hc-trend"></div>`);
 		const p_type = panel(__("Open vs closed (by type)"), open_closed);
-		const p_status = panel(__("Open by status (with us vs waiting on client)"), split(f.open_by_status));
-		const p_prio = panel(__("Open tickets by priority"), split(f.open_by_priority));
+		const p_status = panel(__("Open by status (with us vs waiting on client)"), split(f.open_by_status, "status"));
+		const p_prio = panel(__("Open tickets by priority"), split(f.open_by_priority, "priority"));
 		const p_time = panel(`${__("Spent time: billable vs non-billable")} (${per})`, `<div class="hub-chart" id="hc-time"></div>`);
 		const p_est = panel(__("Estimated vs spent hours"), `${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}`);
 		const p_activity = panel(__("Hours by activity (billable vs non-billable)"), stack(t.by_activity.map((a) => [a.label, a.billable, a.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]));
@@ -353,7 +353,7 @@ class ProjectHub {
 
 		this.$body.html(`
 			<div class="hub-title"><h4>${esc(info.project_name || info.name)}</h4><span class="hub-ident">${esc(info.tracker_identifier)}</span>
-				<span class="text-muted">${__("Project health")} · ${__(ui.PERIOD_NOTE[h.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span></div>
+				<span class="text-muted">${__("Project health")} · ${__(ui.PERIOD_NOTE[h.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span>${ui.projectDates(info)}</div>
 			${st ? ui.statusBanner(st) : ""}
 			<div class="hub-tiles">
 				${tile(`${f.completion_pct}%`, __("Complete"), "hub-green", __("{0} of {1} tickets", [f.closed, f.total]), items())}
@@ -386,8 +386,12 @@ class ProjectHub {
 		this.chart("#hc-flow", { type: "bar", data: { labels: weeks, datasets: [{ name: __("Created"), values: f.created }, { name: __("Resolved"), values: f.resolved }] }, colors: [palette.blue, palette.green], barOptions: { spaceRatio: 0.4 } });
 		this.chart("#hc-trend", { type: "line", data: { labels: weeks, datasets: [{ name: __("Open tickets"), values: f.open_trend }, { name: __("of which waiting on client"), values: f.client_trend }] }, colors: [palette.purple, palette.orange], lineOptions: { regionFill: 1 } });
 		this.chart("#hc-time", { type: "bar", data: { labels: weeks, datasets: [{ name: __("Billable"), values: t.billable_by_week }, { name: __("Non-billable"), values: t.non_billable_by_week }] }, colors: [palette.green, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.4 } });
-		if (h.velocity.length) this.chart("#hc-velocity", { type: "bar", data: { labels: h.velocity.map((v) => v.sprint), datasets: [{ name: __("Tickets closed"), values: h.velocity.map((v) => v.items) }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } });
-		this.chart("#hc-aging", { type: "bar", data: { labels: f.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: f.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: f.aging.map((a) => a.client) }] }, colors: [palette.blue, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } });
+		if (h.velocity.length) this.chart("#hc-velocity", { type: "bar", data: { labels: h.velocity.map((v) => v.sprint), datasets: [{ name: __("Tickets closed"), values: h.velocity.map((v) => v.items) }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } }, (i) => ui.openTarget(ui.go("Work Item", { project: this.project, sprint: h.velocity[i].name, is_closed: 1 })));
+		this.chart("#hc-aging", { type: "bar", data: { labels: f.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: f.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: f.aging.map((a) => a.client) }] }, colors: [palette.blue, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } }, (i) => {
+			const day = (n) => frappe.datetime.add_days(frappe.datetime.get_today(), -n);
+			const ranges = [["between", [day(7), frappe.datetime.get_today()]], ["between", [day(14), day(8)]], ["between", [day(30), day(15)]], ["between", [day(60), day(31)]], ["<", day(60)]];
+			ui.openTarget(ui.go("Work Item", { project: this.project, is_closed: 0, creation: ranges[i] }));
+		});
 	}
 
 

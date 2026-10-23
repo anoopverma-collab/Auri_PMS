@@ -26,7 +26,7 @@ required_apps = ["erpnext"]
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/auri_pms/css/auri_pms.css"
+app_include_css = "/assets/auri_pms/css/auri_pms.css"
 # app_include_js = "/assets/auri_pms/js/auri_pms.js"
 
 # include js, css files in header of web template
@@ -307,7 +307,10 @@ has_permission = {
 	"Project Module": "auri_pms.permissions.project_module_has_permission",
 }
 
-override_doctype_dashboards = {"Project": ["auri_pms.auri_pms.project_hooks.get_dashboard_data"]}
+override_doctype_dashboards = {
+	"Project": ["auri_pms.auri_pms.project_hooks.get_dashboard_data"],
+	"Work Item": ["auri_pms.auri_pms.doctype.work_item.work_item.get_dashboard_data"],
+}
 
 scheduler_events = {
 	"hourly": [

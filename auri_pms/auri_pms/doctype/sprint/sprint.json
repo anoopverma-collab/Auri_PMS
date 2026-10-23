@@ -6,22 +6,24 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"sprint_name",
-		"project",
-		"project_identifier",
-		"status",
-		"column_break_1",
 		"start_date",
+		"column_break_main_1",
+		"project",
 		"end_date",
+		"column_break_main_2",
+		"status",
+		"project_identifier",
 		"section_goal",
 		"goal",
 		"carry_over_to",
 		"section_progress",
 		"total_items",
-		"closed_items",
-		"percent_complete",
-		"column_break_2",
 		"estimated_hours",
-		"spent_hours"
+		"column_break_section_progress_1",
+		"closed_items",
+		"spent_hours",
+		"column_break_section_progress_2",
+		"percent_complete"
 	],
 	"fields": [
 		{
@@ -61,10 +63,6 @@
 			"options": "Planned\nActive\nCompleted",
 			"reqd": 1,
 			"search_index": 1
-		},
-		{
-			"fieldname": "column_break_1",
-			"fieldtype": "Column Break"
 		},
 		{
 			"fieldname": "start_date",
@@ -123,10 +121,6 @@
 			"read_only": 1
 		},
 		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
-		{
 			"fieldname": "estimated_hours",
 			"fieldtype": "Float",
 			"label": "Estimated Hours",
@@ -137,6 +131,22 @@
 			"fieldtype": "Float",
 			"label": "Spent Hours",
 			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_main_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_main_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_progress_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_progress_2",
+			"fieldtype": "Column Break"
 		}
 	],
 	"issingle": 0,
@@ -148,7 +158,7 @@
 			"link_fieldname": "sprint"
 		}
 	],
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-22 19:17:07.964760",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Sprint",
@@ -192,5 +202,6 @@
 	"sort_order": "DESC",
 	"states": [],
 	"title_field": "sprint_name",
-	"track_changes": 1
+	"track_changes": 1,
+	"show_title_field_in_link": 1
 }
