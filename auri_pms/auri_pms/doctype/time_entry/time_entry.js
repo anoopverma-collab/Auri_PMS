@@ -10,6 +10,12 @@ frappe.ui.form.on("Time Entry", {
 	refresh(frm) {
 		// Project is derived from the work item; it is only editable without one.
 		frm.set_df_property("project", "read_only", frm.doc.work_item ? 1 : 0);
+		if (!frm.is_new()) {
+			frm.page.set_indicator(
+				cint(frm.doc.is_billable) ? __("Billable") : __("Non-billable"),
+				cint(frm.doc.is_billable) ? "green" : "gray"
+			);
+		}
 		if (frm.is_new() && !frm.doc.user) frm.set_value("user", frappe.session.user);
 	},
 	work_item(frm) {

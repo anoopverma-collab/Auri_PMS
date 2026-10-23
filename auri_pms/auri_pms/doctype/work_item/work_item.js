@@ -35,7 +35,9 @@ frappe.ui.form.on("Work Item", {
 	},
 
 	refresh(frm) {
+		frm.trigger("move_connections");
 		frm.trigger("set_indicator");
+		frm.trigger("summary_chips");
 		frm.trigger("client_headline");
 		frm.trigger("lock_done_percent");
 		if (frm.is_new()) return;
@@ -70,6 +72,25 @@ frappe.ui.form.on("Work Item", {
 				frm.page.set_indicator(__(frm.doc.status), colors[frm.doc.status] || "gray");
 			});
 		}
+	},
+
+	// Frappe draws Connections (Subtasks, Time) above the first tab; show them at the end of the first tab instead.
+	move_connections(frm) {
+		const first = (frm.layout.tabs || [])[0];
+		const area = frm.dashboard && frm.dashboard.links_area;
+		if (first && area) first.wrapper.append(area.wrapper.addClass("auri-connections"));
+	},
+
+	summary_chips(frm) {
+		if (frm.is_new()) return;
+		frm.dashboard.set_headline(
+			auri_pms.ui.chips([
+				auri_pms.ui.priority(frm.doc.priority),
+				frm.doc.tracker && frappe.utils.escape_html(frm.doc.tracker),
+				frm.doc.due_date && `${__("Due")} ${auri_pms.ui.due(frm.doc.due_date, frm.doc.is_closed)}`,
+				flt(frm.doc.done_percent) ? `${__("Done")} ${cint(frm.doc.done_percent)}%` : "",
+			])
+		);
 	},
 
 	client_headline(frm) {

@@ -17,4 +17,5 @@ frappe.query_reports["Work Item Summary"] = {
 		{fieldname: "from_date", label: __("Closed From"), fieldtype: "Date", default: frappe.datetime.add_days(frappe.datetime.get_today(), -30)},
 		{fieldname: "to_date", label: __("Closed To"), fieldtype: "Date", default: frappe.datetime.get_today()},
 	],
+	formatter: (value, row, column, data, default_formatter) => auri_pms.ui.reportCell(value, row, column, data, default_formatter),
 };

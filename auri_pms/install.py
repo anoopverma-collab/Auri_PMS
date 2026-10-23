@@ -27,7 +27,8 @@ _FLAGS_ALL = (
 PROJECT_ROLES = {
 	"Manager": _FLAGS_ALL,
 	"Developer": ["can_create_items", "can_edit_any_item", "can_log_time", "can_be_assigned"],
-	"Reporter": ["can_create_items"],
+	"Reporter": ["can_create_items", "can_log_time"],
+	"Functional": ["can_create_items", "can_edit_any_item", "can_manage_categories", "can_log_time", "can_be_assigned"],
 }
 
 BUG_WORKFLOW = [
@@ -273,6 +274,17 @@ ERPNEXT_PERMISSIONS = {
 }
 
 
+# Enable Auri PMS sits on its own permission level: only these roles may switch a project on or off.
+PMS_SWITCH_PERMLEVEL = 2
+PMS_SWITCH_PERMISSIONS = {
+	"System Manager": ("read", "write"),
+	"Tracker Manager": ("read", "write"),
+	"Projects Manager": ("read", "write"),
+	"Tracker User": ("read",),
+	"Projects User": ("read",),
+}
+
+
 def ensure_project_permissions() -> None:
 	"""Give the tracker roles access to the ERPNext DocTypes they work with (idempotent)."""
 	from frappe.permissions import add_permission, update_permission_property
@@ -284,6 +296,12 @@ def ensure_project_permissions() -> None:
 			add_permission(doctype, role, 0)
 			for ptype in ptypes:
 				update_permission_property(doctype, role, 0, ptype, 1)
+	for role, ptypes in PMS_SWITCH_PERMISSIONS.items():
+		if not frappe.db.exists("Role", role):
+			continue
+		add_permission("Project", role, PMS_SWITCH_PERMLEVEL)
+		for ptype in ptypes:
+			update_permission_property("Project", role, PMS_SWITCH_PERMLEVEL, ptype, 1)
 
 
 # --------------------------------------------------------------------------- uninstall
@@ -299,6 +317,10 @@ def before_uninstall() -> None:
 				"Custom DocPerm", filters={"parent": doctype, "role": role}, pluck="name"
 			):
 				frappe.delete_doc("Custom DocPerm", name, force=True, ignore_permissions=True)
+	for name in frappe.get_all(
+		"Custom DocPerm", filters={"parent": "Project", "permlevel": PMS_SWITCH_PERMLEVEL}, pluck="name"
+	):
+		frappe.delete_doc("Custom DocPerm", name, force=True, ignore_permissions=True)
 	if frappe.db.exists("Kanban Board", BOARD_NAME):
 		frappe.delete_doc("Kanban Board", BOARD_NAME, force=True, ignore_permissions=True)
 	# Database rows only: delete_doc would also delete the standard JSON files from the app in developer mode.

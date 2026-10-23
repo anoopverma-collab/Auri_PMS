@@ -6,11 +6,25 @@ import frappe
 from frappe import _
 from frappe.utils import date_diff, getdate, today
 
+from auri_pms.auri_pms.utils import summary_card
+
 
 def execute(filters: dict | None = None) -> tuple:
 	"""Return columns and rows of overdue open items the user may see."""
 	filters = frappe._dict(filters or {})
-	return get_columns(), get_data(filters)
+	data = get_data(filters)
+	return get_columns(), data, None, None, get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Overdue count, how long the oldest has waited, and how many are urgent."""
+	urgent = sum(1 for r in data if r.priority in ("Urgent", "Immediate"))
+	return [
+		summary_card(len(data), _("Overdue Items"), indicator="Red" if data else "Green"),
+		summary_card(max((r.days_overdue for r in data), default=0), _("Oldest (days)"), indicator="Orange"),
+		summary_card(urgent, _("Urgent or Immediate"), indicator="Red" if urgent else "Gray"),
+		summary_card(len({r.assigned_to for r in data if r.assigned_to}), _("People Affected"), indicator="Blue"),
+	]
 
 
 def get_columns() -> list[dict]:

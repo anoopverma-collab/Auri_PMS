@@ -6,12 +6,24 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, today
 
+from auri_pms.auri_pms.utils import summary_card
+
 
 def execute(filters: dict | None = None) -> tuple:
 	"""Return columns, rows and a bar chart of waiting tickets per project (permission aware)."""
 	filters = frappe._dict(filters or {})
 	data = get_data(filters)
-	return get_columns(), data, None, get_chart(data)
+	return get_columns(), data, None, get_chart(data), get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Tickets waiting on the client, the longest wait and the projects affected."""
+	longest = max((cint(r.get("days_waiting")) for r in data), default=0)
+	return [
+		summary_card(len(data), _("Waiting on Client"), indicator="Orange" if data else "Green"),
+		summary_card(longest, _("Longest Wait (days)"), indicator="Red" if longest > 7 else "Orange"),
+		summary_card(len({r.get("project") for r in data}), _("Projects"), indicator="Blue"),
+	]
 
 
 def get_columns() -> list[dict]:

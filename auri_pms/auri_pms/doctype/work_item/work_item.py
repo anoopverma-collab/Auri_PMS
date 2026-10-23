@@ -479,3 +479,11 @@ def validate_todo(doc, method: str | None = None) -> None:
 	project = frappe.db.get_value("Work Item", doc.reference_name, "project")
 	if project and not get_capabilities(project, doc.allocated_to, members_only=True)["can_be_assigned"]:
 		frappe.throw(_("{0} cannot be assigned work items in Project {1}").format(doc.allocated_to, project))
+
+
+def get_dashboard_data(data: dict) -> dict:
+	"""override_doctype_dashboards hook: people assigned through Assign To (ToDo links to the item by reference)."""
+	data.setdefault("non_standard_fieldnames", {})["ToDo"] = "reference_name"
+	data.setdefault("dynamic_links", {})["reference_name"] = ["Work Item", "reference_type"]
+	data.setdefault("transactions", []).append({"label": _("Assignments"), "items": ["ToDo"]})
+	return data

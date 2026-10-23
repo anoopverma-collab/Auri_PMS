@@ -4,6 +4,7 @@ import frappe
 from frappe.utils import add_days, today
 
 from auri_pms.auri_pms.tests.utils import DEV, MGR, REP, TM, TrackerTestCase, days_ago
+from auri_pms.auri_pms.utils import clear_cache
 
 
 class TestTimeEntry(TrackerTestCase):
@@ -26,9 +27,12 @@ class TestTimeEntry(TrackerTestCase):
 			lambda: self.logged_time(MGR, item.name, 1, project=self.BET),
 		)
 
-	def test_t092_reporter_cannot_log_time(self):
-		"""T-092: rep has no can_log_time."""
+	def test_t092_log_time_follows_the_project_role(self):
+		"""T-092: rep may log time (Reporter has can_log_time); without the flag the entry is refused."""
 		item = self.new_item(MGR)
+		self.assertTrue(self.logged_time(REP, item.name, 1))
+		frappe.db.set_value("Project Role", "Reporter", "can_log_time", 0)
+		clear_cache()
 		self.assertThrows(
 			"You are not allowed to log time in Project", lambda: self.logged_time(REP, item.name, 1)
 		)

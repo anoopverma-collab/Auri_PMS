@@ -7,7 +7,8 @@
 	"field_order": [
 		"user",
 		"full_name",
-		"project_role"
+		"project_role",
+		"role_permissions"
 	],
 	"fields": [
 		{
@@ -32,7 +33,16 @@
 			"in_list_view": 1,
 			"label": "Project Role",
 			"options": "Project Role",
-			"reqd": 1
+			"reqd": 1,
+			"columns": 2
+		},
+		{
+			"fieldname": "role_permissions",
+			"fieldtype": "Small Text",
+			"in_list_view": 1,
+			"label": "Role Permissions",
+			"read_only": 1,
+			"description": "What this Project Role allows on the project."
 		}
 	],
 	"issingle": 0,

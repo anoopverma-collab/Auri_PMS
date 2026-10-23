@@ -32,6 +32,7 @@ class RiskRegister(Document):
 		self.validate_work_item()
 		self.validate_dates()
 		self.score()
+		self.log_assessment()
 		self.stamp_closed_on()
 
 	def set_project_identifier(self) -> None:
@@ -65,18 +66,31 @@ class RiskRegister(Document):
 			and getdate(self.mitigation_due) < getdate(self.identified_on)
 		):
 			frappe.throw(_("Mitigation Due cannot be before Identified On"))
+		if self.status == "Closed" and self.closed_on:
+			if getdate(self.closed_on) > getdate(today()):
+				frappe.throw(_("Closed On cannot be in the future"))
+			if self.identified_on and getdate(self.closed_on) < getdate(self.identified_on):
+				frappe.throw(_("Closed On cannot be before Identified On"))
 
 	def score(self) -> None:
 		"""Risk Score = probability x impact; the level follows from the score."""
 		self.risk_score = scale_value(self.probability) * scale_value(self.impact)
 		self.risk_level = risk_level(self.risk_score)
 
+	def log_assessment(self) -> None:
+		"""Assessed By is whoever first assessed the risk or last changed its probability or impact."""
+		old = self.get_doc_before_save()
+		if old and (old.probability, old.impact) == (self.probability, self.impact) and old.assessed_by:
+			return
+		self.assessed_by = frappe.session.user
+
 	def stamp_closed_on(self) -> None:
-		"""Closed On is the day the risk was closed and is cleared when it is reopened."""
+		"""Closed On is the day the risk was closed; it and the closing remark are cleared when it is reopened."""
 		if self.status == "Closed":
 			self.closed_on = self.closed_on or today()
 		else:
 			self.closed_on = None
+			self.closing_remark = None
 
 	def on_trash(self) -> None:
 		"""Only people who manage releases (managers and project managers) delete risks."""

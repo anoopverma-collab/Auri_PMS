@@ -4,13 +4,32 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import date_diff, getdate, today
+from frappe.utils import date_diff, flt, getdate, today
+
+from auri_pms.auri_pms.utils import summary_card
 
 
 def execute(filters: dict | None = None) -> tuple:
 	"""Return columns and rows; the % Complete column renders as a progress bar."""
 	filters = frappe._dict(filters or {})
-	return get_columns(), get_data(filters)
+	data = get_data(filters)
+	return get_columns(), data, None, None, get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Releases, average completion, releases past their due date and the items still open."""
+	late = sum(1 for r in data if r.days_left is not None and r.days_left < 0 and flt(r.percent_complete) < 100)
+	return [
+		summary_card(len(data), _("Releases"), indicator="Blue"),
+		summary_card(
+			sum(flt(r.percent_complete) for r in data) / len(data) if data else 0,
+			_("Average Complete"),
+			"Percent",
+			"Green",
+		),
+		summary_card(late, _("Past Due"), indicator="Red" if late else "Green"),
+		summary_card(sum(r["items"] - r["closed"] for r in data), _("Open Items"), indicator="Orange"),
+	]
 
 
 def get_columns() -> list[dict]:

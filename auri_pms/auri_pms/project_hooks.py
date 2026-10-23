@@ -6,18 +6,28 @@ import re
 
 import frappe
 from frappe import _
+from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.utils import cint, cstr, flt
 
+from auri_pms.auri_pms.doctype.work_item.work_item import close_todos
 from auri_pms.auri_pms.utils import (
 	clear_cache,
 	get_capabilities,
 	has_unrestricted_project_view,
 	is_manager,
+	safe_sendmail,
 )
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{1,9}$")
 TRACKER_ROLES = {"Tracker User", "Tracker Manager"}
 PROJECT_RECORDS = ("Work Item", "Release", "Risk Register", "Sprint", "Time Entry")
+# Filters that select the still-open records; Time Entry has no open/closed state.
+OPEN_FILTERS = {
+	"Work Item": {"is_closed": 0},
+	"Release": {"status": ("!=", "Closed")},
+	"Risk Register": {"status": ("!=", "Closed")},
+	"Sprint": {"status": ("!=", "Completed")},
+}
 LAYOUT_FIELDTYPES = {"Section Break", "Column Break", "Tab Break", "HTML", "Heading", "Button", "Fold"}
 TRACKER_FIELDS = {
 	"pms_enabled",
@@ -36,14 +46,15 @@ def validate(doc, method: str | None = None) -> None:
 	validate_identifier(doc, old)
 	validate_parent_project(doc)
 	validate_members(doc, old)
+	set_role_permissions(doc)
 	validate_tracker_permissions(doc, old)
-	warn_about_removed_members(doc, old)
 	set_default_ticket_types(doc, old)
 
 
 def on_update(doc, method: str | None = None) -> None:
-	"""Project.on_update hook: give members the Tracker User role and refresh caches."""
+	"""Project.on_update hook: give members the Tracker User role, release removed members' items, refresh caches."""
 	clear_cache()
+	release_removed_members(doc)
 	added = []
 	for row in doc.get("tracker_members") or []:
 		if TRACKER_ROLES & set(frappe.get_roles(row.user)):
@@ -66,17 +77,57 @@ def on_trash(doc, method: str | None = None) -> None:
 
 
 def validate_enabled(doc, old) -> None:
-	"""Enable Auri PMS needs an identifier and cannot be removed while the project has Auri PMS records."""
+	"""Enable Auri PMS needs an identifier; switching it off with Auri PMS records needs a confirmation."""
 	if cint(doc.get("pms_enabled")) and not doc.get("tracker_identifier"):
 		frappe.throw(_("Set an Identifier to enable Auri PMS on this project"))
 	if old and cint(old.get("pms_enabled")) and not cint(doc.get("pms_enabled")):
-		for doctype in PROJECT_RECORDS:
-			if frappe.db.exists(doctype, {"project": doc.name}):
-				frappe.throw(
-					_("Auri PMS cannot be disabled on Project {0}: it still has {1} records").format(
-						doc.name, _(doctype)
-					)
+		if any(row["total"] for row in get_record_counts(doc.name)) and not _consume_disable_confirmation(
+			doc.name
+		):
+			frappe.throw(
+				_("Auri PMS cannot be disabled on Project {0} until you confirm: it still has records").format(
+					doc.name
 				)
+			)
+
+
+def _confirmation_key(project: str) -> str:
+	return f"auri_pms_disable_confirmed:{frappe.session.user}:{project}"
+
+
+def _consume_disable_confirmation(project: str) -> bool:
+	"""True once per confirmation: the token set by confirm_disable is removed when it is used."""
+	key = _confirmation_key(project)
+	confirmed = bool(frappe.cache.get_value(key))
+	frappe.cache.delete_value(key)
+	return confirmed
+
+
+@frappe.whitelist()
+def get_record_counts(project: str) -> list[dict]:
+	"""Total and open count of every Auri PMS doctype on ``project``; ``open`` is None without a status."""
+	frappe.has_permission("Project", "read", project, throw=True)
+	counts = []
+	for doctype in PROJECT_RECORDS:
+		open_filters = OPEN_FILTERS.get(doctype)
+		counts.append(
+			{
+				"doctype": doctype,
+				"label": _(doctype),
+				"total": frappe.db.count(doctype, {"project": project}),
+				"open": frappe.db.count(doctype, {"project": project, **open_filters})
+				if open_filters
+				else None,
+			}
+		)
+	return counts
+
+
+@frappe.whitelist()
+def confirm_disable(project: str) -> None:
+	"""The user said yes to disabling Auri PMS: allow the next save of this project to do it (5 minutes)."""
+	frappe.has_permission("Project", "write", project, throw=True)
+	frappe.cache.set_value(_confirmation_key(project), 1, expires_in_sec=300)
 
 
 def set_default_ticket_types(doc, old) -> None:
@@ -140,10 +191,26 @@ def validate_members(doc, old) -> None:
 		frappe.throw(_("A project must keep at least one member with a Manager role"))
 
 
+@frappe.whitelist()
+def get_role_permissions(project_role: str) -> str:
+	"""Comma separated list of what a Project Role allows, e.g. "Create Items, Log Time"."""
+	role = frappe.get_cached_doc("Project Role", project_role)
+	return ", ".join(
+		_(df.label).removeprefix("Can ")
+		for df in role.meta.fields
+		if df.fieldtype == "Check" and cint(role.get(df.fieldname))
+	)
+
+
+def set_role_permissions(doc) -> None:
+	"""Keep the Role Permissions column of the members table in step with the Project Roles."""
+	for row in doc.get("tracker_members") or []:
+		row.role_permissions = get_role_permissions(row.project_role) if row.project_role else ""
+
+
 def _tracker_state(doc) -> tuple:
-	"""Comparable snapshot of the fields only managers may change."""
+	"""Comparable snapshot of the fields only managers may change (pms_enabled has its own permission level)."""
 	return (
-		cint(doc.get("pms_enabled")),
 		cint(doc.get("is_public")),
 		sorted((r.user, r.project_role) for r in doc.get("tracker_members") or []),
 		sorted(r.tracker for r in doc.get("enabled_trackers") or []),
@@ -152,7 +219,7 @@ def _tracker_state(doc) -> tuple:
 
 def validate_tracker_permissions(doc, old) -> None:
 	"""Only a manager or a member with can_manage_members changes members, visibility or trackers."""
-	empty = (0, 0, [], [])
+	empty = (0, [], [])
 	before = _tracker_state(old) if old else empty
 	if _tracker_state(doc) != before and not is_manager():
 		allowed = bool(old) and get_capabilities(doc.name)["can_manage_members"]
@@ -180,8 +247,9 @@ def _same_value(df, new, old) -> bool:
 	return cstr(new) == cstr(old)
 
 
-def warn_about_removed_members(doc, old) -> None:
-	"""Removing a member who has open assigned items is allowed, but warn and list the items."""
+def release_removed_members(doc) -> None:
+	"""Removing a member unassigns their open work items and tells them and the project managers."""
+	old = doc.get_doc_before_save()
 	if not old:
 		return
 	removed = {r.user for r in old.get("tracker_members") or []} - {
@@ -189,16 +257,79 @@ def warn_about_removed_members(doc, old) -> None:
 	}
 	if not removed:
 		return
-	items = frappe.get_all(
+	released: dict[str, list[str]] = {}
+	for item in frappe.get_all(
 		"Work Item",
 		filters={"project": doc.name, "assigned_to": ["in", list(removed)], "is_closed": 0},
-		pluck="name",
-	)
-	if items:
+		fields=["name", "assigned_to"],
+		order_by="name",
+	):
+		_unassign(item.name, item.assigned_to, doc.name)
+		released.setdefault(item.assigned_to, []).append(item.name)
+	for user in removed:
+		_tell_removed_member(user, doc.name, released.get(user, []))
+	if released:
+		_tell_managers(doc, released)
 		frappe.msgprint(
-			_("Removed members still have open assigned items: {0}").format(", ".join(items)),
+			_("{0} open items of the removed members were unassigned: {1}").format(
+				sum(len(items) for items in released.values()),
+				", ".join(name for items in released.values() for name in items),
+			),
 			indicator="orange",
 		)
+
+
+def _unassign(work_item: str, user: str, project: str) -> None:
+	"""Clear the assignee without the Work Item rules (the member is already gone) and close their ToDo."""
+	frappe.db.set_value("Work Item", work_item, "assigned_to", None)
+	close_todos(work_item, user)
+	frappe.get_doc("Work Item", work_item).add_comment(
+		"Info", _("Unassigned from {0}: removed from Project {1}").format(user, project)
+	)
+
+
+def _tell_removed_member(user: str, project: str, items: list[str]) -> None:
+	"""In-app notification and email to the removed member; the list is empty when nothing was assigned."""
+	if items:
+		subject = _("You were removed from Project {0}. These open items were unassigned from you: {1}").format(
+			frappe.bold(project), ", ".join(items)
+		)
+	else:
+		subject = _("You were removed from Project {0}").format(frappe.bold(project))
+	if frappe.db.get_value("User", user, "enabled"):
+		enqueue_create_notification(
+			[user],
+			{"type": "Alert", "subject": subject, "from_user": frappe.session.user},
+		)
+		safe_sendmail(
+			recipients=[user],
+			subject=_("Removed from Project {0}").format(project),
+			message=subject,
+		)
+
+
+def _tell_managers(doc, released: dict[str, list[str]]) -> None:
+	"""In-app notification to the members who manage members, except the user who made the change."""
+	managers = {
+		r.user
+		for r in doc.get("tracker_members") or []
+		if cint(frappe.db.get_value("Project Role", r.project_role, "can_manage_members"))
+	} - {frappe.session.user}
+	if not managers:
+		return
+	lines = "; ".join(f"{user}: {', '.join(items)}" for user, items in released.items())
+	enqueue_create_notification(
+		list(managers),
+		{
+			"type": "Alert",
+			"document_type": "Project",
+			"document_name": doc.name,
+			"subject": _("Members were removed from Project {0}; their open items were unassigned. {1}").format(
+				frappe.bold(doc.name), lines
+			),
+			"from_user": frappe.session.user,
+		},
+	)
 
 
 def get_dashboard_data(data: dict) -> dict:

@@ -46,7 +46,7 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-11 20:00:00.000000",
+	"modified": "2026-10-22 19:17:07.964760",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Project Module",
@@ -89,5 +89,6 @@
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
-	"title_field": "module_name"
+	"title_field": "module_name",
+	"show_title_field_in_link": 1
 }

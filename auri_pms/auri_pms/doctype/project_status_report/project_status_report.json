@@ -6,21 +6,26 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"subject",
-		"project",
 		"from_date",
+		"column_break_main_1",
+		"project",
 		"to_date",
-		"column_break_1",
+		"column_break_main_2",
 		"status_level",
+		"section_sending",
 		"sent_on",
+		"column_break_section_sending_1",
 		"sent_by",
+		"column_break_section_sending_2",
 		"scheduled",
 		"section_delivery",
 		"recipient_count",
-		"sent_count",
-		"failed_count",
-		"column_break_2",
 		"delivery_status",
+		"column_break_section_delivery_1",
+		"sent_count",
 		"error",
+		"column_break_section_delivery_2",
+		"failed_count",
 		"section_to",
 		"sent_to",
 		"section_body",
@@ -62,10 +67,6 @@
 			"label": "To",
 			"read_only": 1,
 			"reqd": 1
-		},
-		{
-			"fieldname": "column_break_1",
-			"fieldtype": "Column Break"
 		},
 		{
 			"fieldname": "status_level",
@@ -123,10 +124,6 @@
 			"read_only": 1
 		},
 		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
-		{
 			"default": "Queued",
 			"fieldname": "delivery_status",
 			"fieldtype": "Select",
@@ -163,11 +160,40 @@
 			"fieldtype": "Long Text",
 			"label": "Report (HTML)",
 			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_main_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_main_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_sending",
+			"fieldtype": "Section Break",
+			"label": "Sending"
+		},
+		{
+			"fieldname": "column_break_section_sending_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_sending_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_delivery_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_section_delivery_2",
+			"fieldtype": "Column Break"
 		}
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-12 14:00:00.000000",
+	"modified": "2026-10-22 19:17:07.964760",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Project Status Report",
@@ -212,5 +238,6 @@
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
-	"title_field": "subject"
+	"title_field": "subject",
+	"show_title_field_in_link": 1
 }

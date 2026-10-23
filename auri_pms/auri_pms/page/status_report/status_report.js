@@ -144,6 +144,7 @@ class StatusReport {
 			: `<div class="text-muted small">${__("Nothing has been sent yet.")}</div>`;
 		this.$body.html(`
 			<div class="hub-title"><h4>${__("Client Status Report")}</h4><span class="text-muted">${__("Preview of the email and PDF")}</span></div>
+			${this.summary_tiles(preview, history)}
 			<div class="hub-cols">
 				<div class="hub-col"><div class="hub-panel"><h6>${__("Preview")}</h6><iframe class="hub-frame" sandbox="allow-same-origin" title="${__("Report preview")}"></iframe></div></div>
 				<div class="hub-col">
@@ -189,11 +190,38 @@ class StatusReport {
 		this.page.add_inner_button(__("Project Hub"), () => frappe.set_route("project-hub", this.project_field.get_value()));
 	}
 
+	// Figures at a glance: the period, how many tickets the report lists and the largest sections.
+	summary_tiles(preview, history) {
+		const tickets = preview.tickets || [];
+		const by_section = {};
+		tickets.forEach((t) => (by_section[t.section] = (by_section[t.section] || 0) + 1));
+		const top = Object.entries(by_section).sort((a, b) => b[1] - a[1]).slice(0, 2);
+		const period = `${frappe.datetime.str_to_user(this.from_field.get_value())} - ${frappe.datetime.str_to_user(this.to_field.get_value())}`;
+		const last = history[0] ? frappe.datetime.str_to_user(history[0].from_date) : "";
+		return `<div class="hub-tiles">
+			${ui.tile(tickets.length, __("Tickets in this report"), "hub-blue", period)}
+			${top.map(([label, n], i) => ui.tile(n, ui.esc(label), i ? "hub-purple" : "hub-green")).join("")}
+			${ui.tile(history.length, __("Reports sent"), "hub-orange", last ? __("Last period from {0}", [last]) : __("Nothing sent yet"))}
+		</div>`;
+	}
+
 	// Remove a ticket from this send only; "Hide from Client Report" on the ticket removes it from every report.
 	tickets_panel(tickets) {
 		const esc = ui.esc;
-		const rows = (tickets || [])
-			.map((t) => `<div class="hub-list-row"><span>${ui.link("Work Item", t.name, t.name)} ${esc(t.subject)} <span class="hub-sub">${esc(t.section)}</span></span><a class="text-danger" data-exclude="${esc(t.name)}" title="${__("Remove from this report")}">&times;</a></div>`)
+		const groups = [];
+		(tickets || []).forEach((t) => {
+			let group = groups.find((g) => g.section === t.section);
+			if (!group) groups.push((group = { section: t.section, items: [] }));
+			group.items.push(t);
+		});
+		const rows = groups
+			.map(
+				(g) =>
+					`<div class="hub-sub" style="margin:10px 0 2px;font-weight:700">${esc(g.section)} <span class="hub-badge">${g.items.length}</span></div>` +
+					g.items
+						.map((t) => `<div class="hub-list-row"><span>${ui.link("Work Item", t.name, t.name)} ${esc(t.subject)}</span><a class="text-danger" data-exclude="${esc(t.name)}" title="${__("Remove from this report")}">&times;</a></div>`)
+						.join("")
+			)
 			.join("");
 		const removed = [...this.excluded]
 			.map((name) => `<div class="hub-list-row"><span class="text-muted">${esc(name)}</span><a data-restore="${esc(name)}">${__("Restore")}</a></div>`)

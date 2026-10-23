@@ -100,7 +100,7 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-22 19:17:07.964760",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Release",
@@ -144,5 +144,6 @@
 	"sort_order": "DESC",
 	"states": [],
 	"title_field": "release_name",
-	"track_changes": 1
+	"track_changes": 1,
+	"show_title_field_in_link": 1
 }

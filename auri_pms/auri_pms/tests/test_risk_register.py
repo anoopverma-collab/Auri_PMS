@@ -36,6 +36,18 @@ class TestRiskRegister(TrackerTestCase):
 			doc = self.risk(**values)
 			self.assertEqual((doc.risk_score, doc.risk_level), (score, level), values)
 
+	def test_assessed_by_is_the_user_who_last_changed_probability_or_impact(self):
+		doc = self.risk(**CRITICAL)
+		self.assertEqual(doc.assessed_by, MGR)
+		with self.as_user(TM):
+			doc.title = "Renamed"
+			doc.save()
+		self.assertEqual(doc.assessed_by, MGR)
+		with self.as_user(TM):
+			doc.update(LOW)
+			doc.save()
+		self.assertEqual(doc.assessed_by, TM)
+
 	def test_name_carries_the_project_identifier_and_numbers_each_project_on_its_own(self):
 		first, second = self.risk(), self.risk()
 		other = self.risk(project=self.BET)

@@ -10,6 +10,15 @@ frappe.ui.form.on("Sprint", {
 
 	refresh(frm) {
 		if (frm.is_new()) return;
+		const colors = { Planned: "blue", Active: "green", Completed: "gray" };
+		frm.page.set_indicator(__(frm.doc.status), colors[frm.doc.status] || "gray");
+		frm.dashboard.set_headline(
+			auri_pms.ui.chips([
+				frm.doc.start_date && frm.doc.end_date &&
+					`${frappe.datetime.str_to_user(frm.doc.start_date)} - ${frappe.datetime.str_to_user(frm.doc.end_date)}`,
+				`${cint(frm.doc.closed_items)} / ${cint(frm.doc.total_items)} ${__("items closed")}`,
+			])
+		);
 		frm.dashboard.add_progress(__("% Complete"), flt(frm.doc.percent_complete));
 		const completed = frm.doc.status === "Completed";
 		if (frm.doc.status === "Planned") {

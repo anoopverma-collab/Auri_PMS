@@ -2,7 +2,7 @@
 
 import frappe
 
-from auri_pms.auri_pms import api
+from auri_pms.auri_pms import api, project_hooks
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, TrackerTestCase, ensure_company, make_user
 
 
@@ -106,11 +106,61 @@ class TestProject(TrackerTestCase):
 		doc = self.project("Chosen", "CHOS", enabled_trackers=[{"tracker": "Bug"}]).insert()
 		self.assertEqual([r.tracker for r in doc.enabled_trackers], ["Bug"])
 
-	def test_cannot_disable_with_records(self):
-		"""Auri PMS cannot be switched off while the project has work items."""
+	def test_cannot_disable_with_records_without_confirmation(self):
+		"""Auri PMS cannot be switched off while the project has records, unless the user confirmed."""
 		doc = frappe.get_doc("Project", self.ALP)
 		doc.pms_enabled = 0
 		self.assertThrows("cannot be disabled", doc.save)
+
+	def test_disable_with_records_after_confirmation(self):
+		"""A confirmed disable is allowed once; the next disable asks again."""
+		project_hooks.confirm_disable(self.ALP)
+		doc = frappe.get_doc("Project", self.ALP)
+		doc.pms_enabled = 0
+		doc.save()
+		self.assertFalse(frappe.db.get_value("Project", self.ALP, "pms_enabled"))
+		doc.pms_enabled = 1
+		doc.save()
+		doc.pms_enabled = 0
+		self.assertThrows("cannot be disabled", doc.save)
+
+	def test_members_show_what_their_role_allows(self):
+		"""Each member row lists the permissions of its Project Role."""
+		doc = self.project("Roles", "ROLE", members=[(MGR, "Manager"), (DEV, "Developer")]).insert()
+		by_user = {r.user: r.role_permissions for r in doc.tracker_members}
+		self.assertIn("Manage Members", by_user[MGR])
+		self.assertIn("Log Time", by_user[DEV])
+		self.assertNotIn("Manage Members", by_user[DEV])
+
+	def test_removed_member_is_unassigned_and_notified(self):
+		"""Removing a member unassigns their open items (not closed ones) and notifies them."""
+		open_item = self.new_item(MGR, assigned_to=DEV, subject="Open one")
+		closed_item = self.new_item(MGR, assigned_to=DEV, subject="Closed one")
+		frappe.db.set_value("Work Item", closed_item.name, {"status": "Closed", "is_closed": 1})
+		doc = frappe.get_doc("Project", self.ALP)
+		doc.tracker_members = [r for r in doc.tracker_members if r.user != DEV]
+		doc.save()
+		self.assertIsNone(frappe.db.get_value("Work Item", open_item.name, "assigned_to"))
+		self.assertEqual(frappe.db.get_value("Work Item", closed_item.name, "assigned_to"), DEV)
+		self.assertFalse(
+			frappe.db.exists(
+				"ToDo", {"reference_name": open_item.name, "allocated_to": DEV, "status": "Open"}
+			)
+		)
+		self.assertTrue(
+			frappe.db.exists(
+				"Notification Log",
+				{"for_user": DEV, "subject": ["like", f"%{self.ALP}%{open_item.name}%"]},
+			)
+		)
+
+	def test_record_counts_show_open_and_total(self):
+		"""The confirmation lists every doctype with its total and, where it has a status, its open count."""
+		counts = {row["doctype"]: row for row in project_hooks.get_record_counts(self.ALP)}
+		self.assertEqual(set(counts), set(project_hooks.PROJECT_RECORDS))
+		for row in counts.values():
+			self.assertGreaterEqual(row["total"], row["open"] or 0)
+		self.assertIsNone(counts["Time Entry"]["open"])
 
 	def test_disabled_project_is_hidden_and_unusable(self):
 		"""A project without Enable Auri PMS is not listed and no work item can be created in it."""

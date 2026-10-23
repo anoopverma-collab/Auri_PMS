@@ -6,11 +6,27 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, today
 
+from auri_pms.auri_pms.utils import summary_card
+
 
 def execute(filters: dict | None = None) -> tuple:
 	"""Return columns, data and a stacked bar chart; rows respect the user's project visibility."""
 	filters = frappe._dict(filters or {})
-	return get_columns(), get_data(filters), None, get_chart(get_data(filters))
+	data = get_data(filters)
+	return get_columns(), data, None, get_chart(data), get_summary(data)
+
+
+def get_summary(data: list[dict]) -> list[dict]:
+	"""Totals across the listed projects."""
+	overdue = sum(r["overdue"] for r in data)
+	unassigned = sum(r["unassigned"] for r in data)
+	return [
+		summary_card(sum(r["open"] for r in data), _("Open"), indicator="Blue"),
+		summary_card(overdue, _("Overdue"), indicator="Red" if overdue else "Green"),
+		summary_card(unassigned, _("Unassigned"), indicator="Orange" if unassigned else "Green"),
+		summary_card(sum(r["client_waiting"] for r in data), _("Waiting on Client"), indicator="Orange"),
+		summary_card(sum(r["closed_in_period"] for r in data), _("Closed in Period"), indicator="Green"),
+	]
 
 
 def get_columns() -> list[dict]:
