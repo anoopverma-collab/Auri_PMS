@@ -30,7 +30,7 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 	}
 };
 
-// Small HTML helpers for the list and form look of Auri PMS doctypes (styles: public/css/auri_pms.css).
+// Small HTML helpers for the list and form look of Auri PMS doctypes (styles: public/css/auri_pms.bundle.css).
 frappe.provide("auri_pms.ui");
 Object.assign(auri_pms.ui, {
 	priority(value) {

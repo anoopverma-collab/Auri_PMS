@@ -364,9 +364,10 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Tracker Manager",
+			"role": "Auri PMS Manager",
 			"share": 1,
-			"write": 1
+			"write": 1,
+			"import": 1
 		},
 		{
 			"create": 1,
@@ -387,7 +388,7 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Tracker User",
+			"role": "Auri PMS User",
 			"share": 1,
 			"write": 1
 		}

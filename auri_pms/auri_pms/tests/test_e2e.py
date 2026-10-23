@@ -44,7 +44,7 @@ class TestEndToEnd(TrackerTestCase):
 		v1 = self.create(MGR, "Release", release_name="v1", project=project).name  # named <ident>-v1
 		self.create(MGR, "Release", release_name="v2", project=project)
 		category = self.create(MGR, "Work Item Category", category_name="UI", project=project).name
-		self.assertIn("Tracker User", frappe.get_roles(REP))
+		self.assertIn("Auri PMS User", frappe.get_roles(REP))
 
 		# UAT-02 report a bug
 		bug = self.create(

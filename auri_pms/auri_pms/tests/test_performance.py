@@ -20,7 +20,7 @@ class TestPerformance(TrackerTestCase):
 				self.assertIn(column, indexed, f"{doctype}.{column}")
 
 	def test_list_load_with_10000_items_under_two_seconds(self):
-		"""A Tracker User opens the Work Item list with 10,000 items in 50 projects in under 2 seconds."""
+		"""A Auri PMS User opens the Work Item list with 10,000 items in 50 projects in under 2 seconds."""
 		projects = [self.ALP, self.BET]
 		for number in range(48):
 			doc = frappe.get_doc(

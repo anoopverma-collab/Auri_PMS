@@ -15,7 +15,9 @@ frappe.ui.form.on("Risk Register", {
 		frm.dashboard.clear_headline();
 		if (level) frm.dashboard.set_headline(`<span class="indicator-pill ${RISK_COLORS[level] || "gray"}">${__(level)} · ${__("score")} ${frm.doc.risk_score}</span>`);
 		if (frm.doc.status !== "Closed" && frm.perm[0].write) {
-			frm.add_custom_button(__("Close Risk"), () => frm.trigger("close_risk")).addClass("btn-primary");
+			frm.add_custom_button(__("Close Risk"), () => frm.trigger("close_risk"));
+			// Frappe's own way to make a toolbar button primary; adding the class by hand leaves btn-default on it, which wins on hover
+			frm.change_custom_button_type(__("Close Risk"), null, "primary");
 		}
 		frm.add_custom_button(__("Project Health"), () => frappe.set_route("project-hub", frm.doc.project, "health"), __("View"));
 	},

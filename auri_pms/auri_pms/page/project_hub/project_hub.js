@@ -354,7 +354,7 @@ class ProjectHub {
 		this.$body.html(`
 			<div class="hub-title"><h4>${esc(info.project_name || info.name)}</h4><span class="hub-ident">${esc(info.tracker_identifier)}</span>
 				<span class="text-muted">${__("Project health")} · ${__(ui.PERIOD_NOTE[h.period])} · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}</span>${ui.projectDates(info)}</div>
-			${st ? ui.statusBanner(st) : ""}
+			${st ? ui.statusBanner({ ...st, calc_lines: st.calc ? [ui.scoreCalc(st.calc, st.score)] : [] }) : ""}
 			<div class="hub-tiles">
 				${tile(`${f.completion_pct}%`, __("Complete"), "hub-green", __("{0} of {1} tickets", [f.closed, f.total]), items())}
 				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`, items({ is_closed: 0 }))}

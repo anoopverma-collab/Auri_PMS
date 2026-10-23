@@ -164,7 +164,7 @@
 		},
 		{
 			"default": "0",
-			"description": "0 = no lock; Tracker Manager bypasses",
+			"description": "0 = no lock; Auri PMS Manager bypasses",
 			"fieldname": "time_entry_lock_days",
 			"fieldtype": "Int",
 			"label": "Lock Time Entries Older Than (Days)"
@@ -478,7 +478,7 @@
 			"email": 1,
 			"print": 1,
 			"read": 1,
-			"role": "Tracker Manager",
+			"role": "Auri PMS Manager",
 			"write": 1
 		},
 		{
@@ -491,7 +491,7 @@
 		},
 		{
 			"read": 1,
-			"role": "Tracker User"
+			"role": "Auri PMS User"
 		}
 	],
 	"sort_field": "modified",

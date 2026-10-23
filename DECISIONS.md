@@ -21,20 +21,20 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
    notification (lists recipients) and the Project hooks (validate the document's own rows).
    `get_capabilities(..., members_only=True)` skips the manager shortcut and the public-project fallback; it is
    used for R-11 (an assignee must be a real member) and for the ToDo check below.
-5. **Delete permission on Work Item and Time Entry is granted to Tracker User at DocType level**
+5. **Delete permission on Work Item and Time Entry is granted to Auri PMS User at DocType level**
    (the matrix lists Create/Read/Write/Report). Frappe permissions can only be *granted* by role, and the
-   spec's own tests need a Project Manager (a Tracker User) to delete items (T-118). The capability is
+   spec's own tests need a Project Manager (a Auri PMS User) to delete items (T-118). The capability is
    enforced in `on_trash` (R-37 / R-39).
-6. **Extra DocType permissions.** *Release*: Tracker User also gets `report` (the Release Progress report
-   cannot run without it). *Work Item Category* and *Release*: Tracker User gets create/write, gated by
+6. **Extra DocType permissions.** *Release*: Auri PMS User also gets `report` (the Release Progress report
+   cannot run without it). *Work Item Category* and *Release*: Auri PMS User gets create/write, gated by
    `can_manage_categories` / `can_manage_releases` in the controllers.
 7. **ERPNext DocTypes are opened with Custom DocPerms**, created idempotently in `after_install` and
    `after_migrate` (never by editing ERPNext files):
-   * *Project*: Tracker Manager and System Manager read/write/create/report (System Manager "inherits Tracker Manager
-     rights", but ERPNext's Project never listed it); Tracker User read/write.
-   * *Activity Type*: Tracker Manager and Tracker User read (needed to choose an activity when logging time).
-   Tracker User write on Project exists so that a project's own Manager can change members (section 4). A pure
-   Tracker User (no ERPNext project role) may only change the Tracker tab; any other editable field change is
+   * *Project*: Auri PMS Manager and System Manager read/write/create/report (System Manager "inherits Auri PMS Manager
+     rights", but ERPNext's Project never listed it); Auri PMS User read/write.
+   * *Activity Type*: Auri PMS Manager and Auri PMS User read (needed to choose an activity when logging time).
+   Auri PMS User write on Project exists so that a project's own Manager can change members (section 4). A pure
+   Auri PMS User (no ERPNext project role) may only change the Tracker tab; any other editable field change is
    rejected in `project_hooks`.
 8. **Disabled users** get all-False capabilities and a `1=0` visibility filter immediately.
 9. **System Manager and Administrator count as managers** (`utils.is_manager`) for every "Manager bypass".
@@ -107,7 +107,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 31. **Status colours** are stored as hex; the list/form indicator name is computed on the server
     (`utils.nearest_indicator`, `api.get_status_indicators`).
 32. **Default list filter** uses Frappe's `listview_settings.filters` (applied only when the user has no saved filters),
-    for plain Tracker Users only.
+    for plain Auri PMS Users only.
 33. **Work Item Summary** has two optional filters, *Closed From/To* (default last 30 days), to define "Closed in
     Period"; the spec lists none.
 34. **Column order in the Time Entry list** follows the form field order (work item first); the spec's order
@@ -259,3 +259,5 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 * Notification templates are code, not editable Notification documents.
 * No bulk "move items between releases" action; no email threading beyond the `[ID]` subject tag.
 * The status colour and default % done of a status are not re-applied to existing items when changed.
+
+- **Roles renamed (24 Oct 2026).** *Tracker User* / *Tracker Manager* are now *Auri PMS User* / *Auri PMS Manager* to match the app name. Behaviour is unchanged. The `rename_tracker_roles` patch renames the roles on existing sites, so people, DocType permissions and the app icon keep their access.

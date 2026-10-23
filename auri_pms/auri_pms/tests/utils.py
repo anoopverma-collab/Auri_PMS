@@ -11,12 +11,12 @@ from frappe.utils import add_days, today
 from auri_pms.auri_pms.utils import clear_cache
 
 PASSWORD_FREE_USERS = {
-	"tm@test.com": ("Tracker Manager",),
-	"mgr@test.com": ("Tracker User",),
-	"dev@test.com": ("Tracker User",),
-	"rep@test.com": ("Tracker User",),
-	"out@test.com": ("Tracker User",),
-	"gone@test.com": ("Tracker User",),
+	"tm@test.com": ("Auri PMS Manager",),
+	"mgr@test.com": ("Auri PMS User",),
+	"dev@test.com": ("Auri PMS User",),
+	"rep@test.com": ("Auri PMS User",),
+	"out@test.com": ("Auri PMS User",),
+	"gone@test.com": ("Auri PMS User",),
 }
 TM, MGR, DEV, REP, OUT, GONE = (
 	"tm@test.com",
@@ -132,6 +132,8 @@ def build_world() -> frappe._dict:
 			doc.save(ignore_permissions=True)
 		releases[name] = doc.name
 	frappe.db.set_single_value("PMS Settings", "max_hours_per_day", 12)
+	# the shipped penalties, so a site that tuned its own does not change what the tests expect
+	frappe.db.set_single_value("PMS Settings", {"score_red_penalty": 25, "score_amber_penalty": 10})
 	frappe.get_doc("User", GONE).update({"enabled": 0}).save(ignore_permissions=True)
 	clear_cache()
 	return frappe._dict(alp=alp, bet=bet, gam=gam, releases=releases)

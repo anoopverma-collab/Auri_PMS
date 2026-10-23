@@ -18,10 +18,10 @@
  "restrict_removal": 0,
  "roles": [
   {
-   "role": "Tracker User"
+   "role": "Auri PMS User"
   },
   {
-   "role": "Tracker Manager"
+   "role": "Auri PMS Manager"
   }
  ],
  "standard": 1,

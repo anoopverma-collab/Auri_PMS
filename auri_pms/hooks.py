@@ -26,11 +26,11 @@ required_apps = ["erpnext"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/auri_pms/css/auri_pms.css"
+app_include_css = "auri_pms.bundle.css"
 # app_include_js = "/assets/auri_pms/js/auri_pms.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/auri_pms/css/auri_pms.css"
+# web_include_css = "auri_pms.bundle.css"
 # web_include_js = "/assets/auri_pms/js/auri_pms.js"
 
 # include custom scss in every website theme (without file extension ".scss")
@@ -268,7 +268,7 @@ before_uninstall = "auri_pms.install.before_uninstall"
 fixtures = [
 	{"dt": "Custom Field", "filters": [["module", "=", "Auri PMS"]]},
 	{"dt": "Property Setter", "filters": [["module", "=", "Auri PMS"]]},
-	{"dt": "Role", "filters": [["name", "in", ["Tracker Manager", "Tracker User"]]]},
+	{"dt": "Role", "filters": [["name", "in", ["Auri PMS Manager", "Auri PMS User"]]]},
 	{"dt": "Notification", "filters": [["module", "=", "Auri PMS"]]},
 ]
 

@@ -61,9 +61,10 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Tracker Manager",
+			"role": "Auri PMS Manager",
 			"share": 1,
-			"write": 1
+			"write": 1,
+			"import": 1
 		},
 		{
 			"create": 1,
@@ -80,7 +81,7 @@
 		{
 			"create": 1,
 			"read": 1,
-			"role": "Tracker User",
+			"role": "Auri PMS User",
 			"write": 1,
 			"delete": 1
 		}
@@ -90,5 +91,6 @@
 	"sort_order": "DESC",
 	"states": [],
 	"title_field": "module_name",
-	"show_title_field_in_link": 1
+	"show_title_field_in_link": 1,
+	"allow_import": 1
 }
