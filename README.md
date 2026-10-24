@@ -53,19 +53,19 @@ One project's workbench, laid out in aligned rows: the sprint with its burndown 
 
 ### Project Health
 
-The client-facing health view. The banner gives the status (On Track, At Risk or Off Track), a score and every reason behind it, including open risks and overdue mitigations. Below it: complete %, open and closed tickets, overdue, waiting on the client, hours, then paired panels for created vs resolved, backlog trend, tickets by type, module, status and priority, waiting on the client, estimated vs spent hours, a full-width **risk register** (probability x impact heat map and the top open risks), time and activity, people, sprint velocity, ageing and releases. Use the *Range* menu for 1 month, 3 months, 6 months or overall.
+The health view for one project. The header gives the health score and status (On Track, At Risk or Off Track) with the reasons behind it, opened from *How is it worked out?*, the key figures (complete %, open and overdue, hours spent, billable hours) and a notes button with the latest note. Numbered sections follow: Delivery (created vs resolved, backlog trend), Open work (by status, priority and age), Breakdown (by type and module), Client and effort (waiting on the client, estimated vs spent), Risk (probability x impact heat map and the top open risks), Billing and time (Billing graph, billable vs non-billable tickets, time by ticket category, hours by activity), People (team load and burnout risk, hours and open tickets by person), Plan (sprint velocity, releases) and a final *Tickets and billable time by period* table (Overall, last 7, 30 and 90 days, this year, custom range). Every count opens its tickets or time entries. Use the *Range* menu for 1 month, 3 months, 6 months or overall.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/03-project-health.png" alt="Project Health (light)"></td><td width="50%"><img src="docs/screenshots/dark/03-project-health.png" alt="Project Health (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
 ### Portfolio
 
-Every project you can see on one screen, for management. The banner summarises the health of the projects that have the Portfolio switch ticked, and the table compares open tickets, overdue %, done %, budget burn, billable % and client-waiting tickets. Click a project to open its health view.
+Every project you can see on one screen, for management (Auri PMS Admins see all projects, managers the ones they manage). Pick projects in the search box and press *Apply* to focus everything on them until you press *Show all*. It shows the health banner, project cards and a table comparing open tickets, overdue %, done %, budget burn, billable % and client-waiting tickets, trends by project, a Billing graph, billable vs non-billable tickets, time by ticket category, budget burn, risks, team capacity with over-allocation and burnout flags, a *Tickets and billable time by period* table and a notes button per project. Every count is clickable; click a project to open its health view.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/04-portfolio.png" alt="Portfolio (light)"></td><td width="50%"><img src="docs/screenshots/dark/04-portfolio.png" alt="Portfolio (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
 ### My Work
 
-A personal page for the signed-in user: open tickets grouped by due date (overdue, today, this week, later), what is blocked or waiting on the client, hours logged this week against the weekly capacity, active sprints, and one-click *Log time*.
+A personal page for the signed-in user: a greeting for the time of day, rings for the week's hours, tickets on time, sprint progress and billable share, a focus list for today, open tickets grouped by due date (overdue, today, this week, later) with an *Open list* link per group, what is blocked or waiting on the client, hours logged this week against the weekly capacity, active sprints, releases and projects you are on, and one-click *Log time*. Every count opens its list.
 
 <table><tr><td width="50%"><img src="docs/screenshots/light/05-my-work.png" alt="My Work (light)"></td><td width="50%"><img src="docs/screenshots/dark/05-my-work.png" alt="My Work (dark)"></td></tr><tr><td align="center"><sub>Light mode</sub></td><td align="center"><sub>Dark mode</sub></td></tr></table>
 
