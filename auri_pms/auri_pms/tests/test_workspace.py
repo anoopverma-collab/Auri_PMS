@@ -1,11 +1,13 @@
 """The Auri PMS sidebar and app icon on a site always match the files in the app."""
 
 import json
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
 
 from auri_pms import install
+from auri_pms.auri_pms import boot
 
 
 def read(folder: str) -> dict:
@@ -26,6 +28,20 @@ class TestWorkspace(IntegrationTestCase):
 			[(i.label, i.link_to) for i in sidebar.items],
 			[(i["label"], i.get("link_to")) for i in read("workspace_sidebar")["items"]],
 		)
+
+	def test_a_stale_generated_sidebar_is_dropped_so_the_real_one_shows(self):
+		"""Frappe keeps a generated "Auri PMS" sidebar in worker memory; with the real one present the cache is cleared."""
+		from frappe.desk.doctype.workspace_sidebar import workspace_sidebar as ws
+
+		generated = MagicMock(title="Auri PMS")
+		fake = MagicMock(return_value=[generated])
+		with patch.object(ws, "auto_generate_sidebar_from_module", fake):
+			self.assertTrue(boot.drop_stale_generated_sidebar())
+			fake.clear_cache.assert_called_once()
+		clean = MagicMock(return_value=[MagicMock(title="Other module")])
+		with patch.object(ws, "auto_generate_sidebar_from_module", clean):
+			self.assertFalse(boot.drop_stale_generated_sidebar())
+			clean.clear_cache.assert_not_called()
 
 	def test_the_app_icon_has_each_role_once(self):
 		install.ensure_workspace_docs()
