@@ -90,6 +90,14 @@ def ensure_workspace_docs() -> None:
 		import_file_by_path(
 			frappe.get_app_path("auri_pms", folder, "auri_pms.json"), force=True, ignore_version=True
 		)
+	# Frappe 16.52 and later read a module's sidebar from a Sidebar document (the old Workspace Sidebar is an archive
+	# there and is no longer read); older versions have no such doctype and use the file above.
+	if frappe.db.exists("DocType", "Sidebar"):
+		import_file_by_path(
+			frappe.get_app_path("auri_pms", "auri_pms", "sidebar", "auri_pms", "auri_pms.json"),
+			force=True,
+			ignore_version=True,
+		)
 
 
 def after_migrate() -> None:
@@ -357,9 +365,14 @@ def before_uninstall() -> None:
 		("Workspace", "Tracker"),
 		("Workspace Sidebar", "Tracker"),
 		("Workspace Sidebar", "Auri PMS"),
+		("Sidebar", "Auri PMS"),
 		("Desktop Icon", "Tracker"),
 		("Desktop Icon", "Auri PMS"),
 		("Desktop Icon", "Auriga Track"),
 	):
+		if not frappe.db.exists("DocType", doctype):  # a Frappe version without that doctype
+			continue
 		frappe.db.delete(doctype, {"name": name})
+		if doctype == "Sidebar":
+			frappe.db.delete("Sidebar Item", {"parent": name})
 	frappe.clear_cache()

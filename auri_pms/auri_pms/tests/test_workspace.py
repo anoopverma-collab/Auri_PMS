@@ -49,6 +49,21 @@ class TestWorkspace(IntegrationTestCase):
 		with patch.object(ws, "auto_generate_sidebar_from_module", None, create=True):
 			self.assertFalse(boot.drop_stale_generated_sidebar())
 
+	def test_the_sidebar_file_for_frappe_16_52_lists_the_same_items(self):
+		"""Frappe 16.52 reads a Sidebar document from the module folder; it must match the older workspace sidebar file."""
+		path = frappe.get_app_path("auri_pms", "auri_pms", "sidebar", "auri_pms", "auri_pms.json")
+		with open(path) as f:
+			new = json.load(f)
+		old = read("workspace_sidebar")
+		self.assertEqual(
+			(new["doctype"], new["name"], new["module"], new["standard"]),
+			("Sidebar", "Auri PMS", "Auri PMS", 1),
+		)
+		self.assertEqual(
+			[(i["label"], i.get("link_to"), i["type"]) for i in new["items"]],
+			[(i["label"], i.get("link_to"), i["type"]) for i in old["items"]],
+		)
+
 	def test_the_app_icon_has_each_role_once(self):
 		install.ensure_workspace_docs()
 		install.ensure_workspace_docs()
