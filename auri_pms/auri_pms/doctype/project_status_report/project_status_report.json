@@ -193,7 +193,7 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-10-22 19:17:07.964760",
+	"modified": "2026-10-24 19:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Project Status Report",
@@ -209,6 +209,18 @@
 			"read": 1,
 			"report": 1,
 			"role": "Auri PMS Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Auri PMS Admin",
 			"share": 1,
 			"write": 1
 		},

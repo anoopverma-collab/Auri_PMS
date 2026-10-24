@@ -6,7 +6,7 @@
  "doctype": "Report",
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2026-10-10 10:00:00.000000",
+ "modified": "2026-10-24 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "Sprint Burndown",
@@ -21,6 +21,9 @@
   },
   {
    "role": "Auri PMS Manager"
+  },
+  {
+   "role": "Auri PMS Admin"
   },
   {
    "role": "System Manager"

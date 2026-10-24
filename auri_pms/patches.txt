@@ -24,3 +24,4 @@ auri_pms.patches.v1_0.set_extra_tickets_switch
 auri_pms.patches.v1_0.rename_corporate_dark_to_grey
 auri_pms.patches.v1_0.set_member_role_permissions
 auri_pms.patches.v1_0.move_risk_assessed_by_to_parent
+auri_pms.patches.v1_0.set_allocation_settings

@@ -54,8 +54,23 @@ TRACKERS = {"Bug": "#E24C4C", "Feature": "#2490EF", "Task": "#22C55E", "Support"
 ACTIVITY_TYPES = ["Development", "Design", "Testing", "Meeting", "Support", "Documentation"]
 
 
+# The roles of the app, from the widest to the narrowest. Auri PMS Admin and System Manager see and do everything in every
+# project; Auri PMS Manager and Auri PMS User only work in the projects they are a member of, with the rights of their Project Role.
+ROLES = ("Auri PMS Admin", "Auri PMS Manager", "Auri PMS User")
+
+
+def ensure_roles() -> None:
+	"""Create the app's roles when they are missing (idempotent; the fixtures hold the same list for export)."""
+	for role in ROLES:
+		if not frappe.db.exists("Role", role):
+			frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1, "is_custom": 1}).insert(
+				ignore_permissions=True
+			)
+
+
 def after_install() -> None:
-	"""Create default data once (idempotent) and prepare the Project permissions and Kanban board."""
+	"""Create the roles and default data once (idempotent) and prepare the Project permissions and Kanban board."""
+	ensure_roles()
 	create_default_data()
 	ensure_email_templates()
 	ensure_kanban_board()
@@ -78,7 +93,8 @@ def ensure_workspace_docs() -> None:
 
 
 def after_migrate() -> None:
-	"""Keep Project permissions, the sidebar and the app icon in line with the code after migrate; master data is never touched."""
+	"""Keep the roles, Project permissions, the sidebar and the app icon in line with the code after migrate; master data is never touched."""
+	ensure_roles()
 	ensure_project_permissions()
 	ensure_workspace_docs()
 	ensure_email_templates()
@@ -273,11 +289,13 @@ def add_status_column(status: str) -> None:
 # ERPNext DocTypes the tracker roles need, granted as Custom DocPerm (no core files are touched).
 ERPNEXT_PERMISSIONS = {
 	"Project": {
+		"Auri PMS Admin": ("read", "write", "create", "report"),
 		"Auri PMS Manager": ("read", "write", "create", "report"),
 		"System Manager": ("read", "write", "create", "report"),  # inherits Auri PMS Manager rights
 		"Auri PMS User": ("read", "write"),
 	},
 	"Activity Type": {  # needed to pick an activity when logging time
+		"Auri PMS Admin": ("read",),
 		"Auri PMS Manager": ("read",),
 		"Auri PMS User": ("read",),
 	},
@@ -288,6 +306,7 @@ ERPNEXT_PERMISSIONS = {
 PMS_SWITCH_PERMLEVEL = 2
 PMS_SWITCH_PERMISSIONS = {
 	"System Manager": ("read", "write"),
+	"Auri PMS Admin": ("read", "write"),
 	"Auri PMS Manager": ("read", "write"),
 	"Projects Manager": ("read", "write"),
 	"Auri PMS User": ("read",),

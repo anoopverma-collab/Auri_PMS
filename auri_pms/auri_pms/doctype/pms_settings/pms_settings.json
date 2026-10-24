@@ -27,6 +27,12 @@
 		"max_hours_per_day",
 		"column_break_time_rules_2",
 		"weekly_capacity_hours",
+		"allocation_section",
+		"utilisation_window_weeks",
+		"allocation_col",
+		"over_utilisation_pct",
+		"allocation_col_2",
+		"under_utilisation_pct",
 		"risk_health_tab",
 		"risk_section",
 		"risk_medium_from",
@@ -191,6 +197,43 @@
 			"fieldname": "weekly_capacity_hours",
 			"fieldtype": "Float",
 			"label": "Weekly Capacity (Hours)"
+		},
+		{
+			"fieldname": "allocation_section",
+			"fieldtype": "Section Break",
+			"label": "Allocation & Utilisation"
+		},
+		{
+			"default": "4",
+			"description": "Utilisation compares the average hours logged per week over this many weeks with the hours allocated",
+			"fieldname": "utilisation_window_weeks",
+			"fieldtype": "Int",
+			"label": "Utilisation Window (Weeks)",
+			"non_negative": 1
+		},
+		{
+			"fieldname": "allocation_col",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "110",
+			"description": "Logged hours above this % of the allocated hours are flagged as over-used; a person whose logged hours across all projects exceed this % of their weekly capacity is flagged as a burnout risk",
+			"fieldname": "over_utilisation_pct",
+			"fieldtype": "Int",
+			"label": "Over-utilised Above (%)",
+			"non_negative": 1
+		},
+		{
+			"fieldname": "allocation_col_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "50",
+			"description": "Logged hours below this % of the allocated hours are flagged as under-used",
+			"fieldname": "under_utilisation_pct",
+			"fieldtype": "Int",
+			"label": "Under-utilised Below (%)",
+			"non_negative": 1
 		},
 		{
 			"fieldname": "risk_health_tab",
@@ -467,7 +510,7 @@
 	],
 	"issingle": 1,
 	"istable": 0,
-	"modified": "2026-10-22 16:05:08.404779",
+	"modified": "2026-10-24 19:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "PMS Settings",
@@ -479,6 +522,14 @@
 			"print": 1,
 			"read": 1,
 			"role": "Auri PMS Manager",
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Auri PMS Admin",
 			"write": 1
 		},
 		{

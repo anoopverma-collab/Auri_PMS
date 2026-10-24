@@ -42,6 +42,15 @@ class TestMyWork(TrackerTestCase):
 		self.save_as(MGR, closed, status="Closed")
 		self.assertEqual(self.mine().tiles.open, 0)
 
+	def test_a_project_with_auri_pms_switched_off_is_left_out(self):
+		"""Switching Auri PMS off hides the project from My Work as well as Project Hub and Portfolio."""
+		self.new_item(MGR, assigned_to=DEV, subject="kept")
+		self.assertEqual(self.mine().tiles.open, 1)
+		frappe.db.set_value("Project", self.ALP, "pms_enabled", 0)
+		data = self.mine()
+		self.assertEqual(data.tiles.open, 0)
+		self.assertFalse([i for group in data.groups.values() for i in group])
+
 	def test_blocked_tickets(self):
 		"""A ticket blocked by an open ticket is flagged; once the blocker closes it is not."""
 		blocker = self.new_item(MGR, tracker="Task")

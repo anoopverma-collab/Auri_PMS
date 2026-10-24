@@ -6,6 +6,14 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Added
+- **Portfolio redesign:** Hub-style page with project focus (Apply button, other projects hidden until Show all), clickable counts,
+  trends by project, Billing graph, billable vs non-billable tickets, time by ticket category (treemap), team capacity with
+  over-allocation and burnout flags, a final *Tickets and billable time by period* table (Overall, 7 / 30 / 90 days, this
+  year, custom range) and project notes (add and delete, also shown on the Project).
+- **Project Health** takes the same billing, notes and period table for its one project, plus a *Team load and burnout risk*
+  panel; the weekly billable chart became the Billing graph. API: `get_project_periods`; `get_project_health` adds `billing`,
+  `notes`, `can_note`, `starts` and `team`.
+- **My Work** redesign: time-of-day greeting, rings, a focus list, per-group *Open list* links and clickable counts.
 - **Configurable risk and health thresholds** in PMS Settings (*Risk & Health* tab): the Medium, High and Critical score levels
   of the Risk Register, and every health check (overdue tickets, sprint burndown, effort, releases, backlog growth) with its
   score penalties. Existing sites get the previous values through patches.

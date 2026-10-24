@@ -8,6 +8,7 @@
 		"user",
 		"full_name",
 		"project_role",
+		"allocation_pct",
 		"role_permissions"
 	],
 	"fields": [
@@ -37,6 +38,14 @@
 			"columns": 2
 		},
 		{
+			"fieldname": "allocation_pct",
+			"fieldtype": "Percent",
+			"in_list_view": 1,
+			"columns": 1,
+			"label": "Allocation %",
+			"description": "Share of this person's weekly capacity (PMS Settings) planned for this project. Leave empty if not planned."
+		},
+		{
 			"fieldname": "role_permissions",
 			"fieldtype": "Small Text",
 			"in_list_view": 1,
@@ -47,7 +56,7 @@
 	],
 	"issingle": 0,
 	"istable": 1,
-	"modified": "2026-10-10 10:00:00.000000",
+	"modified": "2026-10-24 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Project Member",

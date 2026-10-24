@@ -10,6 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
+from auri_pms.auri_pms.allocation import team_capacity
 from auri_pms.auri_pms.health import (
 	AGE_BUCKETS,
 	PERIODS,
@@ -23,7 +24,7 @@ from auri_pms.auri_pms.health import (
 	time_summary,
 )
 from auri_pms.auri_pms.risk import my_risks, portfolio_risk_counts
-from auri_pms.auri_pms.utils import get_settings
+from auri_pms.auri_pms.utils import get_settings, is_admin, portfolio_projects
 
 LEVEL_ORDER = {"red": 0, "amber": 1, "green": 2, "none": 3}
 CRITICAL_PRIORITIES = ("Urgent", "Immediate")
@@ -59,14 +60,301 @@ def full_names(users: list[str]) -> dict[str, str]:
 
 
 # --------------------------------------------------------------------------- portfolio
-def get_portfolio_data(period: str = "3m") -> frappe._dict:
-	"""One row of health and delivery numbers per visible project, plus portfolio totals and series."""
-	period = period if period in PERIODS else "3m"
-	today_ = getdate(today())
+def average_score(scores: list) -> int:
+	"""Mean of the health scores that exist, rounded half up (72.5 is 73, not the even 72)."""
+	scores = [score for score in scores if score is not None]
+	return int(sum(scores) / len(scores) + 0.5) if scores else 0
+
+
+NOTE_LIMIT = 2000
+
+
+def note_text(content: str | None) -> str:
+	"""A stored note as plain text, one paragraph per line."""
+	return frappe.utils.strip_html_tags((content or "").replace("</p>", "\n")).strip()
+
+
+def project_notes(project: str, limit: int = 50) -> list[dict]:
+	"""The notes of one project, newest first (comments on the Project)."""
+	return [
+		{
+			"name": c.name,
+			"text": note_text(c.content),
+			"by": c.comment_email,
+			"by_name": frappe.utils.get_fullname(c.comment_email) if c.comment_email else c.comment_by,
+			"on": str(c.creation),
+			"can_delete": c.comment_email == frappe.session.user or is_admin(),
+		}
+		for c in frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Project", "reference_name": project, "comment_type": "Comment"},
+			fields=["name", "content", "comment_email", "comment_by", "creation"],
+			order_by="creation desc",
+			limit_page_length=limit,
+		)
+	]
+
+
+def add_project_note(project: str, note: str) -> list[dict]:
+	"""Add a note to a project of the Portfolio and return its notes. Only who may see the project on the Portfolio can."""
+	if project not in portfolio_projects():
+		frappe.throw(_("You cannot add notes to Project {0}").format(project), frappe.PermissionError)
+	note = (note or "").strip()
+	if not note:
+		frappe.throw(_("Write the note first"))
+	if len(note) > NOTE_LIMIT:
+		frappe.throw(_("A note can have at most {0} characters").format(NOTE_LIMIT))
+	html = "".join(f"<p>{frappe.utils.escape_html(line)}</p>" for line in note.splitlines() if line.strip())
+	frappe.get_doc(
+		{
+			"doctype": "Comment",
+			"comment_type": "Comment",
+			"reference_doctype": "Project",
+			"reference_name": project,
+			"content": html,
+			"comment_email": frappe.session.user,
+			"comment_by": frappe.utils.get_fullname(frappe.session.user),
+		}
+	).insert(ignore_permissions=True)
+	return project_notes(project)
+
+
+def delete_project_note(project: str, note: str) -> list[dict]:
+	"""Delete a note of a project of the Portfolio; its author and the admins can. Returns the notes that are left."""
+	if project not in portfolio_projects():
+		frappe.throw(_("You cannot change the notes of Project {0}").format(project), frappe.PermissionError)
+	comment = frappe.db.get_value(
+		"Comment",
+		{"name": note, "reference_doctype": "Project", "reference_name": project, "comment_type": "Comment"},
+		["name", "comment_email"],
+		as_dict=True,
+	)
+	if not comment:
+		frappe.throw(_("This note does not exist"))
+	if comment.comment_email != frappe.session.user and not is_admin():
+		frappe.throw(_("Only the author of a note or an admin can delete it"), frappe.PermissionError)
+	frappe.delete_doc("Comment", comment.name, ignore_permissions=True, force=True)
+	return project_notes(project)
+
+
+IN_PROGRESS_STATUS = "In Progress"
+
+
+def period_counts(items: list, entries: list, start, end) -> dict:
+	"""Tickets and hours of one project for a period (all time when ``start`` and ``end`` are empty).
+
+	Created counts the tickets created in the period and closed the tickets closed in it. In progress counts the open
+	tickets created in the period that are in the In Progress status now, and client dependent those waiting on the
+	client. Billable hours and spent hours (billable and non-billable together) are the time logged in the period."""
+
+	def inside(value) -> bool:
+		return bool(value) and (not start or as_date(value) >= start) and (not end or as_date(value) <= end)
+
+	out = {
+		"created": 0,
+		"closed": 0,
+		"in_progress": 0,
+		"client_dependent": 0,
+		"billable_hours": 0.0,
+		"spent_hours": 0.0,
+	}
+	for item in items:
+		made_in_period = inside(item.creation)
+		out["created"] += int(made_in_period)
+		out["closed"] += int(cint(item.is_closed) and inside(item.closed_on))
+		out["in_progress"] += int(
+			made_in_period and not cint(item.is_closed) and item.status == IN_PROGRESS_STATUS
+		)
+		out["client_dependent"] += int(
+			made_in_period and not cint(item.is_closed) and cint(item.dependent_on_client)
+		)
+	for entry in entries:
+		if inside(entry.date):
+			out["spent_hours"] += flt(entry.hours)
+			out["billable_hours"] += flt(entry.hours) if cint(entry.is_billable) else 0
+	out["spent_hours"] = flt(out["spent_hours"], 2)
+	out["billable_hours"] = flt(out["billable_hours"], 2)
+	return out
+
+
+def period_range(from_date: str | None, to_date: str | None) -> tuple:
+	"""The two dates of a period in order (either may be empty for all time)."""
+	start = getdate(from_date) if from_date else None
+	end = getdate(to_date) if to_date else None
+	if start and end and start > end:
+		start, end = end, start
+	return start, end
+
+
+COUNT_ITEM_FIELDS = ["project", "status", "is_closed", "creation", "closed_on", "dependent_on_client"]
+
+
+def get_portfolio_ticket_counts(from_date: str | None = None, to_date: str | None = None) -> list[dict]:
+	"""``period_counts`` for every project of the Portfolio (all time without dates); visibility follows the Portfolio."""
+	allowed = portfolio_projects()
+	if not allowed:
+		frappe.throw(
+			_("The Portfolio is for Auri PMS Admins and for the managers of a project."),
+			frappe.PermissionError,
+		)
+	start, end = period_range(from_date, to_date)
 	projects = frappe.get_list(
 		"Project",
-		filters={"pms_enabled": 1},
-		fields=["name", "project_name", "tracker_identifier", "status", "is_public"],
+		filters={"pms_enabled": 1, "name": ["in", allowed]},
+		fields=["name", "project_name", "tracker_identifier"],
+		order_by="project_name asc",
+		limit_page_length=0,
+	)
+	names = [p.name for p in projects] or [""]
+	items_by, entries_by = defaultdict(list), defaultdict(list)
+	for item in frappe.get_list(
+		"Work Item", filters={"project": ["in", names]}, fields=COUNT_ITEM_FIELDS, limit_page_length=0
+	):
+		items_by[item.project].append(item)
+	for entry in frappe.get_list(
+		"Time Entry",
+		filters={"project": ["in", names]},
+		fields=["project", "date", "hours", "is_billable"],
+		limit_page_length=0,
+	):
+		entries_by[entry.project].append(entry)
+	return [
+		{
+			"project": p.name,
+			"project_name": p.project_name or p.name,
+			"identifier": p.tracker_identifier,
+			**period_counts(items_by[p.name], entries_by[p.name], start, end),
+		}
+		for p in projects
+	]
+
+
+def project_period_counts(project: str, ranges: list[dict]) -> list[dict]:
+	"""``period_counts`` of one project for several periods at once: ``ranges`` is [{key, from_date, to_date}]."""
+	items = frappe.get_list(
+		"Work Item", filters={"project": project}, fields=COUNT_ITEM_FIELDS, limit_page_length=0
+	)
+	entries = frappe.get_list(
+		"Time Entry",
+		filters={"project": project},
+		fields=["project", "date", "hours", "is_billable"],
+		limit_page_length=0,
+	)
+	rows = []
+	for r in ranges[:12]:
+		start, end = period_range(r.get("from_date"), r.get("to_date"))
+		rows.append(
+			{
+				"key": r.get("key"),
+				"from_date": str(start) if start else None,
+				"to_date": str(end) if end else None,
+				**period_counts(items, entries, start, end),
+			}
+		)
+	return rows
+
+
+def project_billing(project: str) -> dict:
+	"""The billing summary of one project (tickets by billing group, hours, hours by category)."""
+	items = frappe.get_list(
+		"Work Item", filters={"project": project}, fields=["name", "category"], limit_page_length=0
+	)
+	entries = frappe.get_list(
+		"Time Entry",
+		filters={"project": project},
+		fields=["work_item", "hours", "is_billable"],
+		limit_page_length=0,
+	)
+	names = {
+		c.name: c.category_name or c.name
+		for c in frappe.get_all(
+			"Work Item Category", filters={"project": project}, fields=["name", "category_name"]
+		)
+	}
+	return billing_summary(items, entries, names)
+
+
+def notes_summary(project: str) -> dict:
+	"""How many notes a project has and the latest one."""
+	notes = project_notes(project, limit=1)
+	count = frappe.db.count(
+		"Comment", {"reference_doctype": "Project", "reference_name": project, "comment_type": "Comment"}
+	)
+	last = notes[0] if notes else None
+	return {
+		"count": count,
+		"last": {"text": last["text"], "by_name": last["by_name"], "on": last["on"]} if last else None,
+	}
+
+
+def billing_summary(items: list, entries: list, category_names: dict[str, str]) -> dict:
+	"""Billable vs non-billable tickets and hours, and the hours by ticket category, of one project.
+
+	A ticket is billable when billable hours were logged on it, non-billable when only non-billable hours were, and
+	``no_time`` when nothing was logged. Hours on a ticket without a category are listed as ``No category`` and hours
+	logged without a ticket as ``No ticket``.
+	"""
+	per_ticket: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])  # non-billable, billable
+	for entry in entries:
+		if entry.work_item:
+			per_ticket[entry.work_item][1 if cint(entry.is_billable) else 0] += flt(entry.hours)
+	tickets = {"billable": 0, "non_billable": 0, "no_time": 0}
+	names: dict[str, list[str]] = {"billable": [], "non_billable": [], "no_time": []}
+	for item in items:
+		non_billable, billable = per_ticket.get(item.name, (0.0, 0.0))
+		group = "billable" if billable else "non_billable" if non_billable else "no_time"
+		tickets[group] += 1
+		names[group].append(item.name)
+	by_item = {item.name: item for item in items}
+	categories: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])  # billable, non-billable
+	category_docs: dict[str, set[str]] = defaultdict(set)
+	hours = {"billable": 0.0, "non_billable": 0.0}
+	for entry in entries:
+		item = by_item.get(entry.work_item) if entry.work_item else None
+		label = (
+			_("No ticket")
+			if not entry.work_item
+			else category_names.get(item.category)
+			if item and item.category
+			else _("No category")
+		)
+		key = 0 if cint(entry.is_billable) else 1
+		categories[label or _("No category")][key] += flt(entry.hours)
+		if item and item.category:
+			category_docs[label].add(item.category)
+		hours["non_billable" if key else "billable"] += flt(entry.hours)
+	return {
+		"tickets": tickets,
+		# the tickets of each group, so a count can open them (capped; the page falls back to the time entries above it)
+		"names": {k: v[:300] for k, v in names.items()},
+		"names_capped": any(len(v) > 300 for v in names.values()),
+		"hours": {k: flt(v, 2) for k, v in hours.items()},
+		"categories": [
+			{
+				"label": label,
+				"billable": flt(v[0], 2),
+				"non_billable": flt(v[1], 2),
+				"docnames": sorted(category_docs.get(label, ())),
+			}
+			for label, v in sorted(categories.items(), key=lambda kv: (-(kv[1][0] + kv[1][1]), kv[0]))
+		],
+	}
+
+
+def get_portfolio_data(period: str = "3m") -> frappe._dict:
+	"""One row of health and delivery numbers per project the user manages (``portfolio_projects``), plus totals and series."""
+	period = period if period in PERIODS else "3m"
+	today_ = getdate(today())
+	allowed = portfolio_projects()
+	if not allowed:
+		frappe.throw(
+			_("The Portfolio is for Auri PMS Admins and for the managers of a project."),
+			frappe.PermissionError,
+		)
+	projects = frappe.get_list(
+		"Project",
+		filters={"pms_enabled": 1, "name": ["in", allowed]},
+		fields=["name", "project_name", "tracker_identifier", "status", "is_public", "pms_budget_hours"],
 		order_by="modified desc",
 		limit_page_length=200,
 	)
@@ -74,13 +362,13 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 	items = frappe.get_list(
 		"Work Item",
 		filters={"project": ["in", names or [""]]},
-		fields=[*WORK_ITEM_FIELDS, "modified"],
+		fields=list(dict.fromkeys([*WORK_ITEM_FIELDS, "modified", "category"])),
 		limit_page_length=0,
 	)
 	entries = frappe.get_list(
 		"Time Entry",
 		filters={"project": ["in", names or [""]]},
-		fields=["project", "date", "hours", "is_billable", "user", "activity_type"],
+		fields=["project", "date", "hours", "is_billable", "user", "activity_type", "work_item"],
 		limit_page_length=0,
 	)
 	earliest = min([as_date(i.creation) for i in items] + [as_date(e.date) for e in entries] or [today_])
@@ -106,6 +394,23 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		)
 	}
 
+	note_rows: dict[str, list] = defaultdict(list)
+	for c in frappe.get_all(
+		"Comment",
+		filters={
+			"reference_doctype": "Project",
+			"reference_name": ["in", names or [""]],
+			"comment_type": "Comment",
+		},
+		fields=["reference_name", "content", "comment_email", "comment_by", "creation"],
+		order_by="creation desc",
+		limit_page_length=0,
+	):
+		note_rows[c.reference_name].append(c)
+	category_names = {
+		c.name: c.category_name or c.name
+		for c in frappe.get_all("Work Item Category", fields=["name", "category_name"])
+	}
 	risk_counts = portfolio_risk_counts([p.name for p in projects])
 	rows = []
 	series = {
@@ -115,7 +420,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 	for project in projects:
 		p_items, p_entries = items_by.get(project.name, []), entries_by.get(project.name, [])
 		flow = ticket_flow(p_items, buckets)
-		time = time_summary(p_entries, p_items, buckets)
+		time = time_summary(p_entries, p_items, buckets, flt(project.pms_budget_hours))
 		status = overall_status(project.name, flow, time, today_)
 		for key, source in (
 			("created", flow["created"]),
@@ -164,12 +469,42 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 				"risks_high": risk_counts[project.name]["high"],
 				"risks_overdue": risk_counts[project.name]["overdue"],
 				"avg_resolution_days": flow["avg_resolution_days"],
+				"billing": billing_summary(p_items, p_entries, category_names),
+				"notes": {
+					"count": len(note_rows[project.name]),
+					"last": (
+						{
+							"text": frappe.utils.strip_html_tags(
+								note_rows[project.name][0].content or ""
+							).strip(),
+							"by_name": frappe.utils.get_fullname(note_rows[project.name][0].comment_email)
+							if note_rows[project.name][0].comment_email
+							else note_rows[project.name][0].comment_by,
+							"on": str(note_rows[project.name][0].creation),
+						}
+						if note_rows[project.name]
+						else None
+					),
+				},
+				# weekly (or monthly) numbers of this project for the Portfolio's trend lines
+				"trend": {
+					"open": flow["open_trend"],
+					"created": flow["created"],
+					"resolved": flow["resolved"],
+					"billable": time["billable_by_week"],
+					"non_billable": time["non_billable_by_week"],
+					"hours": [
+						flt(b + n, 2)
+						for b, n in zip(time["billable_by_week"], time["non_billable_by_week"], strict=False)
+					],
+				},
 				"created_period": sum(flow["created"]),
 				"resolved_period": sum(flow["resolved"]),
 				"hours_spent": time["spent"],
 				"hours_period": flt(sum(time["billable_by_week"]) + sum(time["non_billable_by_week"]), 2),
 				"billable_pct": time["billable_pct"],
 				"estimated": time["estimated"],
+				"budget": time["budget"],
 				"burn_pct": time["burn_pct"],
 				"sprint": {
 					"name": sprint.name,
@@ -191,7 +526,9 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 
 	spent = sum(r["hours_spent"] for r in rows)
 	billable = sum(flt(r["hours_spent"]) * flt(r["billable_pct"]) / 100 for r in rows)
-	estimated = sum(r["estimated"] for r in rows)
+	estimated = sum(
+		r["budget"] or r["estimated"] for r in rows
+	)  # a project budget replaces its ticket estimates
 	kpis = {
 		"projects": len(rows),
 		"red": sum(r["level"] == "red" for r in rows),
@@ -210,11 +547,7 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 		"hours_period": flt(sum(r["hours_period"] for r in rows), 2),
 		"billable_pct": flt(billable * 100 / spent, 1) if spent else 0.0,
 		"burn_pct": flt(spent * 100 / estimated, 1) if estimated else None,
-		"avg_score": flt(
-			sum(r["score"] for r in rows if r["score"] is not None)
-			/ max(1, sum(r["score"] is not None for r in rows)),
-			0,
-		),
+		"avg_score": average_score([r["score"] for r in rows]),
 	}
 	return deep_dict(
 		{
@@ -222,9 +555,11 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 			"range_start": str(buckets.first_day),
 			"bucket": buckets.kind,
 			"labels": buckets.labels(),
+			"starts": [str(d) for d in buckets.starts],
 			"kpis": kpis,
 			"series": series,
 			"projects": rows,
+			"capacity": team_capacity({r["name"]: r["project_name"] for r in rows}, today_),
 		}
 	)
 
@@ -236,9 +571,11 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 	today_ = getdate(today())
 	week_start = monday(today_)
 	week_end = week_start + timedelta(days=6)
+	# a project with Auri PMS switched off is hidden from the dashboards, My Work included
+	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name") or [""]
 	items = frappe.get_list(
 		"Work Item",
-		filters={"assigned_to": user, "is_closed": 0},
+		filters={"assigned_to": user, "is_closed": 0, "project": ["in", enabled]},
 		fields=[
 			"name",
 			"subject",
@@ -303,7 +640,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 
 	raised = frappe.get_list(
 		"Work Item",
-		filters={"author": user, "is_closed": 0, "assigned_to": ["!=", user]},
+		filters={"author": user, "is_closed": 0, "assigned_to": ["!=", user], "project": ["in", enabled]},
 		fields=["name", "subject", "project", "status", "assigned_to", "due_date", "priority"],
 		order_by="modified desc",
 		limit_page_length=10,
@@ -317,7 +654,7 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 	capacity = flt(get_settings().get("weekly_capacity_hours")) or 40.0
 	entries = frappe.get_list(
 		"Time Entry",
-		filters={"user": user, "date": ["between", [week_start, week_end]]},
+		filters={"user": user, "date": ["between", [week_start, week_end]], "project": ["in", enabled]},
 		fields=["date", "hours", "is_billable"],
 		limit_page_length=0,
 	)
@@ -335,7 +672,12 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 
 	closed = frappe.get_list(
 		"Work Item",
-		filters={"closed_by": user, "is_closed": 1, "closed_on": [">=", today_ - timedelta(days=27)]},
+		filters={
+			"closed_by": user,
+			"is_closed": 1,
+			"closed_on": [">=", today_ - timedelta(days=27)],
+			"project": ["in", enabled],
+		},
 		fields=["name", "subject", "project", "closed_on"],
 		order_by="closed_on desc",
 		limit_page_length=0,
@@ -370,8 +712,8 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 				"missing_days": missing,
 			},
 			"raised": raised,
-			"risks": my_risks(user),
-			"sprints": my_sprints(user),
+			"risks": [r for r in my_risks(user) if r["project"] in enabled],
+			"sprints": [s for s in my_sprints(user) if s["project"] in enabled],
 			"closed_weekly": closed_weekly,
 			"closed_recent": closed[:5],
 			"impact": timeline_impact(items, today_, capacity / 5),

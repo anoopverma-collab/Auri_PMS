@@ -10,7 +10,7 @@ from auri_pms.auri_pms.utils import (
 	get_capabilities,
 	get_descendants,
 	get_enabled_trackers,
-	is_manager,
+	is_admin,
 	nearest_indicator,
 	transition_allowed,
 )
@@ -147,7 +147,7 @@ def project_create_query(
 	rows = [
 		[p.name, p.project_name]
 		for p in candidates
-		if is_manager() or get_capabilities(p.name)["can_create_items"]
+		if is_admin() or get_capabilities(p.name)["can_create_items"]
 	]
 	start, page_len = cint(start), cint(page_len) or 20
 	return rows[start : start + page_len]
@@ -234,7 +234,15 @@ def get_hub_projects() -> list[dict]:
 	projects = frappe.get_list(
 		"Project",
 		filters={"pms_enabled": 1},
-		fields=["name", "project_name", "tracker_identifier", "status", "is_public"],
+		fields=[
+			"name",
+			"project_name",
+			"tracker_identifier",
+			"status",
+			"is_public",
+			"expected_start_date",
+			"expected_end_date",
+		],
 		order_by="modified desc",
 		limit_page_length=0,
 	)
@@ -260,7 +268,7 @@ def get_hub_projects() -> list[dict]:
 		for s in frappe.get_list(
 			"Sprint",
 			filters={"project": ["in", names], "status": "Active"},
-			fields=["name", "project", "percent_complete", "end_date"],
+			fields=["name", "sprint_name", "project", "percent_complete", "end_date"],
 			limit_page_length=0,
 		)
 	}
@@ -271,6 +279,7 @@ def get_hub_projects() -> list[dict]:
 		members[row.parent] = members.get(row.parent, 0) + 1
 	for project in projects:
 		project.update(stats[project.name])
+		project["closed"] = stats[project.name]["total"] - stats[project.name]["open"]
 		project["members"] = members.get(project.name, 0)
 		project["active_sprint"] = sprints.get(project.name)
 	return projects
@@ -295,6 +304,7 @@ def get_project_hub(project: str) -> dict:
 			"is_public",
 			"expected_start_date",
 			"expected_end_date",
+			"pms_budget_hours",
 		],
 		as_dict=True,
 	)
@@ -316,9 +326,12 @@ def get_project_hub(project: str) -> dict:
 			"modified",
 			"sprint",
 			"done_percent",
+			"estimated_hours",
 			"dependent_on_client",
 			"client_dependency_note",
 			"client_dependency_since",
+			"creation",
+			"closed_on",
 		],
 		order_by="modified desc",
 		limit_page_length=0,
@@ -347,9 +360,36 @@ def get_project_hub(project: str) -> dict:
 		"hours_total": flt(sum(flt(h.hours) for h in hours), 2),
 		"hours_week": flt(sum(flt(h.hours) for h in hours if getdate(h.date) >= week_start), 2),
 		"hours_mine": flt(sum(flt(h.hours) for h in hours if h.user == user), 2),
+		"hours_estimated": flt(sum(flt(i.estimated_hours) for i in items), 2),
+		"hours_budget": flt(info.pms_budget_hours, 2),
 	}
+	# open tickets per person (overdue share included), busiest first
+	load: dict[str, dict] = {}
+	for i in open_items:
+		if not i.assigned_to:
+			continue
+		row = load.setdefault(i.assigned_to, {"user": i.assigned_to, "open": 0, "overdue": 0})
+		row["open"] += 1
+		row["overdue"] += int(bool(i.due_date and getdate(i.due_date) < today_))
+	names = {
+		u.name: u.full_name
+		for u in frappe.get_all(
+			"User", filters={"name": ["in", list(load) or [""]]}, fields=["name", "full_name"]
+		)
+	}
+	by_assignee = sorted(
+		({**r, "name": names.get(r["user"]) or r["user"]} for r in load.values()),
+		key=lambda r: (-r["open"], r["name"]),
+	)
 
-	from auri_pms.auri_pms.health import count_by, count_by_module, module_labels
+	from auri_pms.auri_pms.allocation import project_allocation
+	from auri_pms.auri_pms.health import (
+		count_by,
+		count_by_module,
+		created_resolved_closed,
+		make_buckets,
+		module_labels,
+	)
 	from auri_pms.auri_pms.risk import risk_summary
 
 	sprints = frappe.get_list(
@@ -390,10 +430,12 @@ def get_project_hub(project: str) -> dict:
 	members = frappe.get_all(
 		"Project Member",
 		filters={"parent": project, "parenttype": "Project"},
-		fields=["user", "full_name", "project_role"],
+		fields=["user", "full_name", "project_role", "allocation_pct"],
 		order_by="idx asc",
 	)
 	return frappe._dict(
+		allocation=project_allocation(project, today_=today_),
+		flow=created_resolved_closed(items, make_buckets("3m", None, today_)),
 		project=info,
 		capabilities=caps,
 		numbers=numbers,
@@ -402,6 +444,7 @@ def get_project_hub(project: str) -> dict:
 		by_module=count_by_module(open_items, module_labels(project)),
 		risks=risk_summary(project),
 		by_priority=count_by(open_items, "priority"),
+		by_assignee=by_assignee,
 		active_sprint=active,
 		sprints=sprints,
 		releases=releases,
@@ -438,10 +481,19 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 
 	if not frappe.db.exists("Project", project) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	from auri_pms.auri_pms.allocation import project_team
+	from auri_pms.auri_pms.dashboards import notes_summary, project_billing
 	from auri_pms.auri_pms.risk import risk_summary
+	from auri_pms.auri_pms.utils import portfolio_projects
 
 	data = get_health(project, period)
 	data["risks"] = risk_summary(project)
+	data["billing"] = project_billing(project)
+	data["notes"] = notes_summary(project)
+	data["can_note"] = (
+		project in portfolio_projects()
+	)  # whoever sees the project on the Portfolio may keep notes on it
+	data["team"] = project_team(project, portfolio_projects())
 	if not health_visible(project, "hub"):
 		data["status"] = None
 	return data
@@ -449,11 +501,57 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 
 # --------------------------------------------------------------------------- dashboards
 @frappe.whitelist()
+def get_project_periods(project: str, ranges: str | list) -> list[dict]:
+	"""Tickets and billable time of one project for several periods: ``ranges`` is [{key, from_date, to_date}]."""
+	from auri_pms.auri_pms.dashboards import project_period_counts
+	from auri_pms.permissions import can_see_project
+
+	if not frappe.db.exists("Project", project) or not can_see_project(project):
+		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
+	return project_period_counts(project, frappe.parse_json(ranges) if isinstance(ranges, str) else ranges)
+
+
+@frappe.whitelist()
 def get_portfolio(period: str = "3m") -> dict:
 	"""Portfolio dashboard: health and delivery numbers of every project the user can see."""
 	from auri_pms.auri_pms.dashboards import get_portfolio_data
 
 	return get_portfolio_data(period)
+
+
+@frappe.whitelist()
+def get_portfolio_tickets(from_date: str | None = None, to_date: str | None = None) -> list[dict]:
+	"""Tickets created, closed and in progress per Portfolio project for a period (all time without dates)."""
+	from auri_pms.auri_pms.dashboards import get_portfolio_ticket_counts
+
+	return get_portfolio_ticket_counts(from_date, to_date)
+
+
+@frappe.whitelist()
+def get_project_notes(project: str) -> list[dict]:
+	"""The notes of a Portfolio project, newest first."""
+	from auri_pms.auri_pms.dashboards import project_notes
+	from auri_pms.auri_pms.utils import portfolio_projects
+
+	if project not in portfolio_projects():
+		frappe.throw(_("You cannot see the notes of Project {0}").format(project), frappe.PermissionError)
+	return project_notes(project)
+
+
+@frappe.whitelist(methods=["POST"])
+def add_project_note(project: str, note: str) -> list[dict]:
+	"""Add a note to a Portfolio project; returns the project's notes, newest first."""
+	from auri_pms.auri_pms.dashboards import add_project_note as add
+
+	return add(project, note)
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_project_note(project: str, note: str) -> list[dict]:
+	"""Delete a note of a Portfolio project (its author or an admin); returns the notes that are left."""
+	from auri_pms.auri_pms.dashboards import delete_project_note as delete
+
+	return delete(project, note)
 
 
 @frappe.whitelist()

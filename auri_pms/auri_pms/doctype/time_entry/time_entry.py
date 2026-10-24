@@ -10,7 +10,7 @@ from frappe.utils import add_days, cint, flt, getdate, today
 from auri_pms.auri_pms.utils import (
 	get_capabilities,
 	get_settings,
-	is_manager,
+	is_admin,
 	recalc_chain,
 	recalc_release,
 	recalc_sprint,
@@ -118,7 +118,7 @@ class TimeEntry(Document):
 def check_lock(dates: list) -> None:
 	"""Throw if any date falls before today minus time_entry_lock_days (R-43). Managers bypass."""
 	lock_days = cint(get_settings().time_entry_lock_days)
-	if not lock_days or is_manager():
+	if not lock_days or is_admin():
 		return
 	cutoff = getdate(add_days(today(), -lock_days))
 	if any(getdate(d) < cutoff for d in dates if d):

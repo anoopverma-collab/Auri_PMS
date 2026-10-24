@@ -270,5 +270,19 @@
   "label": "Client Status Report",
   "module": "Auri PMS",
   "name": "Project-tracker_sec_report"
+ },
+ {
+  "depends_on": "eval:doc.pms_enabled",
+  "description": "Total hours approved for the project. When set, Hours used compares logged hours with this budget instead of the ticket estimates.",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "pms_budget_hours",
+  "fieldtype": "Float",
+  "insert_after": "parent_project",
+  "is_system_generated": 0,
+  "label": "Budget (Hours)",
+  "module": "Auri PMS",
+  "name": "Project-pms_budget_hours",
+  "non_negative": 1
  }
 ]

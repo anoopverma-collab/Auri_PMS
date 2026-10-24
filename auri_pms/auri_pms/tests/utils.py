@@ -11,15 +11,17 @@ from frappe.utils import add_days, today
 from auri_pms.auri_pms.utils import clear_cache
 
 PASSWORD_FREE_USERS = {
-	"tm@test.com": ("Auri PMS Manager",),
+	"tm@test.com": ("Auri PMS Admin",),
+	"boss@test.com": ("Auri PMS Manager",),
 	"mgr@test.com": ("Auri PMS User",),
 	"dev@test.com": ("Auri PMS User",),
 	"rep@test.com": ("Auri PMS User",),
 	"out@test.com": ("Auri PMS User",),
 	"gone@test.com": ("Auri PMS User",),
 }
-TM, MGR, DEV, REP, OUT, GONE = (
+TM, BOSS, MGR, DEV, REP, OUT, GONE = (
 	"tm@test.com",
+	"boss@test.com",
 	"mgr@test.com",
 	"dev@test.com",
 	"rep@test.com",

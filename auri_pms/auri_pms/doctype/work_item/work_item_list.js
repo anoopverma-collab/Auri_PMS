@@ -5,6 +5,7 @@
 const wi_is_plain_user =
 	frappe.user.has_role("Auri PMS User") &&
 	!frappe.user.has_role("Auri PMS Manager") &&
+	!frappe.user.has_role("Auri PMS Admin") &&
 	!frappe.user.has_role("System Manager");
 
 frappe.listview_settings["Work Item"] = {
