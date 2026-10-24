@@ -20,7 +20,8 @@ A centralized platform for project planning, task management, timelines, effort 
 | Tickets (Work Items) | bugs, features, tasks and support requests with parent/child tickets, priorities, categories, start/due dates, estimates, relations and blockers; per-project ticket numbers such as `AURI-00001` |
 | Ticket Types and workflow | configurable ticket types with default status, *Counts as Defect* flag and allowed status transitions per project role |
 | Project Hub | project-first screen: users only see projects they belong to (or public ones) and work inside the chosen project |
-| Roles and access | project roles with nine capability flags; private projects stay hidden from outsiders |
+| Roles and access | three roles (Auri PMS Admin, Manager, User) and project roles with nine capability flags; managers and users see only their own projects; private projects stay hidden from outsiders |
+| Allocation | each member's Allocation % of the weekly capacity, logged vs allocated hours per project, and team capacity with over-allocation and burnout flags |
 | Sprints | start/end dates, goal, add tickets to a sprint, Start / Complete, Sprint Board and Burndown |
 | Releases | group tickets into versions with progress and due date |
 | Modules | tag every ticket with the module (part of the product) it is for, such as Sales, Stock or Accounts; dashboards, reports and the client report break the numbers down by module |
@@ -29,7 +30,7 @@ A centralized platform for project planning, task management, timelines, effort 
 | Gantt chart | tickets drawn from start date to due date, filtered to the project |
 | Time tracking | log hours per ticket with activity type and a *Billable* flag; limits per entry/day and lock days |
 | Dependent on Client | tick a ticket that waits on the client; tracked with a note and *Waiting since* and counted everywhere |
-| Dashboards | Project Health (with a risk heat map and tickets by module), Portfolio (risks per project), My Work (risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
+| Dashboards | Project Health (with a risk heat map and tickets by module), Portfolio (billing, team capacity, notes and a period table), My Work (greeting, focus list, risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
 | Themes and range | 8 themes in light and dark and a 1 month / 3 months / 6 months / Overall range, shared by all dashboards |
 | Reports | Work Item Summary, Time Log Summary, Release Progress, Overdue Work Items, Sprint Summary, Sprint Burndown, Client Dependencies |
 | Email | email a project's status report (choice of layouts, sections you can switch and drag into order, tickets you can remove or add with a note, preview, PDF, weekly and monthly schedule, delivery tracking), daily due-date digests, optional email-to-ticket intake |
@@ -241,8 +242,9 @@ before sending; use **Download PDF** for very large reports.
 **PDF.** The PDF fills an A4 sheet edge to edge with the report's own colour on every page. For Calibri text in the PDF install the
 Carlito font on the server (`fonts-crosextra-carlito`).
 
-Roles: **Auri PMS Manager** (and System Manager) administer everything; **Auri PMS User** sees only the
-projects they are a member of, plus public projects. Inside a project the member's **Project Role**
+Roles: **Auri PMS Admin** (and System Manager) see and administer everything, including the Portfolio of all projects; **Auri PMS Manager**
+and **Auri PMS User** see only the projects they are a member of, plus public projects (a manager's Portfolio lists the projects they can
+manage members for). Inside a project the member's **Project Role**
 decides what they can do.
 
 ## 10-minute quick start
@@ -253,9 +255,9 @@ Dashboards (all share one theme choice, 8 themes in light and dark, and the *Ran
 
 | Screen | For | What it shows |
 |---|---|---|
-| **Project Hub > Health Dashboard** | project manager, client | On Track / At Risk / Off Track with reasons, open vs closed, created vs resolved, backlog trend, sprint velocity, ticket aging, spent vs billable hours, tickets waiting on the client |
-| **Portfolio** | management | a status banner like the other dashboards (worst health, average score and the projects that need attention, for projects with the Portfolio switch ticked) and one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; ticket, budget, flow and hour charts |
-| **My Work** | everyone | my tickets by due date (overdue / today / this week / later), blocked and client-waiting badges, my sprints, hours this week against the weekly capacity, one-click *Log time* |
+| **Project Hub > Health Dashboard** | project manager, client | On Track / At Risk / Off Track with reasons, open vs closed, created vs resolved, backlog trend, sprint velocity, ticket aging, Billing graph, billable vs non-billable tickets, time by ticket category, team load and burnout risk, project notes, a final tickets and billable time by period table, tickets waiting on the client; every count opens its tickets |
+| **Portfolio** | management | a status banner like the other dashboards (worst health, average score and the projects that need attention, for projects with the Portfolio switch ticked) and one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; ticket, budget, flow and hour charts; project focus with Apply, trends by project, Billing graph, billable tickets, category treemap, team capacity, a tickets and billable time by period table and project notes; every count is clickable |
+| **My Work** | everyone | my tickets by due date (overdue / today / this week / later), blocked and client-waiting badges, my sprints, hours this week against the weekly capacity, one-click *Log time*, a greeting, rings and a focus list; every count opens its list |
 | **Quality Dashboard** | QA, project manager | bugs opened vs fixed, critical bugs, time to fix by priority, reopen rate, defects per 100 hours, bugs by category and project (ticket types marked *Counts as Defect*) |
 | **Client Dependencies** (report) | project manager | every open ticket waiting on the client, how long, and what is needed; opened from the *Waiting on client* tiles |
 | **Client Status Report** | project manager | a client-ready report for any period: status, delivered, in progress, coming up, risks, *Waiting on you*, plan and hours; email it (logged as *Project Status Report*), download a PDF, or let it go out weekly (Project > Auri PMS tab: *Report Recipients*, *Send Weekly On*) |
@@ -274,7 +276,7 @@ ruff check . && ruff format --check .                      # Python
 eslint --ext .js auri_pms                              # JS (default Frappe config)
 ```
 
-Tests live in `auri_pms/auri_pms/tests/`, one file per area (215 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
+Tests live in `auri_pms/auri_pms/tests/`, one file per area (304 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
 database savepoint. Business rules live in the DocType controllers and `auri_pms/utils.py`; client
 scripts are UX only.
 
