@@ -35,13 +35,19 @@ class TestWorkspace(IntegrationTestCase):
 
 		generated = MagicMock(title="Auri PMS")
 		fake = MagicMock(return_value=[generated])
-		with patch.object(ws, "auto_generate_sidebar_from_module", fake):
+		with patch.object(ws, "auto_generate_sidebar_from_module", fake, create=True):
 			self.assertTrue(boot.drop_stale_generated_sidebar())
 			fake.clear_cache.assert_called_once()
 		clean = MagicMock(return_value=[MagicMock(title="Other module")])
-		with patch.object(ws, "auto_generate_sidebar_from_module", clean):
+		with patch.object(ws, "auto_generate_sidebar_from_module", clean, create=True):
 			self.assertFalse(boot.drop_stale_generated_sidebar())
 			clean.clear_cache.assert_not_called()
+
+	def test_a_frappe_without_generated_sidebars_is_left_alone(self):
+		from frappe.desk.doctype.workspace_sidebar import workspace_sidebar as ws
+
+		with patch.object(ws, "auto_generate_sidebar_from_module", None, create=True):
+			self.assertFalse(boot.drop_stale_generated_sidebar())
 
 	def test_the_app_icon_has_each_role_once(self):
 		install.ensure_workspace_docs()
