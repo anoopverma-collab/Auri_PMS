@@ -119,3 +119,16 @@ class TestProjectHub(TrackerTestCase):
 		self.assertEqual(len(data.active_sprint.burndown["rows"]), 4)  # start .. today
 		self.assertEqual({r.name for r in data.releases}, set(self.world.releases.values()))
 		self.assertEqual({m.user for m in data.members}, {MGR, DEV, REP, "gone@test.com"})
+
+
+class TestHubFlow(TrackerTestCase):
+	def test_created_resolved_and_closed_this_week(self):
+		"""A ticket created, moved to Resolved and closed this week counts once in each series."""
+		item = self.new_item(MGR, tracker="Task")
+		self.save_as(MGR, item, status="Resolved")
+		self.save_as(MGR, item, status="Closed")
+		self.new_item(MGR, tracker="Task")
+		with self.as_user(MGR):
+			flow = api.get_project_hub(self.ALP).flow
+		self.assertEqual((flow["created"][-1], flow["resolved"][-1], flow["closed"][-1]), (2, 1, 1))
+		self.assertEqual(len(flow["labels"]), len(flow["created"]))

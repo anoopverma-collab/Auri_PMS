@@ -37,7 +37,7 @@ class TestInstall(IntegrationTestCase):
 
 	def test_t003_fixtures_exist(self):
 		"""T-003: roles, custom fields, workspace and Kanban board exist."""
-		for role in ("Auri PMS Manager", "Auri PMS User"):
+		for role in ("Auri PMS Admin", "Auri PMS Manager", "Auri PMS User"):
 			self.assertTrue(frappe.db.exists("Role", role), role)
 		for fieldname in (
 			"tab_tracker",
@@ -64,10 +64,12 @@ class TestInstall(IntegrationTestCase):
 		for doctype, role, ptype in (
 			("Project", "Auri PMS User", "read"),
 			("Project", "Auri PMS User", "write"),
+			("Project", "Auri PMS Admin", "create"),
 			("Project", "Auri PMS Manager", "create"),
 			("Project", "System Manager", "read"),
 			("Project", "System Manager", "create"),
 			("Activity Type", "Auri PMS User", "read"),
+			("Activity Type", "Auri PMS Admin", "read"),
 			("Activity Type", "Auri PMS Manager", "read"),
 		):
 			self.assertTrue(

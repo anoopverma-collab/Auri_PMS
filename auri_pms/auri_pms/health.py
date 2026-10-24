@@ -153,7 +153,9 @@ def get_health(project: str, period: str = "3m", client_view: bool = False) -> f
 			by_module.items(), key=lambda kv: (kv[0] == _("(no module)"), -(kv[1][0] + kv[1][2]), kv[0])
 		)
 	]
-	time = time_summary(entries, items, buckets)
+	time = time_summary(
+		entries, items, buckets, flt(frappe.db.get_value("Project", project, "pms_budget_hours"))
+	)
 	workload = workload_summary(items, entries)
 	sprints = velocity(project)
 	status = overall_status(project, flow, time, today_)
@@ -162,6 +164,7 @@ def get_health(project: str, period: str = "3m", client_view: bool = False) -> f
 			"period": period,
 			"bucket": buckets.kind,
 			"labels": buckets.labels(),
+			"starts": [str(d) for d in buckets.starts],
 			"flow": flow,
 			"time": time,
 			"workload": workload,
@@ -179,6 +182,47 @@ def deep_dict(value):
 	if isinstance(value, list):
 		return [deep_dict(v) for v in value]
 	return value
+
+
+def created_resolved_closed(items: list, buckets: Buckets, resolved_status: str = "Resolved") -> dict:
+	"""Tickets created, moved to ``resolved_status`` and closed in each bucket.
+
+	Created uses the creation date and closed the Closed On date. The move to Resolved comes from the
+	ticket's change history (Work Item tracks changes); a ticket counts once per bucket.
+	"""
+	first = buckets.first_day
+	created: dict[date, int] = defaultdict(int)
+	closed: dict[date, int] = defaultdict(int)
+	for item in items:
+		if as_date(item.creation) >= first:
+			created[buckets.key(as_date(item.creation))] += 1
+		if cint(item.is_closed) and item.closed_on and as_date(item.closed_on) >= first:
+			closed[buckets.key(as_date(item.closed_on))] += 1
+	seen: set[tuple] = set()
+	for version in frappe.get_all(
+		"Version",
+		filters={
+			"ref_doctype": "Work Item",
+			"docname": ["in", [i.name for i in items] or [""]],
+			"creation": [">=", first],
+			"data": ["like", '%"status"%'],
+		},
+		fields=["docname", "creation", "data"],
+	):
+		changes = (json.loads(version.data or "{}") or {}).get("changed") or []
+		if any(c[0] == "status" and c[2] == resolved_status for c in changes):
+			seen.add((version.docname, buckets.key(as_date(version.creation))))
+	resolved: dict[date, list[str]] = defaultdict(list)
+	for name, week in sorted(seen):
+		resolved[week].append(name)
+	return {
+		"labels": buckets.labels(),
+		"starts": [str(d) for d in buckets.starts],
+		"created": [created.get(d, 0) for d in buckets.starts],
+		"resolved": [len(resolved.get(d, [])) for d in buckets.starts],
+		"resolved_names": [resolved.get(d, []) for d in buckets.starts],
+		"closed": [closed.get(d, 0) for d in buckets.starts],
+	}
 
 
 def as_date(value) -> date | None:
@@ -370,8 +414,8 @@ def client_wait_trend(items: list, buckets: Buckets) -> list[int]:
 	]
 
 
-def time_summary(entries: list, items: list, buckets: Buckets) -> dict:
-	"""Spent vs billable hours (total, weekly, by person and activity) against the estimate."""
+def time_summary(entries: list, items: list, buckets: Buckets, budget: float = 0) -> dict:
+	"""Spent vs billable hours (total, weekly, by person and activity) against the budget, or the estimate without one."""
 	starts = buckets.starts
 	billable_week: dict[date, float] = defaultdict(float)
 	other_week: dict[date, float] = defaultdict(float)
@@ -400,7 +444,8 @@ def time_summary(entries: list, items: list, buckets: Buckets) -> dict:
 		"non_billable": flt(non_billable, 2),
 		"billable_pct": flt(billable * 100 / spent, 1) if spent else 0.0,
 		"estimated": flt(estimated, 2),
-		"burn_pct": flt(spent * 100 / estimated, 1) if estimated else None,
+		"budget": flt(budget, 2),
+		"burn_pct": flt(spent * 100 / (budget or estimated), 1) if (budget or estimated) else None,
 		"billable_by_week": [flt(billable_week.get(w, 0), 2) for w in starts],
 		"non_billable_by_week": [flt(other_week.get(w, 0), 2) for w in starts],
 		"by_user": sorted(
@@ -551,7 +596,11 @@ def overall_status(project: str, flow: dict, time: dict, today_: date) -> dict:
 		if time["burn_pct"] > 100:
 			add(
 				"red",
-				_("Spent hours exceed the estimate ({0}%)").format(time["burn_pct"]),
+				(
+					_("Spent hours exceed the budget ({0}%)")
+					if time["budget"]
+					else _("Spent hours exceed the estimate ({0}%)")
+				).format(time["burn_pct"]),
 				"time",
 				list_target("Time Entry", {"project": project}),
 			)

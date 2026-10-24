@@ -13,7 +13,7 @@ from frappe.utils import cint
 from auri_pms.auri_pms.utils import (
 	get_member_role,
 	has_unrestricted_project_view,
-	is_manager,
+	is_admin,
 	is_user_enabled,
 )
 
@@ -23,7 +23,7 @@ def _project_scope(user: str, column: str) -> str:
 
 	Returns an empty string when the user is unrestricted and ``1=0`` when the user is disabled.
 	"""
-	if is_manager(user):
+	if is_admin(user):
 		return ""
 	if not is_user_enabled(user):
 		return "(1=0)"
@@ -38,7 +38,7 @@ def _project_scope(user: str, column: str) -> str:
 def can_see_project(project: str | None, user: str | None = None) -> bool:
 	"""Return True if ``user`` is a manager, a member of ``project`` or the project is public."""
 	user = user or frappe.session.user
-	if is_manager(user):
+	if is_admin(user):
 		return True
 	if not project or not is_user_enabled(user):
 		return False
@@ -99,7 +99,7 @@ def category_query(user: str | None = None, doctype: str | None = None) -> str:
 # --------------------------------------------------------------------------- has_permission
 def _has_project_permission(doc, ptype: str | None, user: str | None, project_field: str = "project") -> bool:
 	user = user or frappe.session.user
-	if is_manager(user):
+	if is_admin(user):
 		return True
 	if not is_user_enabled(user):
 		return False

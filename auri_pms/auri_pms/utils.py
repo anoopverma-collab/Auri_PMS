@@ -19,7 +19,8 @@ CAPABILITY_FIELDS: tuple[str, ...] = (
 	"can_manage_members",
 	"can_be_assigned",
 )
-MANAGER_ROLES = frozenset({"Auri PMS Manager", "System Manager"})
+# Full access to every project. Auri PMS Manager is not here: a Manager works like a member and sees only the projects they are on.
+ADMIN_ROLES = frozenset({"Auri PMS Admin", "System Manager"})
 # ERPNext roles that already have their own view of every Project; Project visibility is not narrowed for them.
 ERPNEXT_PROJECT_ROLES = frozenset({"Projects Manager", "Projects User"})
 
@@ -44,12 +45,12 @@ def ensure_pms_project(project: str | None, action: str) -> None:
 		frappe.throw(_("Enable Auri PMS on Project {0} before {1}").format(project, action))
 
 
-def is_manager(user: str | None = None) -> bool:
-	"""Return True for Administrator, Auri PMS Manager and System Manager."""
+def is_admin(user: str | None = None) -> bool:
+	"""Return True for Administrator, Auri PMS Admin and System Manager (they see and do everything)."""
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return True
-	return bool(MANAGER_ROLES & set(frappe.get_roles(user)))
+	return bool(ADMIN_ROLES & set(frappe.get_roles(user)))
 
 
 def is_user_enabled(user: str) -> bool:
@@ -64,8 +65,34 @@ def is_user_enabled(user: str) -> bool:
 
 
 def has_unrestricted_project_view(user: str) -> bool:
-	"""True if the user sees every Project (tracker/system managers and ERPNext project roles)."""
-	return is_manager(user) or bool((ERPNEXT_PROJECT_ROLES) & set(frappe.get_roles(user)))
+	"""True if the user sees every Project (Auri PMS and system admins and ERPNext project roles)."""
+	return is_admin(user) or bool((ERPNEXT_PROJECT_ROLES) & set(frappe.get_roles(user)))
+
+
+def portfolio_projects(user: str | None = None) -> list[str]:
+	"""Projects whose figures ``user`` sees on the Portfolio.
+
+	Auri PMS Admins and System Managers see every project with Auri PMS switched on. Anyone else (an Auri PMS
+	Manager included) sees only the projects where their Project Role can manage members; an empty list
+	means no Portfolio at all.
+	"""
+	user = user or frappe.session.user
+	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
+	if is_admin(user):
+		return enabled
+	if not is_user_enabled(user):
+		return []
+	managing_roles = set(frappe.get_all("Project Role", filters={"can_manage_members": 1}, pluck="name"))
+	mine = {
+		m.parent
+		for m in frappe.get_all(
+			"Project Member",
+			filters={"parenttype": "Project", "user": user, "parent": ["in", enabled or [""]]},
+			fields=["parent", "project_role"],
+		)
+		if m.project_role in managing_roles
+	}
+	return [p for p in enabled if p in mine]
 
 
 # --------------------------------------------------------------------------- settings
@@ -120,11 +147,11 @@ def get_project_role(project: str, user: str | None = None) -> str | None:
 def get_capabilities(project: str, user: str | None = None, members_only: bool = False) -> dict:
 	"""Return the Project Role flags for ``user`` on ``project``.
 
-	Tracker/System Manager -> all True. Member -> their role's flags.
+	Auri PMS Admin/System Manager -> all True. Member (any Auri PMS role) -> their Project Role's flags.
 	Non-member on public project -> PMS Settings.public_project_role flags.
 	Otherwise -> all False. Disabled users always get all False. Cached per request.
 
-	With ``members_only`` the manager shortcut and the public-project fallback are skipped, so only
+	With ``members_only`` the admin shortcut and the public-project fallback are skipped, so only
 	real members are reported (used to decide who may be assigned work).
 	"""
 	user = user or frappe.session.user
@@ -135,7 +162,7 @@ def get_capabilities(project: str, user: str | None = None, members_only: bool =
 
 	if not project or not is_user_enabled(user):
 		caps = dict.fromkeys(CAPABILITY_FIELDS, False)
-	elif not members_only and is_manager(user):
+	elif not members_only and is_admin(user):
 		caps = dict.fromkeys(CAPABILITY_FIELDS, True)
 	else:
 		role = get_member_role(project, user)
@@ -297,7 +324,7 @@ def transition_allowed(
 	An empty transition table allows every move; Tracker/System Managers bypass the table.
 	"""
 	user = user or frappe.session.user
-	if from_status == to_status or is_manager(user):
+	if from_status == to_status or is_admin(user):
 		return True
 	rows = frappe.get_all(
 		"Ticket Type Transition",

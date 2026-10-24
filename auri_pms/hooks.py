@@ -268,7 +268,7 @@ before_uninstall = "auri_pms.install.before_uninstall"
 fixtures = [
 	{"dt": "Custom Field", "filters": [["module", "=", "Auri PMS"]]},
 	{"dt": "Property Setter", "filters": [["module", "=", "Auri PMS"]]},
-	{"dt": "Role", "filters": [["name", "in", ["Auri PMS Manager", "Auri PMS User"]]]},
+	{"dt": "Role", "filters": [["name", "in", ["Auri PMS Admin", "Auri PMS Manager", "Auri PMS User"]]]},
 	{"dt": "Notification", "filters": [["module", "=", "Auri PMS"]]},
 ]
 

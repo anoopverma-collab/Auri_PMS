@@ -98,17 +98,26 @@ class MyWork {
 		const mine = (filters) => ui.go("Work Item", { assigned_to: frappe.session.user, ...filters });
 		const week_end = frappe.datetime.add_days(d.week_start, 6);
 		const blocked = Object.values(d.groups).flat().filter((i) => i.blocked_by.length).map((i) => i.name);
+		// every group opens its tickets as a list too
+		const open_list = {
+			overdue: mine({ is_closed: 0, due_date: ["<", d.today] }),
+			today: mine({ is_closed: 0, due_date: d.today }),
+			week: mine({ is_closed: 0, due_date: ["between", [frappe.datetime.add_days(d.today, 1), week_end]] }),
+			later: mine({ is_closed: 0, due_date: [">", week_end] }),
+			no_due: mine({ is_closed: 0, due_date: ["is", "not set"] }),
+		};
 		const groups = MW_GROUPS.filter(([key]) => d.groups[key].length)
 			.map(
 				([key, label]) =>
-					`<details class="hub-group" ${key === "overdue" ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})</summary>${this.ticket_rows(d.groups[key])}</details>`
+					`<details class="hub-group" ${key === "overdue" ? "open" : ""}><summary>${__(label)} (${d.groups[key].length})${ui.viewAll(open_list[key], __("Open list"))}</summary>${this.ticket_rows(d.groups[key])}</details>`
 			)
 			.join("");
+		const lk = (html, target) => `<span class="pf-link" ${ui.goAttr(target)}>${html}</span>`;
 		const sprints = d.sprints.length
 			? d.sprints
 					.map(
 						(s) => `<div class="hub-mini"><span>${ui.link("Sprint", s.name, s.label)}</span><div class="progress"><div class="progress-bar" style="width:${s.percent}%"></div></div><span>${__("{0} days left", [s.days_left])}</span></div>
-						<div class="hub-sub" style="margin:-4px 0 8px">${__("My tickets: {0} of {1} closed", [s.mine_closed, s.mine_total])}</div>`
+						<div class="hub-sub" style="margin:-4px 0 8px">${__("My tickets")}: ${lk(s.mine_closed, mine({ sprint: s.name, is_closed: 1 }))} ${__("of")} ${lk(s.mine_total, mine({ sprint: s.name }))} ${__("closed")}</div>`
 					)
 					.join("")
 			: `<div class="text-muted small">${__("No active sprint with your tickets.")}</div>`;
@@ -138,17 +147,47 @@ class MyWork {
 			? cols(ui.table(im.releases, [__("Release"), __("Due"), __("My tickets"), __("Hours owed / available"), ""], (r) =>
 				`<tr><td>${ui.link("Release", r.name)}<div class="hub-sub">${ui.esc(r.project)}</div></td>
 				<td style="white-space:nowrap">${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}<div class="hub-sub">${r.days_left === null ? "" : r.days_left < 0 ? __("{0} days overdue", [-r.days_left]) : __("{0} days left", [r.days_left])}</div></td>
-				<td>${r.open_items}</td><td style="white-space:nowrap">${r.hours_owed} h / ${r.hours_available} h</td><td style="white-space:nowrap">${state_chip(r.state)}</td></tr>`), 5)
+				<td>${lk(r.open_items, mine({ release: r.name, is_closed: 0 }))}</td><td style="white-space:nowrap">${r.hours_owed} h / ${r.hours_available} h</td><td style="white-space:nowrap">${state_chip(r.state)}</td></tr>`), 5)
 			: `<div class="text-muted small">${__("None of your open tickets is in an open release.")}</div>`;
 		const projects = im.projects.length
 			? cols(ui.table(im.projects, [__("Project"), __("Project ends"), __("Open"), __("Overdue"), __("Hours owed")], (p) =>
 				`<tr><td>${ui.link("Project", p.name, p.label)}</td>
 				<td style="white-space:nowrap">${p.end_date ? frappe.datetime.str_to_user(p.end_date) : ""}<div class="hub-sub">${p.days_left === null ? "" : p.days_left < 0 ? __("{0} days overdue", [-p.days_left]) : __("{0} days left", [p.days_left])}</div></td>
-				<td>${p.open_items}</td><td class="${p.overdue ? "text-danger" : ""}">${p.overdue}</td><td>${p.hours_owed} h</td></tr>`), 5)
+				<td>${lk(p.open_items, mine({ project: p.name, is_closed: 0 }))}</td><td class="${p.overdue ? "text-danger" : ""}">${p.overdue ? lk(p.overdue, mine({ project: p.name, is_closed: 0, due_date: ["<", d.today] })) : p.overdue}</td><td>${p.hours_owed} h</td></tr>`), 5)
 			: "";
 		const missing = d.hours.missing_days.length ? `<div class="hub-badge hub-badge-warn" style="display:inline-block;margin-top:8px">${__("No hours logged on {0}", [d.hours.missing_days.join(", ")])}</div>` : "";
-		this.$body.html(`
-			<div class="hub-title"><h4>${__("My Work")}</h4><span class="text-muted">${ui.esc(frappe.user.full_name())} · ${frappe.datetime.str_to_user(d.today)}</span></div>
+		// ---- a greeting for the time of day, and what the day looks like
+		const now = new Date();
+		const wish = now.getHours() < 12 ? __("Good morning") : now.getHours() < 17 ? __("Good afternoon") : __("Good evening");
+		const first = (frappe.user.full_name() || "").split(" ")[0];
+		const parts = [];
+		if (t.overdue) parts.push(__("{0} overdue", [t.overdue]));
+		if (t.today) parts.push(__("{0} due today", [t.today]));
+		if (t.week) parts.push(__("{0} due this week", [t.week]));
+		const day = !t.open ? __("Nothing is open on your list. Enjoy the quiet.") : __("You have {0} open tickets{1}.", [t.open, parts.length ? `: ${parts.join(", ")}` : ""]);
+		const friday = now.getDay() === 5 && now.getHours() >= 16 ? ` ${__("Have a great weekend!")}` : "";
+		const hello = `<div class="mw-hello"><div><h4>${wish}, ${ui.esc(first)}</h4><span>${day}${friday}</span></div><span class="mw-date">${frappe.datetime.str_to_user(d.today)}</span></div>`;
+
+		// ---- the dials: my week, how on time I am, the sprint, how billable the week was
+		const week_billable = d.hours.billable.reduce((a, b) => a + b, 0);
+		const week_total = week_billable + d.hours.non_billable.reduce((a, b) => a + b, 0);
+		const sprint = d.sprints[0];
+		const rings = [
+			ui.ring(Math.min(100, Math.round(flt(t.capacity_pct))), __("My week"), __("{0} of {1} h logged", [flt(t.hours_week, 1), t.capacity]), t.capacity_pct >= 100 ? "g-green" : t.capacity_pct >= 60 ? "g-teal" : "g-orange", ui.go("Time Entry", { user: frappe.session.user, date: ["between", [d.week_start, week_end]] })),
+			ui.ring(t.open ? Math.round(((t.open - t.overdue) / t.open) * 100) : 100, __("On time"), t.open ? __("{0} overdue of {1} open", [t.overdue, t.open]) : __("nothing open"), t.overdue ? "g-orange" : "g-green", mine({ is_closed: 0, due_date: ["<", d.today] })),
+			sprint ? ui.ring(Math.round(flt(sprint.percent)), __("Sprint"), `${ui.esc(sprint.label)} · ${__("{0} days left", [sprint.days_left])}`, "g-purple", { route: ["Form", "Sprint", sprint.name], filters: {} }) : "",
+			ui.ring(week_total ? Math.round((week_billable / week_total) * 100) : null, __("Billable"), week_total ? __("{0} of {1} h this week", [flt(week_billable, 1), flt(week_total, 1)]) : __("no hours yet"), "g-blue", ui.go("Time Entry", { user: frappe.session.user, is_billable: 1, date: ["between", [d.week_start, week_end]] })),
+		].filter(Boolean);
+
+		// ---- the few tickets that need me first: overdue, then due today
+		const first_up = [...d.groups.overdue, ...d.groups.today].slice(0, 5);
+		const focus = panel(`${__("Focus for today")} (${first_up.length})${ui.viewAll(open_list.overdue, __("Overdue"))}`, first_up.length
+			? this.ticket_rows(first_up)
+			: `<div class="mw-clear"><b>${t.open ? __("Nothing is overdue or due today.") : __("You are all caught up.")}</b><span>${__("Nice work. Pick the next ticket from the list below when you are ready.")}</span></div>`);
+
+		this.$body.html(`<div class="ph2 ph3 mw">
+			${hello}
+			<div class="ph3-gauges" style="--n:${rings.length}">${rings.join("")}</div>
 			<div class="hub-tiles">
 				${tile(t.open, __("Open tickets"), "hub-blue", "", mine({ is_closed: 0 }))}
 				${tile(t.overdue, __("Overdue"), t.overdue ? "hub-red" : "hub-teal", "", mine({ is_closed: 0, due_date: ["<", d.today] }))}
@@ -159,29 +198,35 @@ class MyWork {
 				${tile(t.hours_week, __("Hours this week"), "hub-green", __("{0}% of {1} h", [t.capacity_pct, t.capacity]), ui.go("Time Entry", { user: frappe.session.user, date: ["between", [d.week_start, week_end]] }))}
 				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal", "", mine({ is_closed: 1, closed_on: [">=", frappe.datetime.add_days(d.today, -28)] }))}
 			</div>
+			<div class="hub-row hub-row-one">${focus}</div>
 			<div class="hub-row hub-row-even">
-				${panel(`${__("Others are waiting on me")} (${im.blocking.length})`, `<div class="mw-table mw-blocking">${blocking}</div>`)}
-				${projects ? panel(__("Projects I am on"), `<div class="mw-table mw-projects">${projects}</div>`) : ""}
+				${panel(`${__("Others are waiting on me")} (${im.blocking.length})${ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0 }))}`, `<div class="mw-table mw-blocking">${blocking}</div>`)}
+				${projects ? panel(__("Projects I am on") + ui.viewAll(ui.go("Project", { pms_enabled: 1 })), `<div class="mw-table mw-projects">${projects}</div>`) : ""}
 			</div>
-			<div class="hub-row hub-row-one">${panel(__("Releases that depend on me"), `<div class="mw-table mw-releases">${releases}</div>`)}</div>
-			<div class="hub-row hub-row-one">${panel(__("My tickets"), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
+			<div class="hub-row hub-row-one">${panel(__("Releases that depend on me") + ui.viewAll(ui.go("Release", { status: ["!=", "Closed"] })), `<div class="mw-table mw-releases">${releases}</div>`)}</div>
+			<div class="hub-row hub-row-one">${panel(__("My tickets") + ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0 })), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 			<div class="hub-row hub-row-even">
-				${panel(__("Hours this week"), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
-				${panel(`${__("Risks I own")} (${d.risks.length})`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
-			</div>
-			<div class="hub-row hub-row-even">
-				${panel(`${__("Waiting on the client")} (${mine_waiting.length})`, waiting)}
-				${panel(__("My active sprints"), sprints)}
+				${panel(__("Hours this week") + ui.viewAll(ui.go("Time Entry", { user: frappe.session.user })), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
+				${panel(`${__("Risks I own")} (${d.risks.length})${ui.viewAll(ui.go("Risk Register", { risk_owner: frappe.session.user }))}`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
 			</div>
 			<div class="hub-row hub-row-even">
-				${panel(__("I raised, others are working on"), raised)}
-				${panel(__("Tickets I closed (last 4 weeks)"), `<div class="hub-chart" id="mw-closed"></div>`)}
+				${panel(`${__("Waiting on the client")} (${mine_waiting.length})${ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0, dependent_on_client: 1 }))}`, waiting)}
+				${panel(__("My active sprints") + ui.viewAll(ui.go("Sprint", { status: "Active" })), sprints)}
 			</div>
-			`);
+			<div class="hub-row hub-row-even">
+				${panel(__("I raised, others are working on") + ui.viewAll(ui.go("Work Item", { author: frappe.session.user, is_closed: 0 })), raised)}
+				${panel(__("Tickets I closed (last 4 weeks)") + ui.viewAll(ui.go("Work Item", { closed_by: frappe.session.user, is_closed: 1 })), `<div class="hub-chart" id="mw-closed"></div>`)}
+			</div>
+			</div>`);
 		ui.bindTiles(this.$body);
 		this.$body.find("[data-log]").on("click", (e) => this.log_time($(e.currentTarget).data("log"), $(e.currentTarget).data("subject")));
 		const palette = ui.PALETTE;
-		ui.chart(this.$body, "#mw-hours", { type: "bar", height: 200, data: { labels: d.hours.days, datasets: [{ name: __("Billable"), values: d.hours.billable }, { name: __("Non-billable"), values: d.hours.non_billable }] }, colors: [palette.green, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.4 } });
-		ui.chart(this.$body, "#mw-closed", { type: "bar", height: 160, data: { labels: [__("3 weeks ago"), __("2 weeks ago"), __("Last week"), __("This week")], datasets: [{ name: __("Closed"), values: d.closed_weekly }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } });
+		ui.chart(this.$body, "#mw-hours", { type: "bar", height: 200, data: { labels: d.hours.days, datasets: [{ name: __("Billable"), values: d.hours.billable }, { name: __("Non-billable"), values: d.hours.non_billable }] }, colors: [palette.green, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.4 } }, (i) =>
+			ui.openTarget(ui.go("Time Entry", { user: frappe.session.user, date: frappe.datetime.add_days(d.week_start, i) }))
+		);
+		ui.chart(this.$body, "#mw-closed", { type: "bar", height: 160, data: { labels: [__("3 weeks ago"), __("2 weeks ago"), __("Last week"), __("This week")], datasets: [{ name: __("Closed"), values: d.closed_weekly }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } }, (i) => {
+			const start = frappe.datetime.add_days(d.week_start, -7 * (3 - i));
+			ui.openTarget(ui.go("Work Item", { closed_by: frappe.session.user, is_closed: 1, closed_on: ["between", [start, frappe.datetime.add_days(start, 6)]] }));
+		});
 	}
 }

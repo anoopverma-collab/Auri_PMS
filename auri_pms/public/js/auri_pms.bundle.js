@@ -76,6 +76,13 @@ Object.assign(auri_pms.ui, {
 	},
 });
 
+// The Portfolio is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
+if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_portfolio) {
+	const style = document.createElement("style");
+	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/portfolio"]) { display: none !important; }';
+	document.head.appendChild(style);
+}
+
 // Frappe builds an extra sidebar for every module and the module used to be called "Tracking", so old browsers may remember "Tracking" (or the
 // old name "Tracker") in the top-left corner instead of "Auri PMS". Drop that generated sidebar, repair any remembered choice
 // that points at it, and switch back whenever one of the two names is shown.

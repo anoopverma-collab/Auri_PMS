@@ -14,12 +14,12 @@ from auri_pms.auri_pms.utils import (
 	clear_cache,
 	get_capabilities,
 	has_unrestricted_project_view,
-	is_manager,
+	is_admin,
 	safe_sendmail,
 )
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{1,9}$")
-TRACKER_ROLES = {"Auri PMS User", "Auri PMS Manager"}
+TRACKER_ROLES = {"Auri PMS User", "Auri PMS Manager", "Auri PMS Admin"}
 PROJECT_RECORDS = ("Work Item", "Release", "Risk Register", "Sprint", "Time Entry")
 # Filters that select the still-open records; Time Entry has no open/closed state.
 OPEN_FILTERS = {
@@ -221,7 +221,7 @@ def validate_tracker_permissions(doc, old) -> None:
 	"""Only a manager or a member with can_manage_members changes members, visibility or trackers."""
 	empty = (0, [], [])
 	before = _tracker_state(old) if old else empty
-	if _tracker_state(doc) != before and not is_manager():
+	if _tracker_state(doc) != before and not is_admin():
 		allowed = bool(old) and get_capabilities(doc.name)["can_manage_members"]
 		if not allowed:
 			frappe.throw(
