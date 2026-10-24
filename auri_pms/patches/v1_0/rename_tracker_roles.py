@@ -13,5 +13,6 @@ def execute():
 			continue
 		# both exist (the new one was created first): move everything over, then drop the old role
 		for doctype in ("Has Role", "Custom DocPerm", "DocPerm"):
-			frappe.db.sql(f"update `tab{doctype}` set role = %s where role = %s", (new, old))
+			table = frappe.qb.DocType(doctype)
+			frappe.qb.update(table).set(table.role, new).where(table.role == old).run()
 		frappe.delete_doc("Role", old, force=True, ignore_permissions=True)
