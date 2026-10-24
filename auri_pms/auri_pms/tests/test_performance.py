@@ -14,8 +14,11 @@ TIME_ENTRY_INDEXES = ("work_item", "user", "date")
 class TestPerformance(TrackerTestCase):
 	def test_indexes_exist(self):
 		"""project, status, assigned_to, parent_work_item, release, is_closed / work_item, user, date are indexed."""
-		for doctype, columns in (("Work Item", WORK_ITEM_INDEXES), ("Time Entry", TIME_ENTRY_INDEXES)):
-			indexed = {row[4] for row in frappe.db.sql(f"show index from `tab{doctype}`")}
+		for doctype, columns, show_index in (
+			("Work Item", WORK_ITEM_INDEXES, "show index from `tabWork Item`"),
+			("Time Entry", TIME_ENTRY_INDEXES, "show index from `tabTime Entry`"),
+		):
+			indexed = {row[4] for row in frappe.db.sql(show_index)}
 			for column in columns:
 				self.assertIn(column, indexed, f"{doctype}.{column}")
 
