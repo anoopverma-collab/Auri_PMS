@@ -22,13 +22,14 @@ def drop_stale_generated_sidebar() -> bool:
 	try:
 		from frappe.desk.doctype.workspace_sidebar import workspace_sidebar as ws
 
-		if not any(
-			getattr(sidebar, "title", None) == SIDEBAR for sidebar in ws.auto_generate_sidebar_from_module()
-		):
+		generate = getattr(ws, "auto_generate_sidebar_from_module", None)
+		if generate is None:  # a Frappe version that does not generate sidebars from modules
+			return False
+		if not any(getattr(sidebar, "title", None) == SIDEBAR for sidebar in generate()):
 			return False
 		if not frappe.db.exists("Workspace Sidebar", {"name": SIDEBAR, "for_user": ["is", "not set"]}):
 			return False
-		ws.auto_generate_sidebar_from_module.clear_cache()
+		generate.clear_cache()
 		return True
 	except Exception:
 		frappe.log_error("Auri PMS: could not refresh the generated sidebar list")
