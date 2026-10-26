@@ -13,7 +13,10 @@ OLD_DEFAULTS = {
 
 def execute() -> None:
 	"""Only values still at the old default change; a limit somebody chose themselves is kept."""
+	meta = frappe.get_meta("PMS Settings")
 	for fieldname, old in OLD_DEFAULTS.items():
+		if not meta.has_field(fieldname):
+			continue  # the per-section limits were removed from PMS Settings; nothing left to change
 		current = frappe.db.get_single_value("PMS Settings", fieldname)
 		if current in (None, "") or int(current) == old:
 			frappe.db.set_single_value("PMS Settings", fieldname, 0)
