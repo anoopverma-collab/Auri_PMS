@@ -165,11 +165,18 @@ class TestStatusReport(TrackerTestCase):
 		"""CC and BCC addresses get the email too; an address already in To is not repeated; the log keeps all three lists."""
 		with self.as_user(MGR):
 			name = send_report(
-				self.ALP, days(-7), days(0), "client@example.com", cc="boss@example.com, client@example.com",
+				self.ALP,
+				days(-7),
+				days(0),
+				"client@example.com",
+				cc="boss@example.com, client@example.com",
 				bcc="audit@example.com",
 			)
 		log = frappe.get_doc("Project Status Report", name)
-		self.assertEqual((log.sent_to, log.sent_cc, log.sent_bcc), ("client@example.com", "boss@example.com", "audit@example.com"))
+		self.assertEqual(
+			(log.sent_to, log.sent_cc, log.sent_bcc),
+			("client@example.com", "boss@example.com", "audit@example.com"),
+		)
 		self.assertEqual(log.recipient_count, 3)
 		for address in ("client@example.com", "boss@example.com", "audit@example.com"):
 			self.assertTrue(self.emails_to(address), address)

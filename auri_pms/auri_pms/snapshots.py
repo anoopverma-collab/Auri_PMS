@@ -18,7 +18,12 @@ def take_snapshot(project: str, period_type: str = "Manual", on: str | None = No
 
 	on = str(getdate(on or today()))
 	data = get_project_health(project)
-	flow, time, status, risks = data.get("flow", {}), data.get("time", {}), data.get("status") or {}, data.get("risks", {})
+	flow, time, status, risks = (
+		data.get("flow", {}),
+		data.get("time", {}),
+		data.get("status") or {},
+		data.get("risks", {}),
+	)
 	values = {
 		"project": project,
 		"snapshot_date": on,
@@ -34,7 +39,9 @@ def take_snapshot(project: str, period_type: str = "Manual", on: str | None = No
 		"open_risks": cint(risks.get("open")),
 		"data": json.dumps(data, default=str),
 	}
-	existing = frappe.db.get_value(DOCTYPE, {"project": project, "snapshot_date": on, "period_type": period_type})
+	existing = frappe.db.get_value(
+		DOCTYPE, {"project": project, "snapshot_date": on, "period_type": period_type}
+	)
 	doc = frappe.get_doc(DOCTYPE, existing) if existing else frappe.new_doc(DOCTYPE)
 	doc.update(values)
 	doc.save(ignore_permissions=True)
@@ -88,8 +95,18 @@ def get_project_snapshots(project: str) -> list[dict]:
 		DOCTYPE,
 		filters={"project": project},
 		fields=[
-			"name", "snapshot_date", "period_type", "health_label", "health_score", "completion_pct",
-			"open_tickets", "closed_tickets", "overdue_tickets", "spent_hours", "billable_hours", "open_risks",
+			"name",
+			"snapshot_date",
+			"period_type",
+			"health_label",
+			"health_score",
+			"completion_pct",
+			"open_tickets",
+			"closed_tickets",
+			"overdue_tickets",
+			"spent_hours",
+			"billable_hours",
+			"open_risks",
 		],
 		order_by="snapshot_date desc, creation desc",
 		limit=200,
@@ -108,8 +125,13 @@ def delete_project_snapshot(name: str) -> None:
 	if not project:
 		frappe.throw(_("Snapshot {0} does not exist").format(name), frappe.DoesNotExistError)
 	if not (frappe.has_permission(DOCTYPE, "create") and is_allocated(project)):
-		frappe.throw(_("Only people allocated to {0} can delete its saved dashboards").format(project), frappe.PermissionError)
-	frappe.delete_doc(DOCTYPE, name, ignore_permissions=True)  # whoever may save a snapshot of the project may remove one
+		frappe.throw(
+			_("Only people allocated to {0} can delete its saved dashboards").format(project),
+			frappe.PermissionError,
+		)
+	frappe.delete_doc(
+		DOCTYPE, name, ignore_permissions=True
+	)  # whoever may save a snapshot of the project may remove one
 
 
 @frappe.whitelist()
@@ -117,4 +139,8 @@ def get_project_snapshot(name: str) -> dict:
 	"""One saved dashboard, as get_project_health returned it on that day."""
 	doc = frappe.get_doc(DOCTYPE, name)
 	doc.check_permission("read")
-	return {"snapshot_date": doc.snapshot_date, "period_type": doc.period_type, "data": json.loads(doc.data or "{}")}
+	return {
+		"snapshot_date": doc.snapshot_date,
+		"period_type": doc.period_type,
+		"data": json.loads(doc.data or "{}"),
+	}

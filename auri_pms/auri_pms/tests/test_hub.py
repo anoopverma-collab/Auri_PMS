@@ -4,8 +4,8 @@ import frappe
 from frappe.utils import add_days, today
 
 from auri_pms.auri_pms import api
-from auri_pms.auri_pms.utils import clear_cache
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, REP, TM, TrackerTestCase
+from auri_pms.auri_pms.utils import clear_cache
 
 
 class TestProjectHub(TrackerTestCase):

@@ -45,7 +45,9 @@ def can_see_project(project: str | None, user: str | None = None) -> bool:
 		return False
 	if get_member_role(project, user):
 		return True
-	return bool(cint(frappe.db.get_value("Project", project, "is_public")))  # public: viewable, never editable
+	return bool(
+		cint(frappe.db.get_value("Project", project, "is_public"))
+	)  # public: viewable, never editable
 
 
 # --------------------------------------------------------------------------- query conditions
