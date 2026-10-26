@@ -1,255 +1,269 @@
 {
-	"actions": [],
-	"autoname": "SR-.YYYY.-.#####",
-	"creation": "2026-10-10 10:00:00.000000",
-	"doctype": "DocType",
-	"engine": "InnoDB",
-	"field_order": [
-		"subject",
-		"from_date",
-		"column_break_main_1",
-		"project",
-		"to_date",
-		"column_break_main_2",
-		"status_level",
-		"section_sending",
-		"sent_on",
-		"column_break_section_sending_1",
-		"sent_by",
-		"column_break_section_sending_2",
-		"scheduled",
-		"section_delivery",
-		"recipient_count",
-		"delivery_status",
-		"column_break_section_delivery_1",
-		"sent_count",
-		"error",
-		"column_break_section_delivery_2",
-		"failed_count",
-		"section_to",
-		"sent_to",
-		"section_body",
-		"body"
-	],
-	"fields": [
-		{
-			"fieldname": "subject",
-			"fieldtype": "Data",
-			"in_list_view": 1,
-			"label": "Subject",
-			"read_only": 1,
-			"reqd": 1
-		},
-		{
-			"fieldname": "project",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Project",
-			"link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
-			"options": "Project",
-			"read_only": 1,
-			"reqd": 1,
-			"search_index": 1
-		},
-		{
-			"fieldname": "from_date",
-			"fieldtype": "Date",
-			"in_list_view": 1,
-			"label": "From",
-			"read_only": 1,
-			"reqd": 1
-		},
-		{
-			"fieldname": "to_date",
-			"fieldtype": "Date",
-			"in_list_view": 1,
-			"label": "To",
-			"read_only": 1,
-			"reqd": 1
-		},
-		{
-			"fieldname": "status_level",
-			"fieldtype": "Select",
-			"in_list_view": 1,
-			"label": "Project Status",
-			"options": "\ngreen\namber\nred\nnone",
-			"read_only": 1
-		},
-		{
-			"fieldname": "sent_on",
-			"fieldtype": "Datetime",
-			"in_list_view": 1,
-			"label": "Sent On",
-			"read_only": 1
-		},
-		{
-			"fieldname": "sent_by",
-			"fieldtype": "Link",
-			"label": "Sent By",
-			"options": "User",
-			"read_only": 1
-		},
-		{
-			"fieldname": "scheduled",
-			"fieldtype": "Check",
-			"label": "Sent by Schedule",
-			"read_only": 1
-		},
-		{
-			"fieldname": "section_delivery",
-			"fieldtype": "Section Break",
-			"label": "Delivery"
-		},
-		{
-			"default": "0",
-			"fieldname": "recipient_count",
-			"fieldtype": "Int",
-			"in_list_view": 1,
-			"label": "Emails Triggered",
-			"read_only": 1
-		},
-		{
-			"default": "0",
-			"fieldname": "sent_count",
-			"fieldtype": "Int",
-			"label": "Delivered",
-			"read_only": 1
-		},
-		{
-			"default": "0",
-			"fieldname": "failed_count",
-			"fieldtype": "Int",
-			"label": "Failed",
-			"read_only": 1
-		},
-		{
-			"default": "Queued",
-			"fieldname": "delivery_status",
-			"fieldtype": "Select",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Delivery Status",
-			"options": "Queued\nSent\nPartially Sent\nFailed",
-			"read_only": 1
-		},
-		{
-			"fieldname": "error",
-			"fieldtype": "Small Text",
-			"label": "Error",
-			"read_only": 1
-		},
-		{
-			"fieldname": "section_to",
-			"fieldtype": "Section Break",
-			"label": "Recipients"
-		},
-		{
-			"fieldname": "sent_to",
-			"fieldtype": "Small Text",
-			"label": "Sent To",
-			"read_only": 1
-		},
-		{
-			"fieldname": "section_body",
-			"fieldtype": "Section Break",
-			"label": "Report"
-		},
-		{
-			"fieldname": "body",
-			"fieldtype": "Long Text",
-			"label": "Report (HTML)",
-			"read_only": 1
-		},
-		{
-			"fieldname": "column_break_main_1",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_main_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_sending",
-			"fieldtype": "Section Break",
-			"label": "Sending"
-		},
-		{
-			"fieldname": "column_break_section_sending_1",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_section_sending_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_section_delivery_1",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_section_delivery_2",
-			"fieldtype": "Column Break"
-		}
-	],
-	"issingle": 0,
-	"istable": 0,
-	"modified": "2026-10-24 19:00:00.000000",
-	"modified_by": "Administrator",
-	"module": "Auri PMS",
-	"name": "Project Status Report",
-	"naming_rule": "Expression (old style)",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Auri PMS Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Auri PMS Admin",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Auri PMS User",
-			"share": 1
-		}
-	],
-	"search_fields": "subject,project",
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": [],
-	"title_field": "subject",
-	"show_title_field_in_link": 1
+ "actions": [],
+ "autoname": "SR-.YYYY.-.#####",
+ "creation": "2026-10-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subject",
+  "from_date",
+  "column_break_main_1",
+  "project",
+  "to_date",
+  "column_break_main_2",
+  "status_level",
+  "section_sending",
+  "sent_on",
+  "column_break_section_sending_1",
+  "sent_by",
+  "column_break_section_sending_2",
+  "scheduled",
+  "section_delivery",
+  "recipient_count",
+  "delivery_status",
+  "column_break_section_delivery_1",
+  "sent_count",
+  "error",
+  "column_break_section_delivery_2",
+  "failed_count",
+  "section_to",
+  "sent_to",
+  "sent_cc",
+  "sent_bcc",
+  "section_body",
+  "body"
+ ],
+ "fields": [
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
+   "options": "Project",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "From",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "To",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status_level",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Project Status",
+   "options": "\ngreen\namber\nred\nnone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Sent On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_by",
+   "fieldtype": "Link",
+   "label": "Sent By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scheduled",
+   "fieldtype": "Check",
+   "label": "Sent by Schedule",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "default": "0",
+   "fieldname": "recipient_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Emails Triggered",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "sent_count",
+   "fieldtype": "Int",
+   "label": "Delivered",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "failed_count",
+   "fieldtype": "Int",
+   "label": "Failed",
+   "read_only": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "delivery_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Delivery Status",
+   "options": "Queued\nSent\nPartially Sent\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_to",
+   "fieldtype": "Section Break",
+   "label": "Recipients"
+  },
+  {
+   "fieldname": "sent_to",
+   "fieldtype": "Small Text",
+   "label": "Sent To",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Report"
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Long Text",
+   "label": "Report (HTML)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_main_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_sending",
+   "fieldtype": "Section Break",
+   "label": "Sending"
+  },
+  {
+   "fieldname": "column_break_section_sending_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_section_sending_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_section_delivery_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_section_delivery_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sent_cc",
+   "fieldtype": "Small Text",
+   "label": "CC",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_bcc",
+   "fieldtype": "Small Text",
+   "label": "BCC",
+   "read_only": 1
+  }
+ ],
+ "issingle": 0,
+ "istable": 0,
+ "modified": "2026-10-24 19:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Auri PMS",
+ "name": "Project Status Report",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Auri PMS Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Auri PMS Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Auri PMS User",
+   "share": 1
+  }
+ ],
+ "search_fields": "subject,project",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "subject",
+ "show_title_field_in_link": 1
 }

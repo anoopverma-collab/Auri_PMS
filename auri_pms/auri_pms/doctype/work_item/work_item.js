@@ -83,6 +83,7 @@ frappe.ui.form.on("Work Item", {
 
 	summary_chips(frm) {
 		if (frm.is_new()) return;
+		frm.dashboard.clear_headline(); // refresh runs more than once after a first save; do not stack the chips
 		frm.dashboard.set_headline(
 			auri_pms.ui.chips([
 				auri_pms.ui.priority(frm.doc.priority),

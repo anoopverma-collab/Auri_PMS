@@ -7,7 +7,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate
 
-from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, recalc_sprint
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, linked_tickets, recalc_sprint
 
 STATUS_ORDER = {"Planned": 0, "Active": 1, "Completed": 2}
 
@@ -124,3 +124,10 @@ class Sprint(Document):
 	def on_trash(self) -> None:
 		"""Deleting needs the same capability; a sprint with items is refused by Frappe's link check."""
 		self.validate_can_manage()
+
+
+@frappe.whitelist()
+def get_sprint_tickets(sprint: str) -> dict:
+	"""The tickets allocated to a sprint: a count per status and per person, plus the tickets themselves."""
+	frappe.has_permission("Sprint", "read", doc=sprint, throw=True)
+	return linked_tickets("sprint", sprint)

@@ -29,9 +29,10 @@ class TestWorkItem(TrackerTestCase):
 		"""T-023: out cannot create on ALP."""
 		self.assertThrows("You are not allowed to create work items in Project", lambda: self.new_item(OUT))
 
-	def test_t024_outsider_can_create_on_public(self):
-		"""T-024: out can create on BET through the public Reporter role."""
-		self.assertTrue(self.new_item(OUT, self.BET).name.startswith("BET-"))
+	def test_t024_outsider_cannot_create_on_public(self):
+		"""T-024: out is not allocated to the public project BET, so cannot create there."""
+		with self.assertRaises(frappe.ValidationError):
+			self.new_item(OUT, self.BET)
 
 	def test_t025_tracker_not_enabled(self):
 		"""T-025: Feature is not enabled on BET."""
@@ -55,6 +56,15 @@ class TestWorkItem(TrackerTestCase):
 			"Due Date cannot be before Start Date",
 			lambda: self.new_item(DEV, start_date="2026-10-10", due_date="2026-10-01"),
 		)
+
+	def test_actual_end_before_actual_start(self):
+		"""The actual end date cannot come before the actual start date."""
+		self.assertThrows(
+			"Actual End Date cannot be before Actual Start Date",
+			lambda: self.new_item(DEV, actual_start_date="2026-10-10", actual_end_date="2026-10-01"),
+		)
+		item = self.new_item(DEV, actual_start_date="2026-10-01", actual_end_date="2026-10-05")
+		self.assertEqual(str(item.actual_end_date), "2026-10-05")
 
 	def test_t029_negative_estimate_and_percent(self):
 		"""T-029: estimated_hours -1 and done_percent 120 are each rejected."""

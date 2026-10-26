@@ -32,17 +32,14 @@ class TestPermissions(TrackerTestCase):
 		return {i.name for i in items}
 
 	def test_t110_outsider_sees_only_public(self):
-		"""T-110: out only sees BET items (checked on the items this test created, so other data may exist)."""
+		"""T-110: out only sees BET items, read-only (checked on the items this test created, so other data may exist)."""
 		visible = self.names(OUT)
 		self.assertIn(self.bet_item.name, visible)
 		self.assertNotIn(self.alp_item.name, visible)
-		self.assertTrue(
-			{p for p in frappe.get_all("Work Item", {"name": ["in", list(visible)]}, pluck="project")}
-			<= {p.name for p in frappe.get_all("Project", {"is_public": 1})}
-		)
+		self.assertFalse(frappe.has_permission("Work Item", "write", doc=self.bet_item.name, user=OUT))
 
 	def test_t111_member_sees_alp_and_bet(self):
-		"""T-111: dev sees ALP and BET items."""
+		"""T-111: dev sees ALP (member) and BET (public, read-only) items."""
 		self.assertTrue(self.created(self.alp_item, self.bet_item) <= self.names(DEV))
 
 	def test_t112_manager_sees_all(self):
@@ -154,3 +151,26 @@ class TestPermissions(TrackerTestCase):
 			with self.as_user(OUT):
 				hidden = json.dumps(run_report(report, report_filters)["result"], default=str)
 			self.assertNotIn(self.ALP, hidden, report)
+
+
+class TestAllocationOnly(TrackerTestCase):
+	"""Only the people allocated to a project change its data; an Auri PMS Admin or System Manager may change any."""
+
+	def test_a_non_member_cannot_change_a_work_item_of_a_public_project(self):
+		item = self.new_item(MGR, self.BET)
+		for ptype in ("write", "delete"):
+			self.assertFalse(frappe.has_permission("Work Item", ptype, doc=item.name, user=OUT))
+			self.assertFalse(frappe.has_permission("Work Item", ptype, doc=item.name, user=DEV))
+
+	def test_a_member_can_change_the_work_items_of_their_project(self):
+		item = self.new_item(MGR)
+		self.assertTrue(frappe.has_permission("Work Item", "write", doc=item.name, user=MGR))
+
+	def test_an_admin_can_change_any_project(self):
+		item = self.new_item(MGR, self.BET)
+		self.assertTrue(frappe.has_permission("Work Item", "write", doc=item.name, user=TM))
+
+	def test_a_non_member_cannot_edit_the_project_itself(self):
+		self.assertFalse(frappe.has_permission("Project", "write", doc=self.BET, user=OUT))
+		self.assertFalse(frappe.has_permission("Project", "write", doc=self.BET, user=DEV))
+		self.assertTrue(frappe.has_permission("Project", "write", doc=self.ALP, user=MGR))

@@ -453,6 +453,13 @@ def parse_recipients(raw: str | list[str]) -> list[str]:
 	return addresses
 
 
+def parse_copies(raw: str | list[str] | None, taken: list[str]) -> list[str]:
+	"""CC or BCC addresses: validated and de-duplicated like recipients, but optional, and never repeating an address in ``taken``."""
+	if not raw or (isinstance(raw, str) and not raw.strip()):
+		return []
+	return [a for a in parse_recipients(raw) if a not in taken]
+
+
 def merge_recipients(*lists: str | None) -> str:
 	"""Several recipient lists as one comma separated string, without repeats (case-insensitive)."""
 	seen: dict[str, str] = {}
@@ -492,6 +499,8 @@ def send_report(
 	subject: str | None = None,
 	note: str | None = None,
 	scheduled: bool = False,
+	cc=None,
+	bcc=None,
 	exclude: list[str] | None = None,
 	template: str | None = None,
 	include: dict | list[str] | None = None,
@@ -502,6 +511,10 @@ def send_report(
 	if not has_capability(project, "can_manage_releases"):
 		frappe.throw(_("You are not allowed to send status reports for Project {0}").format(project))
 	addresses = parse_recipients(recipients)
+	cc_addresses = parse_copies(cc, addresses)
+	bcc_addresses = parse_copies(bcc, addresses + cc_addresses)
+	if len(addresses) + len(cc_addresses) + len(bcc_addresses) > MAX_RECIPIENTS:
+		frappe.throw(_("At most {0} recipients are allowed").format(MAX_RECIPIENTS))
 	# Frappe only notices a missing outgoing account when the queue sends; tell the user now instead of "sending" nothing.
 	EmailAccount.find_outgoing(_raise_error=True)
 	report = build_report(project, from_date, to_date, exclude, include)
@@ -524,7 +537,9 @@ def send_report(
 		"sent_by": frappe.session.user,
 		"scheduled": 1 if scheduled else 0,
 		"sent_to": ", ".join(addresses),
-		"recipient_count": len(addresses),
+		"sent_cc": ", ".join(cc_addresses),
+		"sent_bcc": ", ".join(bcc_addresses),
+		"recipient_count": len(addresses) + len(cc_addresses) + len(bcc_addresses),
 		"delivery_status": "Queued",
 		"body": html,
 	}
@@ -534,6 +549,8 @@ def send_report(
 		# the queue entries point at the log so their delivery state can be read back later
 		frappe.sendmail(
 			recipients=addresses,
+			cc=cc_addresses,
+			bcc=bcc_addresses,
 			subject=subject,
 			message=html,
 			reference_doctype=log.doctype,
@@ -549,7 +566,7 @@ def send_report(
 				**values,
 				"body": "",
 				"delivery_status": "Failed",
-				"failed_count": len(addresses),
+				"failed_count": len(addresses) + len(cc_addresses) + len(bcc_addresses),
 				"error": str(e)[:500],
 			}
 		).insert(ignore_permissions=True)
@@ -681,7 +698,7 @@ def send_scheduled_reports() -> None:
 		projects = frappe.get_all(
 			"Project",
 			filters={**filters, "pms_enabled": 1, "tracker_report_recipients": ["is", "set"]},
-			fields=["name", "tracker_report_recipients"],
+			fields=["name", "tracker_report_recipients", "tracker_report_cc", "tracker_report_bcc"],
 		)
 		for project in projects:
 			# once per report period: a weekly and a monthly report may go out on the same day
@@ -704,6 +721,8 @@ def send_scheduled_reports() -> None:
 					to_date,
 					merge_recipients(project.tracker_report_recipients, setting("report_default_recipients")),
 					scheduled=True,
+					cc=merge_recipients(project.tracker_report_cc, setting("report_default_cc")),
+					bcc=merge_recipients(project.tracker_report_bcc, setting("report_default_bcc")),
 				)
 			except Exception:
 				frappe.log_error(title=f"Auri PMS: scheduled status report failed for {project.name}")

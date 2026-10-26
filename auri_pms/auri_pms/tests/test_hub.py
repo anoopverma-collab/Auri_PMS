@@ -4,6 +4,7 @@ import frappe
 from frappe.utils import add_days, today
 
 from auri_pms.auri_pms import api
+from auri_pms.auri_pms.utils import clear_cache
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, REP, TM, TrackerTestCase
 
 
@@ -17,7 +18,7 @@ class TestProjectHub(TrackerTestCase):
 			return api.get_project_hub(project or self.ALP)
 
 	def test_picker_lists_only_projects_the_user_can_see(self):
-		"""Members see their projects and public ones; outsiders only public ones; managers all."""
+		"""Members see their projects and public ones; outsiders only public ones; admins all."""
 		self.assertTrue({self.ALP, self.BET} <= set(self.hub_projects(DEV)))
 		out = self.hub_projects(OUT)
 		self.assertIn(self.BET, out)
@@ -84,9 +85,10 @@ class TestProjectHub(TrackerTestCase):
 		self.assertEqual(len(data.recent_items), 3)
 
 	def test_access_check(self):
-		"""An outsider cannot open a private project but can open a public one."""
+		"""An outsider cannot open a private project but can open a public one, read-only."""
 		self.assertRaises(frappe.PermissionError, self.hub, OUT, self.ALP)
 		self.assertEqual(self.hub(OUT, self.BET)["project"].tracker_identifier, "BET")
+		self.assertFalse(any(self.hub(OUT, self.BET)["capabilities"].values()))
 
 	def test_capabilities_follow_the_project_role(self):
 		"""The page receives the user's capabilities so it only offers what they may do."""
@@ -95,9 +97,6 @@ class TestProjectHub(TrackerTestCase):
 		self.assertTrue(rep["can_create_items"])
 		self.assertTrue(rep["can_log_time"])
 		self.assertFalse(rep["can_manage_releases"])
-		self.assertTrue(
-			self.hub(OUT, self.BET)["capabilities"]["can_create_items"]
-		)  # public project, Reporter
 
 	def test_active_sprint_burndown_and_lists(self):
 		"""Active sprint comes with its burndown; sprints, releases and members are listed."""
@@ -132,3 +131,12 @@ class TestHubFlow(TrackerTestCase):
 			flow = api.get_project_hub(self.ALP).flow
 		self.assertEqual((flow["created"][-1], flow["resolved"][-1], flow["closed"][-1]), (2, 1, 1))
 		self.assertEqual(len(flow["labels"]), len(flow["created"]))
+
+	def test_picker_hides_projects_from_an_erpnext_projects_role_who_is_not_allocated(self):
+		"""An ERPNext Projects Manager sees every Project record, but the Project Hub hides private projects they are not on."""
+		frappe.get_doc("User", OUT).add_roles("Projects Manager")
+		clear_cache()
+		with self.as_user(OUT):
+			names = {p["name"] for p in api.get_hub_projects()}
+		self.assertNotIn(self.ALP, names)  # private and not allocated
+		self.assertIn(self.BET, names)  # public: visible, read-only

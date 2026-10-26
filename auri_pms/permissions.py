@@ -14,6 +14,7 @@ from auri_pms.auri_pms.utils import (
 	get_member_role,
 	has_unrestricted_project_view,
 	is_admin,
+	is_allocated,
 	is_user_enabled,
 )
 
@@ -36,7 +37,7 @@ def _project_scope(user: str, column: str) -> str:
 
 
 def can_see_project(project: str | None, user: str | None = None) -> bool:
-	"""Return True if ``user`` is a manager, a member of ``project`` or the project is public."""
+	"""Return True if ``user`` may VIEW ``project``: an admin, a member, or anyone for a public project (editing needs allocation)."""
 	user = user or frappe.session.user
 	if is_admin(user):
 		return True
@@ -44,7 +45,7 @@ def can_see_project(project: str | None, user: str | None = None) -> bool:
 		return False
 	if get_member_role(project, user):
 		return True
-	return bool(cint(frappe.db.get_value("Project", project, "is_public")))
+	return bool(cint(frappe.db.get_value("Project", project, "is_public")))  # public: viewable, never editable
 
 
 # --------------------------------------------------------------------------- query conditions
@@ -97,6 +98,10 @@ def category_query(user: str | None = None, doctype: str | None = None) -> str:
 
 
 # --------------------------------------------------------------------------- has_permission
+# Anything that changes a record: only the people allocated to its project (or an admin) may do it.
+CHANGE_TYPES = frozenset({"write", "delete", "submit", "cancel", "amend"})
+
+
 def _has_project_permission(doc, ptype: str | None, user: str | None, project_field: str = "project") -> bool:
 	user = user or frappe.session.user
 	if is_admin(user):
@@ -109,17 +114,27 @@ def _has_project_permission(doc, ptype: str | None, user: str | None, project_fi
 	project = doc.get(project_field)
 	if not project:
 		return True
+	if ptype in CHANGE_TYPES and not is_allocated(project, user):
+		return False
 	return can_see_project(project, user)
 
 
 def project_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Project."""
 	user = user or frappe.session.user
-	if has_unrestricted_project_view(user):
+	if is_admin(user):
 		return True
 	if not is_user_enabled(user):
 		return False
 	if ptype == "create" or doc.is_new():
+		return True
+	if (
+		ptype in CHANGE_TYPES
+		and cint(frappe.db.get_value("Project", doc.name, "pms_enabled"))
+		and not is_allocated(doc.name, user)
+	):
+		return False  # an ERPNext Projects role does not let you edit a project you are not allocated to
+	if has_unrestricted_project_view(user):
 		return True
 	return can_see_project(doc.name, user)
 

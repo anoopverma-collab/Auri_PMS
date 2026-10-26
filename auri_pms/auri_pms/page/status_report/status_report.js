@@ -89,6 +89,8 @@ class StatusReport {
 
 	on_project_change() {
 		this.recipients = null;
+		this.cc = null;
+		this.bcc = null;
 		this.excluded.clear();
 		this.included.clear();
 		this.sections = {};
@@ -324,15 +326,19 @@ class StatusReport {
 			title: __("Email status report"),
 			fields: [
 				{ fieldname: "recipients", label: __("Recipients"), fieldtype: "Small Text", reqd: 1, default: this.recipients || this.preview.recipients, description: __("Email addresses separated by commas or new lines") },
+				{ fieldname: "cc", label: __("CC"), fieldtype: "Small Text", default: this.cc !== undefined && this.cc !== null ? this.cc : this.preview.cc, description: __("Copied on the email; everyone sees these addresses") },
+				{ fieldname: "bcc", label: __("BCC"), fieldtype: "Small Text", default: this.bcc !== undefined && this.bcc !== null ? this.bcc : this.preview.bcc, description: __("Blind copy; the other recipients do not see these addresses") },
 				{ fieldname: "subject", label: __("Subject"), fieldtype: "Data", reqd: 1, default: this.preview.subject },
 			],
 			primary_action_label: __("Send"),
 			primary_action: (values) => {
 				frappe
-					.xcall("auri_pms.auri_pms.api.email_status_report", { ...args, recipients: values.recipients, subject: values.subject })
+					.xcall("auri_pms.auri_pms.api.email_status_report", { ...args, recipients: values.recipients, cc: values.cc || "", bcc: values.bcc || "", subject: values.subject })
 					.then((name) => {
 						dialog.hide();
 						this.recipients = values.recipients;
+						this.cc = values.cc || "";
+						this.bcc = values.bcc || "";
 						frappe.show_alert({ message: __("Report queued for sending ({0})", [name]), indicator: "green" });
 						this.refresh();
 					});

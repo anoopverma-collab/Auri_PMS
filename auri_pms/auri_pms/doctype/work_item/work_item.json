@@ -15,11 +15,13 @@
 		"project",
 		"category",
 		"start_date",
+		"actual_start_date",
 		"dependent_on_client",
 		"column_break_main_2",
 		"tracker",
 		"status",
 		"due_date",
+		"actual_end_date",
 		"hide_from_client_report",
 		"client_dependency_note",
 		"section_description",
@@ -181,9 +183,21 @@
 			"read_only": 1
 		},
 		{
+			"fieldname": "actual_start_date",
+			"fieldtype": "Date",
+			"label": "Actual Start Date",
+			"description": "The day work really began"
+		},
+		{
 			"fieldname": "start_date",
 			"fieldtype": "Date",
 			"label": "Start Date"
+		},
+		{
+			"fieldname": "actual_end_date",
+			"fieldtype": "Date",
+			"label": "Actual End Date",
+			"description": "The day work really finished"
 		},
 		{
 			"allow_in_quick_entry": 1,

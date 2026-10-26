@@ -319,6 +319,8 @@ scheduler_events = {
 	"daily": [
 		"auri_pms.auri_pms.tasks.send_due_digests",
 		"auri_pms.auri_pms.status_report.send_scheduled_reports",
+		"auri_pms.auri_pms.snapshots.weekly",
+		"auri_pms.auri_pms.snapshots.monthly",
 	],
 }
 

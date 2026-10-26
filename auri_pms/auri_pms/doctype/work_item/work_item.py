@@ -128,6 +128,8 @@ class WorkItem(Document):
 		"""R-09, R-10."""
 		if self.start_date and self.due_date and self.due_date < self.start_date:
 			frappe.throw(_("Due Date cannot be before Start Date"))
+		if self.actual_start_date and self.actual_end_date and self.actual_end_date < self.actual_start_date:
+			frappe.throw(_("Actual End Date cannot be before Actual Start Date"))
 		if flt(self.estimated_hours) < 0:
 			frappe.throw(_("Estimated Hours cannot be negative"))
 		if not 0 <= flt(self.done_percent) <= 100:

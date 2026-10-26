@@ -6,6 +6,24 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Added
+- **CC and BCC on the Client Status Report.** The *Email status report* dialog has CC and BCC fields. A project can keep standing
+  *Report CC* and *Report BCC* addresses, and PMS Settings has *Default CC* and *Default BCC* that are added to every project.
+  They are used by the scheduled weekly and monthly reports too. BCC addresses are hidden from the other recipients, an address
+  already in To is not repeated, and *Status Reports Sent* records the To, CC and BCC lists.
+- **Tickets on the Release and Sprint forms:** a *Tickets in this release / sprint* panel with the totals (tickets, closed, open, hours), a count per status
+  and per person, and the list of tickets (owner, sprint, due, % done), plus a *View tickets* button and a Work Item connection.
+- **Release and Sprint chips** on every ticket row in My Work.
+- **Actual Start Date** and **Actual End Date** on Work Item, next to the planned Start and Due Date. The actual end cannot come before the actual start.
+- **Project Health sub-tabs:** the long Health page is split into *Overview*, *Work*, *Time and billing*, *People* and *Plan*.
+- **Insights:** a gallery of six ready-made analytical dashboards on Auri PMS data, in the style of the Power BI samples: *Delivery
+  Analysis*, *Team Workload*, *Releases and Sprints*, *Quality Analysis*, *Client Dependency* and *Time and Billing*. Each has KPI
+  cards, charts, breakdowns and a detail table, follows the project and range filters, and cards open the matching list.
+- **Project page tabs and History:** every project now has one page with *Overview*, *Health* and *History* tabs and quick links to its
+  tickets, releases, sprints, risks and time. *History* keeps the Project Health dashboard project by project: a **Project Dashboard
+  Snapshot** is saved every Monday and on the 1st of each month (and with *Save snapshot*), with a trend chart, change since the last
+  one and a read-only view of any past dashboard.
+- **Delete a saved dashboard:** each row of *History* has a *Delete* link (with a confirmation) for a snapshot saved by mistake or with wrong data.
+  Only people allocated to the project, or an admin, can delete.
 - **Portfolio redesign:** Hub-style page with project focus (Apply button, other projects hidden until Show all), clickable counts,
   trends by project, Billing graph, billable vs non-billable tickets, time by ticket category (treemap), team capacity with
   over-allocation and burnout flags, a final *Tickets and billable time by period* table (Overall, 7 / 30 / 90 days, this
@@ -47,6 +65,9 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 - App logo, social preview image and light and dark screenshots of every screen in the README.
 
 ### Changed
+- **Editing needs allocation.** A user changes data only in projects they are allocated to (a member of the Project); an Auri PMS Admin
+  or System Manager changes any project. A public project stays visible to everyone but is read-only for people who are not
+  members, and an ERPNext Projects role no longer lets someone edit a PMS project they are not on.
 - The status report lists **every ticket** of each section (the earlier per-section limits and "+ N more" lines are gone).
 - Report layouts use the Calibri font (with Carlito, Segoe UI and Arial as fallbacks) and the footer reads *Sent through Auri PMS*.
 - Corporate shows the summary figures in equal-width boxes, four to a row.
@@ -58,6 +79,8 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 - The sidebar header shows *Auri PMS*.
 
 ### Fixed
+- The summary header and progress bar no longer appear twice on a new Sprint, Release or Work Item right after its first save.
+- Project Hub: release labels on the timeline no longer overlap, and the Releases list on Project Health scrolls instead of stretching the page.
 - The Auri PMS sidebar is shown on pages that take a project in their address (Project Hub, Client Status Report), also after a
   refresh or from a direct link. The generated *Tracking* sidebar and the old *Tracker* name no longer appear in the top-left
   corner.

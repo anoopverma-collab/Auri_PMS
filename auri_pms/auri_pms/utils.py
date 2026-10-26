@@ -148,7 +148,7 @@ def get_capabilities(project: str, user: str | None = None, members_only: bool =
 	"""Return the Project Role flags for ``user`` on ``project``.
 
 	Auri PMS Admin/System Manager -> all True. Member (any Auri PMS role) -> their Project Role's flags.
-	Non-member on public project -> PMS Settings.public_project_role flags.
+	A non-member (a public project included) -> all False: a public project is read-only for them.
 	Otherwise -> all False. Disabled users always get all False. Cached per request.
 
 	With ``members_only`` the admin shortcut and the public-project fallback are skipped, so only
@@ -165,13 +165,19 @@ def get_capabilities(project: str, user: str | None = None, members_only: bool =
 	elif not members_only and is_admin(user):
 		caps = dict.fromkeys(CAPABILITY_FIELDS, True)
 	else:
-		role = get_member_role(project, user)
-		if not role and not members_only and cint(frappe.db.get_value("Project", project, "is_public")):
-			role = get_settings().public_project_role
-		caps = _role_flags(role)
+		# Only an allocated member can change anything: a public project is read-only for everyone else.
+		caps = _role_flags(get_member_role(project, user))
 
 	cache[key] = caps
 	return dict(caps)
+
+
+def is_allocated(project: str | None, user: str | None = None) -> bool:
+	"""True when ``user`` may change data of ``project``: an Auri PMS Admin / System Manager or a member of the project."""
+	user = user or frappe.session.user
+	if is_admin(user):
+		return True
+	return bool(project and is_user_enabled(user) and get_member_role(project, user))
 
 
 def has_capability(project: str, capability: str, user: str | None = None) -> bool:
@@ -500,3 +506,42 @@ def nearest_indicator(hex_color: str | None) -> str:
 		INDICATOR_PALETTE,
 		key=lambda name: sum((a - b) ** 2 for a, b in zip(rgb(INDICATOR_PALETTE[name]), target, strict=True)),
 	)
+
+
+def linked_tickets(field: str, name: str) -> dict:
+	"""The Work Items whose ``field`` (release or sprint) is ``name``: counts per status and person, plus the tickets.
+
+	Uses get_list, so only the tickets of projects the user may see come back.
+	"""
+	rows = frappe.get_list(
+		"Work Item",
+		filters={field: name},
+		fields=[
+			"name", "subject", "status", "priority", "assigned_to", "due_date", "is_closed",
+			"estimated_hours", "spent_hours", "done_percent", "sprint", "release",
+		],
+		order_by="is_closed asc, due_date asc, name asc",
+		limit_page_length=0,
+	)
+	users = [r.assigned_to for r in rows if r.assigned_to]
+	names = {
+		u.name: u.full_name or u.name
+		for u in frappe.get_all("User", filters={"name": ["in", users or [""]]}, fields=["name", "full_name"])
+	}
+	statuses: dict[str, int] = {}
+	people: dict[str, int] = {}
+	for row in rows:
+		statuses[row.status] = statuses.get(row.status, 0) + 1
+		if not row.is_closed:
+			people[row.assigned_to or ""] = people.get(row.assigned_to or "", 0) + 1
+		row["assignee"] = names.get(row.assigned_to) or (row.assigned_to or "")
+	return {
+		"total": len(rows),
+		"closed": sum(1 for r in rows if r.is_closed),
+		"statuses": statuses,
+		"open_by_person": [
+			{"user": u, "name": names.get(u) or _("Unassigned"), "open": n}
+			for u, n in sorted(people.items(), key=lambda kv: -kv[1])
+		],
+		"rows": rows,
+	}

@@ -220,6 +220,30 @@
   "name": "Project-tracker_report_recipients"
  },
  {
+  "description": "Copied on every status report (comma or new line)",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "tracker_report_cc",
+  "fieldtype": "Small Text",
+  "insert_after": "tracker_report_recipients",
+  "is_system_generated": 0,
+  "label": "Report CC",
+  "module": "Auri PMS",
+  "name": "Project-tracker_report_cc"
+ },
+ {
+  "description": "Blind copied on every status report; the other recipients do not see these addresses",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "tracker_report_bcc",
+  "fieldtype": "Small Text",
+  "insert_after": "tracker_report_cc",
+  "is_system_generated": 0,
+  "label": "Report BCC",
+  "module": "Auri PMS",
+  "name": "Project-tracker_report_bcc"
+ },
+ {
   "description": "Weekly report: the weekday it is sent, covering the previous 7 days. Leave blank for no weekly report.",
   "doctype": "Custom Field",
   "dt": "Project",

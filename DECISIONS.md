@@ -261,3 +261,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 * The status colour and default % done of a status are not re-applied to existing items when changed.
 
 - **Roles renamed (24 Oct 2026).** *Tracker User* / *Tracker Manager* are now *Auri PMS User* / *Auri PMS Manager* to match the app name. Behaviour is unchanged. The `rename_tracker_roles` patch renames the roles on existing sites, so people, DocType permissions and the app icon keep their access.
+
+## Allocation decides who can change a project
+
+* **Public means read-only.** A public project is visible to everyone, but `get_capabilities` gives a non-member no capability at
+  all, so they cannot create, edit, delete or log time. The PMS Settings *public project role* no longer grants anything.
+* **Changing a record needs allocation.** `has_permission` refuses write, delete, submit, cancel and amend on any project-bound
+  document (and on a PMS-enabled Project) unless `is_allocated(project, user)`: a member of the project, an Auri PMS Admin or a
+  System Manager. An ERPNext Projects role does not change that.

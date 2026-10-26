@@ -189,12 +189,13 @@ class TestSprint(TrackerTestCase):
 			self.assertRaises(frappe.PermissionError, frappe.delete_doc, "Sprint", sprint.name)
 
 	def test_sp17_visibility(self):
-		"""SP-17: outsiders see sprints of public projects only."""
+		"""SP-17: outsiders see sprints of public projects only (read-only)."""
 		private, public = self.sprint("P1", 0, 13), self.sprint("B1", 0, 13, project=self.BET)
 		with self.as_user(OUT):
 			names = set(frappe.get_list("Sprint", pluck="name", limit_page_length=0))
 		self.assertIn(public.name, names)
 		self.assertNotIn(private.name, names)
+		self.assertFalse(frappe.has_permission("Sprint", "write", doc=public.name, user=OUT))
 		self.assertFalse(frappe.has_permission("Sprint", "read", doc=private.name, user=OUT))
 
 	def test_sp18_bulk_move_api(self):

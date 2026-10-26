@@ -84,7 +84,8 @@ class MyWork {
 						: `<span class="mw-due">${i.due_date ? frappe.datetime.str_to_user(i.due_date) : ""}</span>`;
 				return `<div class="mw-row">
 					<i class="mw-dot mw-dot-${dot[i.priority] || "blue"}" title="${esc(__(i.priority))}"></i>
-					<div class="mw-text"><span>${ui.link("Work Item", i.name)}</span> ${esc(i.subject)}<em>${esc(i.project_label)}</em></div>
+					<div class="mw-text"><span>${ui.link("Work Item", i.name)}</span> ${esc(i.subject)}<em>${esc(i.project_label)}</em>
+						${i.release || i.sprint ? `<div class="mw-links">${i.release ? `<a class="mw-chip mw-chip-rel" href="/desk/release/${encodeURIComponent(i.release)}" title="${__("Release")}">${__("Release")} ${esc(i.release.replace(/^.*?-(?=[^-]+$)/, ""))}</a>` : ""}${i.sprint ? `<a class="mw-chip mw-chip-spr" href="/desk/sprint/${encodeURIComponent(i.sprint)}" title="${__("Sprint")}">${__("Sprint")} ${esc(i.sprint.replace(/^.*?-(?=[^-]+$)/, ""))}</a>` : ""}</div>` : ""}</div>
 					${flag}${due}
 					<button class="hub-btn" data-log="${esc(i.name)}" data-subject="${esc(i.subject)}">${__("Log time")}</button></div>`;
 			})
