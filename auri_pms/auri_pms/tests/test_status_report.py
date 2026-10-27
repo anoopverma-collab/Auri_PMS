@@ -161,8 +161,8 @@ class TestStatusReport(TrackerTestCase):
 		self.assertIn("Thanks all", log.body)
 		self.assertTrue(self.emails_to("client@example.com"))
 
-	def test_cc_and_bcc_are_sent_and_logged(self):
-		"""CC and BCC addresses get the email too; an address already in To is not repeated; the log keeps all three lists."""
+	def test_cc_is_sent_and_logged(self):
+		"""CC addresses get the email too; an address already in To is not repeated; the log keeps both lists."""
 		with self.as_user(MGR):
 			name = send_report(
 				self.ALP,
@@ -170,15 +170,14 @@ class TestStatusReport(TrackerTestCase):
 				days(0),
 				"client@example.com",
 				cc="boss@example.com, client@example.com",
-				bcc="audit@example.com",
 			)
 		log = frappe.get_doc("Project Status Report", name)
 		self.assertEqual(
-			(log.sent_to, log.sent_cc, log.sent_bcc),
-			("client@example.com", "boss@example.com", "audit@example.com"),
+			(log.sent_to, log.sent_cc),
+			("client@example.com", "boss@example.com"),
 		)
-		self.assertEqual(log.recipient_count, 3)
-		for address in ("client@example.com", "boss@example.com", "audit@example.com"):
+		self.assertEqual(log.recipient_count, 2)
+		for address in ("client@example.com", "boss@example.com"):
 			self.assertTrue(self.emails_to(address), address)
 
 	def test_cc_must_be_valid_addresses(self):
@@ -638,3 +637,116 @@ class TestStatusReport(TrackerTestCase):
 				"Project Status Report", {"scheduled": 1, "project": ["in", [self.ALP, self.BET]]}
 			)
 		)
+
+	# ---- summary tiles, templates and notes under tickets ---------------------------------------------
+	TILE_MARKER = "border-radius:8px;padding:12px 4px"  # one per summary tile in the built-in layout
+	TILE_SWITCHES = ("tile_delivered", "tile_open", "tile_overdue", "tile_waiting", "tile_time", "created", "completion")
+
+	def test_every_summary_tile_has_its_own_switch(self):
+		"""Seven tiles show; each switch hides exactly one of them and leaves the sections alone."""
+		from auri_pms.auri_pms.status_report import REPORT_SECTIONS
+
+		report = self.report()
+		everything = {key: 1 for key in REPORT_SECTIONS}
+		self.assertEqual(render_html(report, None, "__builtin__", everything).count(self.TILE_MARKER), 7)
+		for switch in self.TILE_SWITCHES:
+			html = render_html(report, None, "__builtin__", {**everything, switch: 0})
+			self.assertEqual(html.count(self.TILE_MARKER), 6, switch)
+
+	def test_a_tile_switch_keeps_its_section(self):
+		"""Hiding the Delivered tile does not hide the Delivered list."""
+		self.closed_item(subject="Shipped login")
+		html = render_html(self.report(), None, "__builtin__", {"tile_delivered": 0})
+		self.assertIn("Shipped login", html)
+
+	def test_summary_templates_draw_time_and_plan_sections(self):
+		"""Summary and Summary Dark draw Time recorded when Time spent is on, and leave it out when it is off."""
+		report = self.report()
+		for template in ("PMS Status Report - Summary", "PMS Status Report - Summary Dark"):
+			self.assertIn("Time recorded", render_html(report, None, template, {"time": 1}), template)
+			self.assertNotIn("Time recorded", render_html(report, None, template, {"time": 0}), template)
+
+	def test_note_shows_under_any_ticket_and_is_escaped(self):
+		"""A note for the client appears under the ticket in its section; markup in it is shown as text."""
+		item = self.closed_item(subject="Shipped login")
+		report = build_report(
+			self.ALP, days(-7), days(0), ticket_notes={item.name: "Fixed <b>in</b> v2"}
+		)
+		for template in ("__builtin__", "PMS Status Report - Summary Dark"):
+			html = render_html(report, None, template)
+			self.assertIn("Fixed &lt;b&gt;in&lt;/b&gt; v2", html, template)
+			self.assertNotIn("<b>in</b>", html, template)
+
+	def test_no_note_means_nothing_added(self):
+		"""Without a note the subject is printed as before."""
+		self.closed_item(subject="Shipped login")
+		self.assertNotIn("font-style:italic", render_html(self.report(), None, "__builtin__"))
+
+	def test_notes_do_not_change_the_report_data(self):
+		"""Rendering with notes leaves the ticket subjects in the report plain text (the page lists reuse them)."""
+		item = self.closed_item(subject="Shipped login")
+		report = build_report(self.ALP, days(-7), days(0), ticket_notes={item.name: "Note"})
+		render_html(report, None, "__builtin__")
+		self.assertEqual([i.subject for i in report.delivered], ["Shipped login"])
+		self.assertEqual(type(report.delivered[0].subject), str)
+
+	def test_ticket_notes_are_cleaned_by_the_api(self):
+		"""The API keeps at most 500 characters per note."""
+		self.assertEqual(api.parse_included('{"ALP-00001": "' + "x" * 600 + '"}')["ALP-00001"], "x" * 500)
+
+	# ---- additional attachments on the emailed report ---------------------------------------------------
+	def upload(self, user, name="notes.txt", content="Extra for the client"):
+		with self.as_user(user):
+			return frappe.get_doc(
+				{"doctype": "File", "file_name": name, "content": content, "is_private": 1}
+			).insert()
+
+	def test_additional_attachment_is_emailed_and_linked_to_the_log(self):
+		"""The uploaded file goes out with the email and shows under the Status Reports Sent record."""
+		file = self.upload(MGR)
+		with self.as_user(MGR):
+			name = send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name])
+		self.assertEqual(
+			frappe.db.get_value("File", file.name, ["attached_to_doctype", "attached_to_name"]),
+			("Project Status Report", name),
+		)
+		# Frappe keeps the file as a reference on the queue entry and attaches it when the mail is sent
+		queued = [frappe.db.get_value("Email Queue", e.name, "attachments") or "" for e in self.emails_to("client@example.com")]
+		self.assertTrue(any(file.name in value for value in queued))
+
+	def test_attachment_of_another_user_is_refused(self):
+		"""A file somebody else uploaded cannot be emailed through the report."""
+		file = self.upload(DEV)
+		with self.as_user(MGR):
+			self.assertThrows(
+				"cannot be attached",
+				lambda: send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]),
+			)
+
+	def test_file_already_attached_elsewhere_is_refused(self):
+		"""A file that belongs to a document (here a ticket) is not taken from there."""
+		item = self.new_item(MGR)
+		file = self.upload(MGR)
+		frappe.db.set_value("File", file.name, {"attached_to_doctype": "Work Item", "attached_to_name": item.name})
+		with self.as_user(MGR):
+			self.assertThrows(
+				"cannot be attached",
+				lambda: send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]),
+			)
+
+	def test_too_many_attachments_are_refused(self):
+		"""At most ten files go with one email."""
+		names = [self.upload(MGR, f"f{i}.txt").name for i in range(11)]
+		with self.as_user(MGR):
+			self.assertThrows(
+				"At most 10 attachments",
+				lambda: send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=names),
+			)
+
+	def test_a_failed_send_leaves_the_file_unattached(self):
+		"""Refused files are not attached to anything."""
+		file = self.upload(DEV)
+		with self.as_user(MGR), self.assertRaises(frappe.ValidationError):
+			send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name])
+		self.assertFalse(frappe.db.get_value("File", file.name, "attached_to_name"))
+

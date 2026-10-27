@@ -96,7 +96,7 @@ class MyWork {
 		const d = this.data;
 		const t = d.tiles;
 		const { tile, panel } = ui;
-		const mine = (filters) => ui.go("Work Item", { assigned_to: frappe.session.user, ...filters });
+		const mine = (filters) => ui.go("Work Item", { _assign: ["like", `%${frappe.session.user}%`], ...filters });
 		const week_end = frappe.datetime.add_days(d.week_start, 6);
 		const blocked = Object.values(d.groups).flat().filter((i) => i.blocked_by.length).map((i) => i.name);
 		// every group opens its tickets as a list too
@@ -200,18 +200,18 @@ class MyWork {
 				${tile(t.closed_28d, __("Closed (28 days)"), "hub-teal", "", mine({ is_closed: 1, closed_on: [">=", frappe.datetime.add_days(d.today, -28)] }))}
 			</div>
 			<div class="hub-row hub-row-one">${focus}</div>
-			<div class="hub-row hub-row-even">
-				${panel(`${__("Others are waiting on me")} (${im.blocking.length})${ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0 }))}`, `<div class="mw-table mw-blocking">${blocking}</div>`)}
+			<div class="hub-row ${projects ? "hub-row-even" : "hub-row-one"}">
+				${panel(`${__("Others are waiting on me")} (${im.blocking.length})${ui.viewAll(ui.go("Work Item", { _assign: ["like", `%${frappe.session.user}%`], is_closed: 0 }))}`, `<div class="mw-table mw-blocking">${blocking}</div>`)}
 				${projects ? panel(__("Projects I am on") + ui.viewAll(ui.go("Project", { pms_enabled: 1 })), `<div class="mw-table mw-projects">${projects}</div>`) : ""}
 			</div>
 			<div class="hub-row hub-row-one">${panel(__("Releases that depend on me") + ui.viewAll(ui.go("Release", { status: ["!=", "Closed"] })), `<div class="mw-table mw-releases">${releases}</div>`)}</div>
-			<div class="hub-row hub-row-one">${panel(__("My tickets") + ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0 })), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
+			<div class="hub-row hub-row-one">${panel(__("My tickets") + ui.viewAll(ui.go("Work Item", { _assign: ["like", `%${frappe.session.user}%`], is_closed: 0 })), groups || `<div class="text-muted small">${__("Nothing is assigned to you right now.")}</div>`)}</div>
 			<div class="hub-row hub-row-even">
 				${panel(__("Hours this week") + ui.viewAll(ui.go("Time Entry", { user: frappe.session.user })), `<div class="hub-chart" id="mw-hours"></div>${missing}`)}
 				${panel(`${__("Risks I own")} (${d.risks.length})${ui.viewAll(ui.go("Risk Register", { risk_owner: frappe.session.user }))}`, d.risks.length ? ui.riskTable(d.risks, true) : `<div class="text-muted small">${__("You do not own any open risks.")}</div>`)}
 			</div>
 			<div class="hub-row hub-row-even">
-				${panel(`${__("Waiting on the client")} (${mine_waiting.length})${ui.viewAll(ui.go("Work Item", { assigned_to: frappe.session.user, is_closed: 0, dependent_on_client: 1 }))}`, waiting)}
+				${panel(`${__("Waiting on the client")} (${mine_waiting.length})${ui.viewAll(ui.go("Work Item", { _assign: ["like", `%${frappe.session.user}%`], is_closed: 0, dependent_on_client: 1 }))}`, waiting)}
 				${panel(__("My active sprints") + ui.viewAll(ui.go("Sprint", { status: "Active" })), sprints)}
 			</div>
 			<div class="hub-row hub-row-even">

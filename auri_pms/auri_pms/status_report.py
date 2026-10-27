@@ -34,6 +34,7 @@ from auri_pms.permissions import can_see_project
 
 MAX_RANGE_DAYS = 366
 MAX_RECIPIENTS = 20
+MAX_ATTACHMENTS = 10
 MAX_EMAIL_BYTES = (
 	10 * 1024 * 1024
 )  # most mail servers refuse 10-25 MB messages; the database caps a row at 16 MB
@@ -51,6 +52,11 @@ REPORT_SECTIONS = (
 	"created",
 	"completion",
 	"extra",
+	"tile_delivered",  # the summary tiles, each with its own switch next to the section it counts
+	"tile_open",
+	"tile_overdue",
+	"tile_waiting",
+	"tile_time",
 )
 LEVEL_COLOUR = {"green": "#10b981", "amber": "#f59e0b", "red": "#ef4444", "none": "#9ca3af"}
 
@@ -61,12 +67,14 @@ def build_report(
 	to_date,
 	exclude: list[str] | None = None,
 	include: dict | list[str] | None = None,
+	ticket_notes: dict[str, str] | None = None,
 ) -> frappe._dict:
 	"""Everything the report shows for ``project`` between two dates (permission aware).
 
 	Tickets flagged "Hide from Client Report" and the ticket names in ``exclude`` are left out everywhere.
 	The tickets in ``include`` (names, or a dict of name -> note for the client) are listed in an extra
-	"Additional tickets" section whatever their state."""
+	"Additional tickets" section whatever their state. ``ticket_notes`` (name -> note) puts a note for the client under
+	those tickets wherever the report lists them."""
 	if not frappe.db.exists("Project", project) or not can_see_project(project):
 		frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
 	start, end = getdate(from_date), getdate(to_date)
@@ -110,6 +118,8 @@ def build_report(
 		if i.name in notes and i.name not in skipped
 	]
 	items = [i for i in items if not cint(i.hide_from_client_report) and i.name not in skipped]
+	for item in items:
+		item["client_note"] = ((ticket_notes or {}).get(item.name) or "").strip()
 	entries = frappe.get_list(
 		"Time Entry",
 		filters={"project": project, "date": ["between", [start, end]]},
@@ -352,6 +362,26 @@ def current_order(template: str | None = None, order: list[str] | None = None) -
 	return report_order(template_source(chosen) if chosen else REPORT_TEMPLATE, order)
 
 
+def with_ticket_notes(report: frappe._dict) -> frappe._dict:
+	"""A copy of ``report`` where a ticket with a note for the client shows it under its subject.
+
+	The subject becomes escaped markup, so every layout that prints ``i.subject`` carries the note without changes."""
+	from markupsafe import Markup, escape
+
+	def noted(row):
+		if not isinstance(row, dict) or not row.get("client_note"):
+			return row
+		html = (
+			f"{escape(row.get('subject') or '')}<br><span style=\"font-size:12px;font-style:italic;color:#8a94a6;\">"
+			f"{escape(row['client_note'])}</span>"
+		)
+		return frappe._dict({**row, "subject": Markup(html)})
+
+	return frappe._dict(
+		{k: [noted(r) for r in v] if isinstance(v, list) else v for k, v in report.items()}
+	)
+
+
 def render_html(
 	report: frappe._dict,
 	note: str | None = None,
@@ -367,30 +397,32 @@ def render_html(
 	switches = section_switches(sections)
 	# the status banner only counts what the report shows
 	status = status_for_sections(status, switches)
-	report = frappe._dict({**report, "status": status})
-	# every figure belongs to a section; switching the section off removes its figure as well
+	report = with_ticket_notes(frappe._dict({**report, "status": status}))
+	# every figure belongs to a section; switching the section off removes its figure as well, and a tile also has its own switch
 	tiles = [
-		t
+		t[:4]  # the layouts take (value, label, colour, section)
 		for t in [
-			(report.summary.delivered, _("Delivered"), "#ecfdf5", "delivered"),
-			(report.summary.created, _("New tickets"), "#eff6ff", "created"),
-			(report.summary.open, _("Open"), "#e3f2fd", "in_progress"),
+			(report.summary.delivered, _("Delivered"), "#ecfdf5", "delivered", "tile_delivered"),
+			(report.summary.created, _("New tickets"), "#eff6ff", "created", None),
+			(report.summary.open, _("Open"), "#e3f2fd", "in_progress", "tile_open"),
 			(
 				report.summary.overdue,
 				_("Overdue"),
 				"#fef2f2" if report.summary.overdue else "#f9fafb",
 				"issues",
+				"tile_overdue",
 			),
 			(
 				report.summary.waiting,
 				_("Waiting on you"),
 				"#fffbeb" if report.summary.waiting else "#f9fafb",
 				"waiting",
+				"tile_waiting",
 			),
-			(f"{report.summary.completion_pct:.0f}%", _("Complete"), "#ecfdf5", "completion"),
-			(report.summary.hours, _("Hours"), "#ecfeff", "time"),
+			(f"{report.summary.completion_pct:.0f}%", _("Complete"), "#ecfdf5", "completion", None),
+			(report.summary.hours, _("Hours"), "#ecfeff", "time", "tile_time"),
 		]
-		if t[3] is None or switches[t[3]]
+		if switches[t[3]] and (t[4] is None or switches[t[4]])
 	]
 	context = {
 		"r": report,
@@ -454,10 +486,33 @@ def parse_recipients(raw: str | list[str]) -> list[str]:
 
 
 def parse_copies(raw: str | list[str] | None, taken: list[str]) -> list[str]:
-	"""CC or BCC addresses: validated and de-duplicated like recipients, but optional, and never repeating an address in ``taken``."""
+	"""CC addresses: validated and de-duplicated like recipients, but optional, and never repeating an address in ``taken``."""
 	if not raw or (isinstance(raw, str) and not raw.strip()):
 		return []
 	return [a for a in parse_recipients(raw) if a not in taken]
+
+
+def check_attachments(names: list[str] | None) -> list:
+	"""The File documents for the extra attachments of one email, after checking them.
+
+	Only a file the sender uploaded for this email is accepted: their own, not attached to any document yet,
+	and not a folder. So a form cannot be used to email someone else's file."""
+	names = list(dict.fromkeys(names or []))
+	if len(names) > MAX_ATTACHMENTS:
+		frappe.throw(_("At most {0} attachments are allowed").format(MAX_ATTACHMENTS))
+	files = []
+	for name in names:
+		file = frappe.get_doc("File", name) if frappe.db.exists("File", name) else None
+		if (
+			not file
+			or file.is_folder
+			or file.owner != frappe.session.user
+			or file.attached_to_doctype
+			or file.attached_to_name
+		):
+			frappe.throw(_("{0} cannot be attached to this email").format(name))
+		files.append(file)
+	return files
 
 
 def merge_recipients(*lists: str | None) -> str:
@@ -500,30 +555,34 @@ def send_report(
 	note: str | None = None,
 	scheduled: bool = False,
 	cc=None,
-	bcc=None,
 	exclude: list[str] | None = None,
 	template: str | None = None,
 	include: dict | list[str] | None = None,
 	sections: dict | None = None,
 	order: list[str] | None = None,
+	ticket_notes: dict[str, str] | None = None,
+	attachments: list[str] | None = None,
 ) -> str:
-	"""Email the report and log it as a Project Status Report. Returns the log document name."""
+	"""Email the report and log it as a Project Status Report. Returns the log document name.
+
+	``attachments`` are File names the sender uploaded for this email (see ``check_attachments``)."""
 	if not has_capability(project, "can_manage_releases"):
 		frappe.throw(_("You are not allowed to send status reports for Project {0}").format(project))
 	addresses = parse_recipients(recipients)
 	cc_addresses = parse_copies(cc, addresses)
-	bcc_addresses = parse_copies(bcc, addresses + cc_addresses)
-	if len(addresses) + len(cc_addresses) + len(bcc_addresses) > MAX_RECIPIENTS:
+	if len(addresses) + len(cc_addresses) > MAX_RECIPIENTS:
 		frappe.throw(_("At most {0} recipients are allowed").format(MAX_RECIPIENTS))
 	# Frappe only notices a missing outgoing account when the queue sends; tell the user now instead of "sending" nothing.
 	EmailAccount.find_outgoing(_raise_error=True)
-	report = build_report(project, from_date, to_date, exclude, include)
+	report = build_report(project, from_date, to_date, exclude, include, ticket_notes)
 	html = render_html(report, note, template, sections, order)
-	if len(html.encode("utf-8")) > MAX_EMAIL_BYTES:
+	files = check_attachments(attachments)
+	size = len(html.encode("utf-8")) + sum(f.file_size or 0 for f in files)
+	if size > MAX_EMAIL_BYTES:
 		frappe.throw(
 			_(
-				"This report is {0} MB, which is too large to email. Switch off some sections, remove tickets or use a shorter period."
-			).format(round(len(html.encode("utf-8")) / 1024 / 1024, 1))
+				"This report with its attachments is {0} MB, which is too large to email. Switch off some sections, remove tickets or attachments, or use a shorter period."
+			).format(round(size / 1024 / 1024, 1))
 		)
 	subject = (subject or default_subject(report, template))[:140]
 	values = {
@@ -538,21 +597,23 @@ def send_report(
 		"scheduled": 1 if scheduled else 0,
 		"sent_to": ", ".join(addresses),
 		"sent_cc": ", ".join(cc_addresses),
-		"sent_bcc": ", ".join(bcc_addresses),
-		"recipient_count": len(addresses) + len(cc_addresses) + len(bcc_addresses),
+		"recipient_count": len(addresses) + len(cc_addresses),
 		"delivery_status": "Queued",
 		"body": html,
 	}
 
 	log = frappe.get_doc(values).insert(ignore_permissions=True)
+	for file in files:  # the files show in the attachments of the Status Reports Sent record
+		file.attached_to_doctype, file.attached_to_name = log.doctype, log.name
+		file.save(ignore_permissions=True)
 	try:
 		# the queue entries point at the log so their delivery state can be read back later
 		frappe.sendmail(
 			recipients=addresses,
 			cc=cc_addresses,
-			bcc=bcc_addresses,
 			subject=subject,
 			message=html,
+			attachments=[{"fid": f.name} for f in files],
 			reference_doctype=log.doctype,
 			reference_name=log.name,
 			add_unsubscribe_link=0,
@@ -566,7 +627,7 @@ def send_report(
 				**values,
 				"body": "",
 				"delivery_status": "Failed",
-				"failed_count": len(addresses) + len(cc_addresses) + len(bcc_addresses),
+				"failed_count": len(addresses) + len(cc_addresses),
 				"error": str(e)[:500],
 			}
 		).insert(ignore_permissions=True)
@@ -585,13 +646,14 @@ def get_pdf_bytes(
 	include: dict | list[str] | None = None,
 	sections: dict | None = None,
 	order: list[str] | None = None,
+	ticket_notes: dict[str, str] | None = None,
 ) -> bytes:
 	"""PDF of the report (wkhtmltopdf through Frappe), laid out to fill an A4 page."""
 	import pdfkit
 	from frappe.utils.pdf import scrub_urls
 
 	html = render_html(
-		build_report(project, from_date, to_date, exclude, include), note, template, sections, order
+		build_report(project, from_date, to_date, exclude, include, ticket_notes), note, template, sections, order
 	)
 	# Frappe's get_pdf forces 15mm top and bottom margins (white paper); call wkhtmltopdf directly so
 	# the colour behind the report reaches the edges of the sheet
@@ -698,7 +760,7 @@ def send_scheduled_reports() -> None:
 		projects = frappe.get_all(
 			"Project",
 			filters={**filters, "pms_enabled": 1, "tracker_report_recipients": ["is", "set"]},
-			fields=["name", "tracker_report_recipients", "tracker_report_cc", "tracker_report_bcc"],
+			fields=["name", "tracker_report_recipients", "tracker_report_cc"],
 		)
 		for project in projects:
 			# once per report period: a weekly and a monthly report may go out on the same day
@@ -722,7 +784,6 @@ def send_scheduled_reports() -> None:
 					merge_recipients(project.tracker_report_recipients, setting("report_default_recipients")),
 					scheduled=True,
 					cc=merge_recipients(project.tracker_report_cc, setting("report_default_cc")),
-					bcc=merge_recipients(project.tracker_report_bcc, setting("report_default_bcc")),
 				)
 			except Exception:
 				frappe.log_error(title=f"Auri PMS: scheduled status report failed for {project.name}")

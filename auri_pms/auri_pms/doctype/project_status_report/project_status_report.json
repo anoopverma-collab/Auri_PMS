@@ -29,7 +29,6 @@
   "section_to",
   "sent_to",
   "sent_cc",
-  "sent_bcc",
   "section_body",
   "body"
  ],
@@ -196,12 +195,6 @@
    "fieldname": "sent_cc",
    "fieldtype": "Small Text",
    "label": "CC",
-   "read_only": 1
-  },
-  {
-   "fieldname": "sent_bcc",
-   "fieldtype": "Small Text",
-   "label": "BCC",
    "read_only": 1
   }
  ],

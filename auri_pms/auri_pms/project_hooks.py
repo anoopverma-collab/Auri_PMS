@@ -9,7 +9,7 @@ from frappe import _
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.utils import cint, cstr, flt
 
-from auri_pms.auri_pms.doctype.work_item.work_item import close_todos
+from auri_pms.auri_pms.doctype.work_item.work_item import CUSTOM_FIELD_COUNT, close_todos, project_custom_values
 from auri_pms.auri_pms.utils import (
 	clear_cache,
 	get_capabilities,
@@ -51,10 +51,56 @@ def validate(doc, method: str | None = None) -> None:
 	set_default_ticket_types(doc, old)
 
 
+def sync_custom_values(doc) -> None:
+	"""Pass a changed project custom value on to the tickets that still hold the old one (a background job)."""
+	fields = ["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, CUSTOM_FIELD_COUNT + 1))]
+	if doc.is_new() or not any(doc.has_value_changed(f) for f in fields):
+		return
+	before = doc.get_doc_before_save()
+	old = {f: before.get(f) for f in fields} if before else {}
+	frappe.enqueue(
+		"auri_pms.auri_pms.project_hooks.apply_custom_values",
+		project=doc.name,
+		old=old,
+		queue="long",
+		enqueue_after_commit=True,
+		now=frappe.in_test,
+	)
+
+
+def apply_custom_values(project: str, old: dict) -> None:
+	"""Save each ticket of ``project`` with the new custom values, so validation and the version history apply.
+
+	A ticket follows the project when it holds the old project value (or none); a value typed on the ticket is kept,
+	and fields beyond the project's *Number of Custom Fields* are cleared."""
+	values = project_custom_values(project)
+	count = values["project_custom_count"]
+	for name in frappe.get_all("Work Item", {"project": project}, pluck="name"):
+		try:
+			item = frappe.get_doc("Work Item", name)
+			columns = ["project_custom_count", *(f"project_custom_{n}" for n in range(1, CUSTOM_FIELD_COUNT + 1))]
+			current = [item.get(c) for c in columns]
+			item.project_custom_count = count
+			for n in range(1, CUSTOM_FIELD_COUNT + 1):
+				column, new = f"project_custom_{n}", values[f"project_custom_{n}"]
+				if n > count:
+					item.set(column, None)
+				elif not item.get(column) or item.get(column) == (old.get(f"pms_custom_{n}") or None):
+					item.set(column, new)
+			if [item.get(c) for c in columns] == current:
+				continue
+			item.flags.ignore_permissions = True
+			item.flags.ignore_tracker_rules = True
+			item.save()
+		except Exception:
+			frappe.log_error(title=f"Auri PMS: custom values not copied to {name}")
+
+
 def on_update(doc, method: str | None = None) -> None:
 	"""Project.on_update hook: give members the Auri PMS User role, release removed members' items, refresh caches."""
 	clear_cache()
 	release_removed_members(doc)
+	sync_custom_values(doc)
 	added = []
 	for row in doc.get("tracker_members") or []:
 		if TRACKER_ROLES & set(frappe.get_roles(row.user)):

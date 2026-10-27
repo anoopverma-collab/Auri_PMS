@@ -565,6 +565,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 
 
 # --------------------------------------------------------------------------- my work
+def assigned_to_or_additional(user: str) -> list:
+	"""or_filters for the Work Items ``user`` is assigned to, as Assigned To or as one of the Additional Assignees."""
+	extra = frappe.get_all("Work Item Assignee", {"user": user, "parenttype": "Work Item"}, pluck="parent")
+	return [["Work Item", "assigned_to", "=", user], ["Work Item", "name", "in", extra or ["-"]]]
+
+
 def get_my_work_data(user: str | None = None) -> frappe._dict:
 	"""Everything assigned to (or raised by) the user, their hours this week and their active sprints."""
 	user = user or frappe.session.user
@@ -575,7 +581,8 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name") or [""]
 	items = frappe.get_list(
 		"Work Item",
-		filters={"assigned_to": user, "is_closed": 0, "project": ["in", enabled]},
+		filters={"is_closed": 0, "project": ["in", enabled]},
+		or_filters=assigned_to_or_additional(user),
 		fields=[
 			"name",
 			"subject",
@@ -890,7 +897,8 @@ def my_sprints(user: str) -> list[dict]:
 		return []
 	mine = frappe.get_all(
 		"Work Item",
-		filters={"sprint": ["in", [s.name for s in sprints]], "assigned_to": user},
+		filters={"sprint": ["in", [s.name for s in sprints]]},
+		or_filters=assigned_to_or_additional(user),
 		fields=["sprint", "is_closed"],
 	)
 	today_ = getdate(today())

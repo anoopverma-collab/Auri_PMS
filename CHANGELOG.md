@@ -6,10 +6,18 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Added
-- **CC and BCC on the Client Status Report.** The *Email status report* dialog has CC and BCC fields. A project can keep standing
-  *Report CC* and *Report BCC* addresses, and PMS Settings has *Default CC* and *Default BCC* that are added to every project.
-  They are used by the scheduled weekly and monthly reports too. BCC addresses are hidden from the other recipients, an address
-  already in To is not repeated, and *Status Reports Sent* records the To, CC and BCC lists.
+- **Select and remove several tickets from a client status report.** *Tickets in this report* has a checkbox on every ticket, one per section and *Select all*, with a *Remove selected (n)* button that asks for confirmation. *Restore* still brings a ticket back.
+- **Custom fields on the Project, copied to tickets.** *Number of Custom Fields* (1-10) on the Project's Auri PMS tab shows that many text fields, *Custom 1* to *Custom 10*, three to a row. Tickets show the same number of fields (*Project Custom Fields* on the Work Item), filled from the project and editable on the ticket. A changed project value reaches the tickets that still hold the old one; a value typed on a ticket is kept. They can be list columns and filters. Lowering the number clears the extra values.
+- **Keep Closed On visible and editable** (*PMS Settings > General > Ticket Rules*). When ticked, *Closed On* on a Work Item can be edited, and a date entered while closing a ticket is kept instead of being replaced by the closing time. Off by default.
+- **Hide any summary tile on its own.** Delivered, Open, Overdue, Waiting on you and Hours tiles each have a switch (in the *Sections* dialog and in *PMS Settings > Status Report*), next to the existing New tickets and Completion switches, so a tile can be hidden while its section stays.
+- **A note for the client under any ticket.** A pencil in front of every ticket in *Tickets in this report* opens a note box (500 characters); the note shows in italics under the ticket's subject in every section, in the preview, PDF and email, for that send only.
+- **Summary and Summary Dark** email templates now draw *Plan*, *Progress by module* and *Time recorded*, so those sections show when ticked. A patch refreshes stored copies that were never edited.
+- **Sprint settings** (*PMS Settings > General > Ticket Rules*, both off by default): *Allow Completed Sprint for Closed Tickets* lets a closed ticket be moved to a Completed sprint (the picker lists them too), and *Allow Reopening a Completed Sprint* adds a *Reopen Sprint* button that returns it to Active when no other sprint of the project is active.
+- **Additional Assignees on a Work Item.** A table next to *Assigned To* for more people working on a ticket. Each must be a project member who can be assigned (like Assigned To), gets a ToDo, and sees the ticket in *My Work* (lists, tiles and the sprint count) and in the due-date digest. Assigned To stays the main assignee; the other dashboards and reports still count that person only.
+- **Additional attachments on the emailed report.** The *Email status report* dialog has an *Additional attachments* list with an *Add files* button (up to 10 files, counted in the 10 MB limit). Only files uploaded in that dialog by the sender are accepted; they are attached to the email and then to the *Status Reports Sent* record.
+- **CC on the Client Status Report.** The *Email status report* dialog has a CC field. A project can keep standing *Report CC*
+  addresses, and PMS Settings has *Default CC* that is added to every project. They are used by the scheduled weekly and monthly
+  reports too. An address already in To is not repeated, and *Status Reports Sent* records the To and CC lists.
 - **Tickets on the Release and Sprint forms:** a *Tickets in this release / sprint* panel with the totals (tickets, closed, open, hours), a count per status
   and per person, and the list of tickets (owner, sprint, due, % done), plus a *View tickets* button and a Work Item connection.
 - **Release and Sprint chips** on every ticket row in My Work.

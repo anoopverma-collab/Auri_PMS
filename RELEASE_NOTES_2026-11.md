@@ -13,9 +13,17 @@ Month: November 2026
 - **Configurable risk and health thresholds** in PMS Settings (*Risk & Health* tab). Existing sites get the previous values through patches.
 
 ### Client Status Report
-- **Email templates:** ready-made templates (Summary, Summary Dark, Corporate, Corporate Grey) plus the built-in layout; *Enable for Auri PMS* checkbox on Email Template; default chosen in PMS Settings and overridable per send.
+- **Email templates:** ready-made templates (Summary, Summary Dark, Corporate, Corporate Grey) plus the built-in layout, all drawing every section (Summary and Summary Dark now include Plan, Progress by module and Time recorded); *Enable for Auri PMS* checkbox on Email Template; default chosen in PMS Settings and overridable per send.
 - **Sections:** every report section can be switched on or off and reordered, in PMS Settings (defaults) and per report (*Sections* dialog).
 - **Tickets in a report:** remove tickets from one send, hide a ticket from every report (*Hide from Client Report*), and add any ticket with a client note in *Additional tickets*.
+- **Project custom fields:** pick 1-10 and that many *Custom* text fields appear on the Project; tickets carry a copy that can be shown as list columns.
+- **Keep Closed On visible and editable:** a PMS Settings checkbox that lets people edit *Closed On* on a ticket and keeps a date entered while closing.
+- **Hide any summary tile on its own:** a switch per tile in the Sections dialog and PMS Settings, independent of its section.
+- **Note for the client under any ticket:** a pencil in front of each ticket adds a note that appears under the ticket in the report.
+- **Additional attachments:** add up to 10 files to the emailed status report from the Email dialog; they are kept on the Status Reports Sent record.
+- **Sprint settings:** optionally allow closed tickets in Completed sprints, and reopening a Completed sprint.
+- **Additional Assignees:** assign one ticket to several people; each gets a ToDo and sees it in My Work.
+- **Select and remove several tickets at once:** a checkbox on every ticket, one per section and *Select all*, with a *Remove selected* button that asks for confirmation.
 - **Email defaults** in PMS Settings: default recipients and a default subject with `{project}`, `{from_date}`, `{to_date}`.
 - **Delivery tracking** on Project Status Report: triggered, delivered, failed, delivery status and error, refreshed from the Email Queue. Reports over 10 MB are refused before sending.
 - **PDF** fills an A4 sheet edge to edge.

@@ -258,3 +258,40 @@ class TestSprint(TrackerTestCase):
 		self.save_as(MGR, sprint, status="Completed")
 		item.reload()
 		self.assertEqual((item.subject, item.priority, item.sprint), ("Keep me", "High", None))
+
+	# ---- Reopening a Completed sprint: PMS Settings > Allow Reopening a Completed Sprint ----------------
+	def completed(self, name="Sprint R"):
+		sprint = self.sprint(name)
+		self.save_as(MGR, sprint, status="Active")
+		sprint.reload()
+		self.save_as(MGR, sprint, status="Completed")
+		sprint.reload()
+		return sprint
+
+	def test_completed_sprint_cannot_be_reopened_by_default(self):
+		sprint = self.completed()
+		self.assertThrows("cannot move back to Active", lambda: self.save_as(MGR, sprint, status="Active"))
+
+	def test_completed_sprint_can_be_reopened_when_allowed(self):
+		frappe.db.set_single_value("PMS Settings", "allow_reopen_sprint", 1)
+		sprint = self.completed()
+		self.save_as(MGR, sprint, status="Active")
+		self.assertEqual(frappe.db.get_value("Sprint", sprint.name, "status"), "Active")
+
+	def test_reopening_still_allows_one_active_sprint_only(self):
+		frappe.db.set_single_value("PMS Settings", "allow_reopen_sprint", 1)
+		sprint = self.completed()
+		other = self.sprint("Sprint Other", start=20, end=33)
+		self.save_as(MGR, other, status="Active")
+		self.assertThrows("is already active", lambda: self.save_as(MGR, sprint, status="Active"))
+
+	def test_a_completed_sprint_still_cannot_go_back_to_planned(self):
+		frappe.db.set_single_value("PMS Settings", "allow_reopen_sprint", 1)
+		sprint = self.completed()
+		self.assertThrows("cannot move back to Planned", lambda: self.save_as(MGR, sprint, status="Planned"))
+
+	def test_reopening_needs_the_manage_capability(self):
+		frappe.db.set_single_value("PMS Settings", "allow_reopen_sprint", 1)
+		sprint = self.completed()
+		self.assertThrows("not allowed to manage sprints", lambda: self.save_as(DEV, sprint, status="Active"))
+

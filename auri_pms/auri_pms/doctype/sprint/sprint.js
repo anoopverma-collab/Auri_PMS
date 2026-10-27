@@ -26,6 +26,11 @@ frappe.ui.form.on("Sprint", {
 		if (frm.doc.status === "Planned") {
 			frm.add_custom_button(__("Start Sprint"), () => sprint_set_status(frm, "Active")).addClass("btn-primary");
 		}
+		if (completed && frm.doc.__onload && cint(frm.doc.__onload.allow_reopen_sprint)) {
+			frm.add_custom_button(__("Reopen Sprint"), () =>
+				frappe.confirm(__("Reopen {0}? Tickets already carried over to another sprint stay there.", [frm.doc.name]), () => sprint_set_status(frm, "Active"))
+			).addClass("btn-primary");
+		}
 		if (frm.doc.status === "Active") {
 			frm.add_custom_button(__("Complete Sprint"), () => sprint_complete(frm)).addClass("btn-primary");
 		}

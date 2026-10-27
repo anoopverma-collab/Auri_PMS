@@ -618,6 +618,7 @@ def get_status_report_html(
 	include: str | None = None,
 	sections: str | None = None,
 	order: str | None = None,
+	ticket_notes: str | None = None,
 ) -> dict:
 	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
 	from auri_pms.auri_pms.health import status_for_sections
@@ -631,7 +632,9 @@ def get_status_report_html(
 		visible_tickets,
 	)
 
-	report = build_report(project, from_date, to_date, parse_excluded(exclude), parse_included(include))
+	report = build_report(
+		project, from_date, to_date, parse_excluded(exclude), parse_included(include), parse_included(ticket_notes)
+	)
 	switches = section_switches(parse_sections(sections))
 	chosen_order = parse_order(order)
 	return {
@@ -651,10 +654,6 @@ def get_status_report_html(
 			frappe.db.get_value("Project", project, "tracker_report_cc"),
 			frappe.db.get_single_value("PMS Settings", "report_default_cc"),
 		),
-		"bcc": merge_recipients(
-			frappe.db.get_value("Project", project, "tracker_report_bcc"),
-			frappe.db.get_single_value("PMS Settings", "report_default_bcc"),
-		),
 		"can_send": bool(get_capabilities(project)["can_manage_releases"]),
 	}
 
@@ -672,10 +671,11 @@ def email_status_report(
 	include: str | None = None,
 	sections: str | None = None,
 	order: str | None = None,
+	ticket_notes: str | None = None,
 	cc: str | None = None,
-	bcc: str | None = None,
+	attachments: str | None = None,
 ) -> str:
-	"""Email the status report to ``recipients`` (with optional ``cc`` and ``bcc``) and log it; returns the Project Status Report name."""
+	"""Email the status report to ``recipients`` (with optional ``cc``) and log it; returns the Project Status Report name."""
 	from auri_pms.auri_pms.status_report import send_report
 
 	return send_report(
@@ -691,7 +691,8 @@ def email_status_report(
 		sections=parse_sections(sections),
 		order=parse_order(order),
 		cc=cc,
-		bcc=bcc,
+		ticket_notes=parse_included(ticket_notes),
+		attachments=[str(n) for n in (frappe.parse_json(attachments) if attachments else [])],
 	)
 
 
@@ -706,6 +707,7 @@ def status_report_pdf(
 	include: str | None = None,
 	sections: str | None = None,
 	order: str | None = None,
+	ticket_notes: str | None = None,
 ) -> None:
 	"""Download the status report as a PDF."""
 	from auri_pms.auri_pms.status_report import get_pdf_bytes
@@ -721,6 +723,7 @@ def status_report_pdf(
 		parse_included(include),
 		parse_sections(sections),
 		parse_order(order),
+		parse_included(ticket_notes),
 	)
 	frappe.local.response.type = "pdf"
 

@@ -214,12 +214,12 @@ Open **Client Status Report** from the sidebar, choose a project and period, pre
 **Download PDF**.
 
 **Layouts.** With no template chosen the report uses the built-in layout. The ready-made Email Templates are **Summary**,
-**Summary Dark**, **Corporate** and **Corporate Grey**. Make your own by writing an Email Template and ticking **Enable for Auri PMS**
+**Summary Dark**, **Corporate** and **Corporate Grey**. All of them draw every section, including Progress by module, Plan and Time recorded. Make your own by writing an Email Template and ticking **Enable for Auri PMS**
 on it; only enabled templates appear in the pickers. Choose the default in **PMS Settings > Status Report**, or pick one for a single
 send with the **Email Template** field (or **Built-in layout**) on the report page.
 
 **Sections.** The sections are Progress by module, Waiting on client, Delivered, In progress, Coming up next, Additional tickets,
-Risks and issues, Plan, Risk register mitigation and Time spent, plus the summary figures (New tickets, Completion).
+Risks and issues, Plan, Risk register mitigation and Time spent, plus the summary figures and tiles (New tickets, Completion, and a tile each for Delivered, Open, Overdue, Waiting on you and Hours, which can be hidden without hiding their section).
 
 * **Defaults:** in **PMS Settings > Status Report** tick the sections to include and drag the rows of **Section Order** (an empty
   table keeps each layout's own order).
@@ -229,7 +229,7 @@ Risks and issues, Plan, Risk register mitigation and Time spent, plus the summar
 * Switching a section off also removes its summary figure and the status reasons that belong to it.
 
 **Tickets.** Every ticket of a section is listed. In **Tickets in this report** on the right you can remove a ticket from the
-current send (x), and add any ticket of the project with an optional note for the client (it appears under *Additional tickets*).
+current send (x), or tick several tickets (a checkbox on each ticket, one per section, and *Select all*) and use **Remove selected** to take them all out at once after a confirmation; **Restore** brings one back. A pencil in front of each ticket adds a note for the client (up to 500 characters) that is shown under the ticket in the report, for this send only. You can also add any ticket of the project with an optional note for the client (it appears under *Additional tickets*).
 Tick **Hide from Client Report** on a ticket to keep it out of every report and out of the client's health status.
 
 **Email defaults.** **Default Recipients** are added to each project's own recipients (dialog and scheduled sends); **Default Subject**

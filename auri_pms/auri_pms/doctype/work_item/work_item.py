@@ -44,8 +44,10 @@ class WorkItem(Document):
 	"""A bug, feature, task or support request tracked against a Project."""
 
 	def onload(self) -> None:
-		"""Tell the form whether this item has subtasks (its % Done is then read-only, R-31)."""
+		"""Tell the form whether this item has subtasks (its % Done is then read-only, R-31) and whether Closed On is editable."""
 		self.set_onload("has_children", bool(get_children(self.name)))
+		self.set_onload("allow_completed_sprint_for_closed", cint(frappe.db.get_single_value("PMS Settings", "allow_completed_sprint_for_closed")))
+		self.set_onload("keep_closed_on_editable", cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")))
 
 	# ------------------------------------------------------------------ naming and creation (R-01, R-03, R-04)
 	def before_insert(self) -> None:
@@ -75,9 +77,11 @@ class WorkItem(Document):
 		self.old = self.get_doc_before_save()
 		self.validate_edit_permission()
 		self.set_defaults()
+		self.set_project_custom_values()
 		self.validate_tracker()
 		self.validate_dates_and_numbers()
 		self.validate_assignee()
+		self.validate_additional_assignees()
 		self.validate_category_and_release()
 		self.validate_sprint()
 		self.validate_parent()
@@ -86,13 +90,26 @@ class WorkItem(Document):
 		self.validate_relations()
 		self.apply_children_progress()
 
+	def set_project_custom_values(self) -> None:
+		"""Start a ticket with the project's custom values (Project > Custom Fields); a value typed on the ticket is kept."""
+		if not self.project:
+			return
+		values = project_custom_values(self.project)
+		self.project_custom_count = values.pop("project_custom_count")
+		for fieldname, value in values.items():
+			n = int(fieldname.rsplit("_", 1)[1])
+			if n > self.project_custom_count:
+				self.set(fieldname, None)  # the project no longer uses this field
+			elif not self.get(fieldname):
+				self.set(fieldname, value)
+
 	def validate_edit_permission(self) -> None:
 		"""R-15: editing needs can_edit_any_item, or being the author or the assignee."""
 		if self.is_new() or self.flags.get("ignore_tracker_rules"):
 			return
 		if get_capabilities(self.project)["can_edit_any_item"]:
 			return
-		if frappe.session.user in (self.old.author, self.old.assigned_to):
+		if frappe.session.user in (self.old.author, self.old.assigned_to, *self.additional_users(self.old)):
 			return
 		frappe.throw(_("You can only edit work items you created or are assigned to"))
 
@@ -146,6 +163,24 @@ class WorkItem(Document):
 				_("{0} cannot be assigned work items in Project {1}").format(self.assigned_to, self.project)
 			)
 
+	def additional_users(self, doc=None) -> list[str]:
+		"""The users in Additional Assignees of this item (or of ``doc``, for example its saved copy)."""
+		source = self if doc is None else doc  # a Document can be falsy, so no `doc or self`
+		return [r.user for r in source.get("additional_assignees") or [] if r.user]
+
+	def validate_additional_assignees(self) -> None:
+		"""Each extra assignee follows R-11 like Assigned To, once; nobody is listed twice or next to themselves."""
+		seen = set()
+		for row in list(self.get("additional_assignees") or []):
+			if not row.user or row.user in seen or row.user == self.assigned_to:
+				self.remove(row)  # an empty, repeated or primary-assignee row adds nothing
+				continue
+			seen.add(row.user)
+		already = set(self.additional_users(self.old)) if self.old else set()
+		for user in seen - already:
+			if not get_capabilities(self.project, user, members_only=True)["can_be_assigned"]:
+				frappe.throw(_("{0} cannot be assigned work items in Project {1}").format(user, self.project))
+
 	def validate_category_and_release(self) -> None:
 		"""R-12 same project, R-13 only Open releases accept (new) items."""
 		for fieldname, doctype in (
@@ -163,6 +198,12 @@ class WorkItem(Document):
 					_("Release {0} is {1}; only Open releases accept work items").format(self.release, status)
 				)
 
+	def completed_sprint_allowed(self) -> bool:
+		"""PMS Settings > Allow Completed Sprint for Closed Tickets: a closed ticket may sit in a Completed sprint."""
+		if not cint(frappe.db.get_single_value("PMS Settings", "allow_completed_sprint_for_closed")):
+			return False
+		return bool(cint(frappe.db.get_value("Work Item Status", self.status, "is_closed")))
+
 	def validate_sprint(self) -> None:
 		"""Sprint must belong to the same project; only Planned or Active sprints accept (new) items."""
 		if not self.sprint:
@@ -170,7 +211,7 @@ class WorkItem(Document):
 		project, status = frappe.db.get_value("Sprint", self.sprint, ["project", "status"])
 		if project != self.project:
 			frappe.throw(_("{0} does not belong to Project {1}").format(self.sprint, self.project))
-		if (self.is_new() or self.old.sprint != self.sprint) and status == "Completed":
+		if (self.is_new() or self.old.sprint != self.sprint) and status == "Completed" and not self.completed_sprint_allowed():
 			frappe.throw(
 				_("Sprint {0} is {1}; only Planned or Active sprints accept work items").format(
 					self.sprint, status
@@ -229,7 +270,9 @@ class WorkItem(Document):
 				self.warn_if_parent_closed()
 
 		if new_closed and not old_closed:
-			self.closed_on, self.closed_by = now_datetime(), frappe.session.user
+			# with the PMS Settings switch on, a Closed On the user entered is kept
+			keep = cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")) and self.closed_on
+			self.closed_on, self.closed_by = (self.closed_on if keep else now_datetime()), frappe.session.user
 		elif not new_closed:
 			self.closed_on = self.closed_by = None
 
@@ -383,8 +426,34 @@ class WorkItem(Document):
 					},
 					ignore_permissions=True,
 				)
+		if self.sync_additional_assignment():
+			# Frappe's Assign To sets (or clears) the Assigned To field to the last person it touched; keep the real one
+			frappe.db.set_value("Work Item", self.name, "assigned_to", self.assigned_to, update_modified=False)
 		follow_work_item(self.name, self.assigned_to)
 		follow_work_item(self.name, self.author)
+		for user in self.additional_users():
+			follow_work_item(self.name, user)
+
+	def sync_additional_assignment(self) -> bool:
+		"""A ToDo for each added assignee and the ToDos of removed ones closed, like Assigned To (R-16). True if any changed."""
+		now = set(self.additional_users())
+		before = set(self.additional_users(self.old)) if self.old else set()
+		for user in before - now:
+			if user != self.assigned_to:
+				close_todos(self.name, user)
+		for user in now - before:
+			assign_to._add(
+				{
+					"doctype": "Work Item",
+					"name": self.name,
+					"assign_to": frappe.as_json([user]),
+					"description": frappe.utils.escape_html(self.subject),
+					"priority": TODO_PRIORITY.get(self.priority, "Medium"),
+					"date": self.due_date,
+				},
+				ignore_permissions=True,
+			)
+		return bool(before ^ now)
 
 	def refresh_relation_display(self) -> None:
 		"""Keep the fetched subject/status of rows that point at this item current."""
@@ -472,6 +541,23 @@ def close_todos(work_item: str, user: str) -> None:
 def touch_modified(work_item: str) -> None:
 	"""Bump ``modified`` so stale forms cannot overwrite a directly written relation row."""
 	frappe.db.set_value("Work Item", work_item, "modified", now_datetime(), update_modified=False)
+
+
+CUSTOM_FIELD_COUNT = 10
+
+
+def project_custom_values(project: str) -> dict:
+	"""Work Item ``project_custom_count`` and ``project_custom_n`` values of ``project``: only the first *Number of Custom Fields* are filled."""
+	source = [f"pms_custom_{n}" for n in range(1, CUSTOM_FIELD_COUNT + 1)]
+	row = frappe.db.get_value("Project", project, ["pms_custom_count", *source], as_dict=True) or {}
+	count = cint(row.get("pms_custom_count"))
+	return {
+		"project_custom_count": count,
+		**{
+			f"project_custom_{n}": (row.get(f"pms_custom_{n}") or None) if n <= count else None
+			for n in range(1, CUSTOM_FIELD_COUNT + 1)
+		},
+	}
 
 
 def validate_todo(doc, method: str | None = None) -> None:

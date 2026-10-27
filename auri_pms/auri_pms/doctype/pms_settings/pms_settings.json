@@ -18,6 +18,12 @@
   "max_subtask_depth",
   "column_break_ticket_rules_2",
   "due_reminder_days",
+  "closed_sprint_section",
+  "keep_closed_on_editable",
+  "closed_sprint_col_1",
+  "allow_completed_sprint_for_closed",
+  "closed_sprint_col_2",
+  "allow_reopen_sprint",
   "time_tab",
   "time_rules_section",
   "allow_time_on_closed_items",
@@ -72,12 +78,16 @@
   "show_report_time",
   "show_report_created",
   "show_report_completion",
+  "show_report_tile_delivered",
+  "show_report_tile_open",
+  "show_report_tile_overdue",
+  "show_report_tile_waiting",
+  "show_report_tile_time",
   "report_order_section",
   "report_section_order",
   "report_defaults_section",
   "report_default_recipients",
   "report_default_cc",
-  "report_default_bcc",
   "report_default_subject",
   "limits_col"
  ],
@@ -153,6 +163,40 @@
    "fieldname": "due_reminder_days",
    "fieldtype": "Int",
    "label": "Due Reminder (Days Before)"
+  },
+  {
+   "fieldname": "closed_sprint_section",
+   "fieldtype": "Section Break",
+   "label": "Closed Tickets and Sprints"
+  },
+  {
+   "fieldname": "closed_sprint_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "closed_sprint_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Show Closed On on every ticket and let people edit it. A date entered while closing a ticket is kept; without one it is set to the closing time.",
+   "fieldname": "keep_closed_on_editable",
+   "fieldtype": "Check",
+   "label": "Keep Closed On Visible and Editable"
+  },
+  {
+   "default": "0",
+   "description": "A closed ticket can be moved to a Completed sprint, for example to record the sprint it was really delivered in. Open tickets still only accept Planned or Active sprints.",
+   "fieldname": "allow_completed_sprint_for_closed",
+   "fieldtype": "Check",
+   "label": "Allow Completed Sprint for Closed Tickets"
+  },
+  {
+   "default": "0",
+   "description": "Adds a Reopen Sprint button to a Completed sprint (back to Active, when no other sprint of the project is active). Tickets already carried over to another sprint or the backlog stay there.",
+   "fieldname": "allow_reopen_sprint",
+   "fieldtype": "Check",
+   "label": "Allow Reopening a Completed Sprint"
   },
   {
    "fieldname": "time_tab",
@@ -471,6 +515,36 @@
   },
   {
    "default": "1",
+   "fieldname": "show_report_tile_delivered",
+   "fieldtype": "Check",
+   "label": "Show Delivered Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_open",
+   "fieldtype": "Check",
+   "label": "Show Open Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_overdue",
+   "fieldtype": "Check",
+   "label": "Show Overdue Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_waiting",
+   "fieldtype": "Check",
+   "label": "Show Waiting on you Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_time",
+   "fieldtype": "Check",
+   "label": "Show Hours Tile"
+  },
+  {
+   "default": "1",
    "fieldname": "show_report_extra",
    "fieldtype": "Check",
    "label": "Show Additional Tickets"
@@ -514,12 +588,6 @@
    "fieldname": "report_default_cc",
    "fieldtype": "Small Text",
    "label": "Default CC"
-  },
-  {
-   "description": "Added to each project's own report BCC; other recipients do not see these addresses",
-   "fieldname": "report_default_bcc",
-   "fieldtype": "Small Text",
-   "label": "Default BCC"
   }
  ],
  "issingle": 1,
