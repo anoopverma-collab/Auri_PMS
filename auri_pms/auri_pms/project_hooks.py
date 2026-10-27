@@ -9,7 +9,11 @@ from frappe import _
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.utils import cint, cstr, flt
 
-from auri_pms.auri_pms.doctype.work_item.work_item import CUSTOM_FIELD_COUNT, close_todos, project_custom_values
+from auri_pms.auri_pms.doctype.work_item.work_item import (
+	CUSTOM_FIELD_COUNT,
+	close_todos,
+	project_custom_values,
+)
 from auri_pms.auri_pms.utils import (
 	clear_cache,
 	get_capabilities,
@@ -78,7 +82,10 @@ def apply_custom_values(project: str, old: dict) -> None:
 	for name in frappe.get_all("Work Item", {"project": project}, pluck="name"):
 		try:
 			item = frappe.get_doc("Work Item", name)
-			columns = ["project_custom_count", *(f"project_custom_{n}" for n in range(1, CUSTOM_FIELD_COUNT + 1))]
+			columns = [
+				"project_custom_count",
+				*(f"project_custom_{n}" for n in range(1, CUSTOM_FIELD_COUNT + 1)),
+			]
 			current = [item.get(c) for c in columns]
 			item.project_custom_count = count
 			for n in range(1, CUSTOM_FIELD_COUNT + 1):

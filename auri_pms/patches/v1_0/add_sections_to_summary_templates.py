@@ -8,8 +8,14 @@ from auri_pms.install import template_html
 
 # sha256 of the previous shipped HTML (stripped); a template that differs was edited by someone and is kept
 PREVIOUS = {
-	"PMS Status Report - Summary": ("pms_status_report_summary.html", "00f27b45db7ee2c0c6160e091c7e6a1ff706483029f52a5eab7591b6bcff5014"),
-	"PMS Status Report - Summary Dark": ("pms_status_report_summary_dark.html", "c3e01f98b870d9e7ebf707600e10b8cd3383753a788677aa896afdefdc70eca9"),
+	"PMS Status Report - Summary": (
+		"pms_status_report_summary.html",
+		"00f27b45db7ee2c0c6160e091c7e6a1ff706483029f52a5eab7591b6bcff5014",
+	),
+	"PMS Status Report - Summary Dark": (
+		"pms_status_report_summary_dark.html",
+		"c3e01f98b870d9e7ebf707600e10b8cd3383753a788677aa896afdefdc70eca9",
+	),
 }
 
 

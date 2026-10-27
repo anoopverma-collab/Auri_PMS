@@ -633,7 +633,12 @@ def get_status_report_html(
 	)
 
 	report = build_report(
-		project, from_date, to_date, parse_excluded(exclude), parse_included(include), parse_included(ticket_notes)
+		project,
+		from_date,
+		to_date,
+		parse_excluded(exclude),
+		parse_included(include),
+		parse_included(ticket_notes),
 	)
 	switches = section_switches(parse_sections(sections))
 	chosen_order = parse_order(order)

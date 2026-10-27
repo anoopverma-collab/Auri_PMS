@@ -640,7 +640,15 @@ class TestStatusReport(TrackerTestCase):
 
 	# ---- summary tiles, templates and notes under tickets ---------------------------------------------
 	TILE_MARKER = "border-radius:8px;padding:12px 4px"  # one per summary tile in the built-in layout
-	TILE_SWITCHES = ("tile_delivered", "tile_open", "tile_overdue", "tile_waiting", "tile_time", "created", "completion")
+	TILE_SWITCHES = (
+		"tile_delivered",
+		"tile_open",
+		"tile_overdue",
+		"tile_waiting",
+		"tile_time",
+		"created",
+		"completion",
+	)
 
 	def test_every_summary_tile_has_its_own_switch(self):
 		"""Seven tiles show; each switch hides exactly one of them and leaves the sections alone."""
@@ -669,9 +677,7 @@ class TestStatusReport(TrackerTestCase):
 	def test_note_shows_under_any_ticket_and_is_escaped(self):
 		"""A note for the client appears under the ticket in its section; markup in it is shown as text."""
 		item = self.closed_item(subject="Shipped login")
-		report = build_report(
-			self.ALP, days(-7), days(0), ticket_notes={item.name: "Fixed <b>in</b> v2"}
-		)
+		report = build_report(self.ALP, days(-7), days(0), ticket_notes={item.name: "Fixed <b>in</b> v2"})
 		for template in ("__builtin__", "PMS Status Report - Summary Dark"):
 			html = render_html(report, None, template)
 			self.assertIn("Fixed &lt;b&gt;in&lt;/b&gt; v2", html, template)
@@ -711,7 +717,10 @@ class TestStatusReport(TrackerTestCase):
 			("Project Status Report", name),
 		)
 		# Frappe keeps the file as a reference on the queue entry and attaches it when the mail is sent
-		queued = [frappe.db.get_value("Email Queue", e.name, "attachments") or "" for e in self.emails_to("client@example.com")]
+		queued = [
+			frappe.db.get_value("Email Queue", e.name, "attachments") or ""
+			for e in self.emails_to("client@example.com")
+		]
 		self.assertTrue(any(file.name in value for value in queued))
 
 	def test_attachment_of_another_user_is_refused(self):
@@ -720,18 +729,24 @@ class TestStatusReport(TrackerTestCase):
 		with self.as_user(MGR):
 			self.assertThrows(
 				"cannot be attached",
-				lambda: send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]),
+				lambda: send_report(
+					self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]
+				),
 			)
 
 	def test_file_already_attached_elsewhere_is_refused(self):
 		"""A file that belongs to a document (here a ticket) is not taken from there."""
 		item = self.new_item(MGR)
 		file = self.upload(MGR)
-		frappe.db.set_value("File", file.name, {"attached_to_doctype": "Work Item", "attached_to_name": item.name})
+		frappe.db.set_value(
+			"File", file.name, {"attached_to_doctype": "Work Item", "attached_to_name": item.name}
+		)
 		with self.as_user(MGR):
 			self.assertThrows(
 				"cannot be attached",
-				lambda: send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]),
+				lambda: send_report(
+					self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name]
+				),
 			)
 
 	def test_too_many_attachments_are_refused(self):
@@ -749,4 +764,3 @@ class TestStatusReport(TrackerTestCase):
 		with self.as_user(MGR), self.assertRaises(frappe.ValidationError):
 			send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name])
 		self.assertFalse(frappe.db.get_value("File", file.name, "attached_to_name"))
-

@@ -46,8 +46,14 @@ class WorkItem(Document):
 	def onload(self) -> None:
 		"""Tell the form whether this item has subtasks (its % Done is then read-only, R-31) and whether Closed On is editable."""
 		self.set_onload("has_children", bool(get_children(self.name)))
-		self.set_onload("allow_completed_sprint_for_closed", cint(frappe.db.get_single_value("PMS Settings", "allow_completed_sprint_for_closed")))
-		self.set_onload("keep_closed_on_editable", cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")))
+		self.set_onload(
+			"allow_completed_sprint_for_closed",
+			cint(frappe.db.get_single_value("PMS Settings", "allow_completed_sprint_for_closed")),
+		)
+		self.set_onload(
+			"keep_closed_on_editable",
+			cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")),
+		)
 
 	# ------------------------------------------------------------------ naming and creation (R-01, R-03, R-04)
 	def before_insert(self) -> None:
@@ -211,7 +217,11 @@ class WorkItem(Document):
 		project, status = frappe.db.get_value("Sprint", self.sprint, ["project", "status"])
 		if project != self.project:
 			frappe.throw(_("{0} does not belong to Project {1}").format(self.sprint, self.project))
-		if (self.is_new() or self.old.sprint != self.sprint) and status == "Completed" and not self.completed_sprint_allowed():
+		if (
+			(self.is_new() or self.old.sprint != self.sprint)
+			and status == "Completed"
+			and not self.completed_sprint_allowed()
+		):
 			frappe.throw(
 				_("Sprint {0} is {1}; only Planned or Active sprints accept work items").format(
 					self.sprint, status
@@ -271,7 +281,9 @@ class WorkItem(Document):
 
 		if new_closed and not old_closed:
 			# with the PMS Settings switch on, a Closed On the user entered is kept
-			keep = cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")) and self.closed_on
+			keep = (
+				cint(frappe.db.get_single_value("PMS Settings", "keep_closed_on_editable")) and self.closed_on
+			)
 			self.closed_on, self.closed_by = (self.closed_on if keep else now_datetime()), frappe.session.user
 		elif not new_closed:
 			self.closed_on = self.closed_by = None
@@ -428,7 +440,9 @@ class WorkItem(Document):
 				)
 		if self.sync_additional_assignment():
 			# Frappe's Assign To sets (or clears) the Assigned To field to the last person it touched; keep the real one
-			frappe.db.set_value("Work Item", self.name, "assigned_to", self.assigned_to, update_modified=False)
+			frappe.db.set_value(
+				"Work Item", self.name, "assigned_to", self.assigned_to, update_modified=False
+			)
 		follow_work_item(self.name, self.assigned_to)
 		follow_work_item(self.name, self.author)
 		for user in self.additional_users():

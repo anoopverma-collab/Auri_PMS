@@ -26,11 +26,17 @@ def send_due_digests() -> None:
 	# a ticket with Additional Assignees is also in their digest
 	extra = frappe.get_all(
 		"Work Item",
-		filters={"is_closed": 0, "due_date": ["<=", cutoff], "name": ["in", [i.name for i in items] or ["-"]]},
+		filters={
+			"is_closed": 0,
+			"due_date": ["<=", cutoff],
+			"name": ["in", [i.name for i in items] or ["-"]],
+		},
 		pluck="name",
 	)
 	for row in frappe.get_all(
-		"Work Item Assignee", {"parent": ["in", extra or ["-"]], "parenttype": "Work Item"}, ["parent", "user"]
+		"Work Item Assignee",
+		{"parent": ["in", extra or ["-"]], "parenttype": "Work Item"},
+		["parent", "user"],
 	):
 		item = next(i for i in items if i.name == row.parent)
 		if row.user != item.assigned_to:

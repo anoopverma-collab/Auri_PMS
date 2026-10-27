@@ -294,4 +294,3 @@ class TestSprint(TrackerTestCase):
 		frappe.db.set_single_value("PMS Settings", "allow_reopen_sprint", 1)
 		sprint = self.completed()
 		self.assertThrows("not allowed to manage sprints", lambda: self.save_as(DEV, sprint, status="Active"))
-

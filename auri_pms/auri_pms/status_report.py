@@ -372,14 +372,12 @@ def with_ticket_notes(report: frappe._dict) -> frappe._dict:
 		if not isinstance(row, dict) or not row.get("client_note"):
 			return row
 		html = (
-			f"{escape(row.get('subject') or '')}<br><span style=\"font-size:12px;font-style:italic;color:#8a94a6;\">"
+			f'{escape(row.get("subject") or "")}<br><span style="font-size:12px;font-style:italic;color:#8a94a6;">'
 			f"{escape(row['client_note'])}</span>"
 		)
 		return frappe._dict({**row, "subject": Markup(html)})
 
-	return frappe._dict(
-		{k: [noted(r) for r in v] if isinstance(v, list) else v for k, v in report.items()}
-	)
+	return frappe._dict({k: [noted(r) for r in v] if isinstance(v, list) else v for k, v in report.items()})
 
 
 def render_html(
@@ -653,7 +651,11 @@ def get_pdf_bytes(
 	from frappe.utils.pdf import scrub_urls
 
 	html = render_html(
-		build_report(project, from_date, to_date, exclude, include, ticket_notes), note, template, sections, order
+		build_report(project, from_date, to_date, exclude, include, ticket_notes),
+		note,
+		template,
+		sections,
+		order,
 	)
 	# Frappe's get_pdf forces 15mm top and bottom margins (white paper); call wkhtmltopdf directly so
 	# the colour behind the report reaches the edges of the sheet

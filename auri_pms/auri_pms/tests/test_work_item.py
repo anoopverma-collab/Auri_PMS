@@ -203,7 +203,9 @@ class TestWorkItem(TrackerTestCase):
 		frappe.db.set_single_value("PMS Settings", "keep_closed_on_editable", 1)
 		item = self.close_with_date("2026-10-01 10:30:00")
 		self.save_as(MGR, item, status="New")
-		self.assertEqual(frappe.db.get_value("Work Item", item.name, ["closed_on", "closed_by"]), (None, None))
+		self.assertEqual(
+			frappe.db.get_value("Work Item", item.name, ["closed_on", "closed_by"]), (None, None)
+		)
 
 	# ---- Project custom fields (Project > Custom Fields) copied to the tickets -----------------------
 	def set_project_custom(self, count, **values):
@@ -236,7 +238,10 @@ class TestWorkItem(TrackerTestCase):
 		item = self.new_item(MGR)
 		self.save_as(MGR, item, project_custom_5="Mine")
 		old = frappe.db.get_value(
-			"Project", self.ALP, ["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))], as_dict=True
+			"Project",
+			self.ALP,
+			["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))],
+			as_dict=True,
 		)
 		self.set_project_custom(5, pms_custom_1="Alpha2", pms_custom_5="New5")
 		apply_custom_values(self.ALP, dict(old))
@@ -249,7 +254,10 @@ class TestWorkItem(TrackerTestCase):
 		item = self.new_item(MGR)
 		self.assertEqual(self.custom_of(item)["project_custom_4"], "Four")
 		old = frappe.db.get_value(
-			"Project", self.ALP, ["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))], as_dict=True
+			"Project",
+			self.ALP,
+			["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))],
+			as_dict=True,
 		)
 		self.set_project_custom(2)
 		apply_custom_values(self.ALP, dict(old))
@@ -267,7 +275,12 @@ class TestWorkItem(TrackerTestCase):
 	def open_todos(self, item, user):
 		return frappe.get_all(
 			"ToDo",
-			filters={"reference_type": "Work Item", "reference_name": item.name, "allocated_to": user, "status": "Open"},
+			filters={
+				"reference_type": "Work Item",
+				"reference_name": item.name,
+				"allocated_to": user,
+				"status": "Open",
+			},
 		)
 
 	def test_additional_assignee_gets_a_todo(self):
@@ -321,8 +334,13 @@ class TestWorkItem(TrackerTestCase):
 	# ---- Sprint on a closed ticket: PMS Settings > Allow Completed Sprint for Closed Tickets -----------
 	def completed_sprint(self):
 		sprint = frappe.get_doc(
-			{"doctype": "Sprint", "sprint_name": "Done sprint", "project": self.ALP,
-			 "start_date": "2026-01-01", "end_date": "2026-01-14"}
+			{
+				"doctype": "Sprint",
+				"sprint_name": "Done sprint",
+				"project": self.ALP,
+				"start_date": "2026-01-01",
+				"end_date": "2026-01-14",
+			}
 		).insert(ignore_permissions=True)
 		frappe.db.set_value("Sprint", sprint.name, "status", "Completed")
 		return sprint
@@ -330,7 +348,9 @@ class TestWorkItem(TrackerTestCase):
 	def test_closed_ticket_cannot_move_to_a_completed_sprint_by_default(self):
 		sprint = self.completed_sprint()
 		item = self.closed_ticket()
-		self.assertThrows("only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name))
+		self.assertThrows(
+			"only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name)
+		)
 
 	def test_closed_ticket_can_move_to_a_completed_sprint_when_allowed(self):
 		frappe.db.set_single_value("PMS Settings", "allow_completed_sprint_for_closed", 1)
@@ -343,10 +363,11 @@ class TestWorkItem(TrackerTestCase):
 		frappe.db.set_single_value("PMS Settings", "allow_completed_sprint_for_closed", 1)
 		sprint = self.completed_sprint()
 		item = self.new_item(MGR, tracker="Task")
-		self.assertThrows("only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name))
+		self.assertThrows(
+			"only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name)
+		)
 
 	def closed_ticket(self):
 		item = self.new_item(MGR, tracker="Task")
 		self.save_as(MGR, item, status="Closed")
 		return item
-
