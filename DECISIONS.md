@@ -246,6 +246,24 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     client report carry them too). The client report lists only risks ticked *Show in Client Status Report*, with the mitigation plan
     as plain text. Visibility follows the project like every other document.
 
+68. **Additional Assignees.** A child table (*Work Item Assignee*) next to *Assigned To*, which stays the single main assignee. Each extra
+    person follows R-11 (enabled member, role with *can_be_assigned*), gets a ToDo and may edit the ticket like the assignee. Frappe's Assign To
+    sets or clears the *Assigned To* field to the last person it touched, so after changing the table the controller writes the real value back.
+    My Work and the due digest include the extra assignees; the team dashboards, health and reports still count the main assignee only.
+69. **Project custom fields.** *Number of Custom Fields* (1-10) on the Project shows that many text fields. Every ticket carries a copy
+    (*project_custom_n*, with the count) so they work as list columns and filters. A new ticket starts with the project's values; a value typed
+    on the ticket is kept. A changed project value is passed on by a background job that saves each ticket (validation and versions apply)
+    and only to tickets still holding the old value; lowering the count clears the extra values.
+70. **Rule relaxations are PMS Settings switches, off by default.** *Keep Closed On Visible and Editable*, *Allow Completed Sprint for Closed
+    Tickets* and *Allow Reopening a Completed Sprint* each loosen one rule and nothing else: a Closed On typed while closing is kept (otherwise
+    stamped), a closed ticket may sit in a Completed sprint (open tickets may not), and a Completed sprint may return to Active (never to
+    Planned, and never beside another Active sprint; tickets carried over earlier stay where they are).
+71. **Status report attachments.** Extra files come only from the sender's own fresh uploads: the file must be owned by the sender and attached
+    to no document, so the dialog cannot be used to email someone else's file. At most 10 files, counted in the 10 MB limit; they are then
+    attached to the *Project Status Report* record. BCC was removed from the report; the CC field and recipients remain.
+72. **Never overwrite.** Patches and fixtures only create or fill what is missing or still equals the previous shipped value (stored Email
+    Templates and PMS Settings values chosen by people are kept); stored data changes go through document saves, not raw SQL.
+
 ## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.

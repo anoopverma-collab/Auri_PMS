@@ -145,17 +145,18 @@ Activity Types are left alone).
 
 | Where | What |
 |---|---|
-| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth |
+| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
 | **PMS Settings > Risk & Health** | the Medium, High and Critical risk score levels and every project health threshold and score penalty (see *How the health status is worked out*) |
 | **PMS Settings > Status Report** | default Email Template, which sections the report includes, the Section Order table, default recipients and default subject (see *Client Status Report: layouts, sections and defaults*) |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types, client status report recipients and weekly/monthly schedule |
+| **Project > Auri PMS tab** | *Project* (identifier, 2-10 chars set once; parent project; budget hours; public flag), *Members* + role, *Ticket Types*, *Client Status Report* (recipients, CC, weekly/monthly schedule), *Health Status* and *Custom Fields* (a count of 1-10 and that many text fields, three to a row) |
+| **Work Item** | besides the usual fields: **Additional Assignees** (more people on a ticket: each must be a member who can be assigned, gets a ToDo, and sees the ticket in My Work and the due digest; *Assigned To* stays the main assignee and the other dashboards count only that person), **Project Custom Fields** (the project's Custom 1-10 copied to the ticket, editable, usable as list columns and filters; a changed project value reaches tickets that still hold the old one) |
 | **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Project Module** | the modules of a project (name, optional lead); project managers maintain them and tickets pick one in the *Module* field |
 | **Risk Register** | project, risk, category, owner, probability and impact (1-5 each; the score is the product), status (Identified, Mitigating, Monitoring, Occurred, Closed), mitigation due date, mitigation and contingency plan, related ticket, and *Show in Client Status Report*; anyone who can create tickets in the project can raise and edit risks, project managers delete them |
-| **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
+| **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint (and Reopen Sprint when the PMS Settings switch is on, only while no other sprint of the project is Active); Sprint Board (Kanban) and Burndown |
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Auri PMS Project* (+ default ticket type) turns received mail into work items |
 
@@ -234,6 +235,8 @@ Tick **Hide from Client Report** on a ticket to keep it out of every report and 
 
 **Email defaults.** **Default Recipients** are added to each project's own recipients (dialog and scheduled sends); **Default Subject**
 is used when the chosen template has no subject (`{project}`, `{from_date}`, `{to_date}`).
+
+**Attachments.** The email dialog has an **Additional attachments** list with **Add files** (up to 10 files, counted in the 10 MB limit). Only files uploaded there by the sender are accepted; they are attached to the email and to the *Status Reports Sent* record.
 
 **Delivery.** Each sent report is a **Project Status Report** with *Emails Triggered*, *Delivered*, *Failed*, *Delivery Status*
 (Queued, Sent, Partially Sent, Failed) and the error; the status is refreshed from the Email Queue. A report over 10 MB is refused
