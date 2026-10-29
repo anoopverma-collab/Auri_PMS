@@ -137,6 +137,9 @@ number cards, charts, reports) and creates the default data **once**: 6 statuses
 4 ticket types (Bug has a workflow), activity types, PMS Settings and the Kanban board
 "Work Items by Status". A later `migrate` never overwrites changes you made to that data.
 
+The status report PDF needs `wkhtmltopdf` on the server. CI runs on Ubuntu 24.04 for that reason, as the `wkhtmltopdf` package
+is missing from Ubuntu 26.04 (`ubuntu-latest`).
+
 Uninstall: `bench --site <site> uninstall-app auri_pms` (removes the Project and Email Account
 custom fields, the Kanban board, the workspace and the Project permissions it added; ERPNext
 Activity Types are left alone).

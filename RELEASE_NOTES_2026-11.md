@@ -62,3 +62,4 @@ Month: November 2026
 - The Auri PMS sidebar now shows on pages that take a project in their address (Project Hub, Client Status Report), also after a refresh or from a direct link; the old *Tracking* and *Tracker* sidebars no longer appear.
 - Dark-mode readability of the Soft UI Convex and Pearl themes.
 - Singular wording ("1 ticket is waiting on the client", "1 day").
+- **Install on a restored site.** `install-app` no longer fails with *Fieldname reference_doctype appears multiple times* when the site was restored from an older Frappe and still holds a Custom Field that Frappe now ships itself. Nothing is deleted from the site.

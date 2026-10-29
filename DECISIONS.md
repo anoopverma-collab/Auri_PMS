@@ -263,6 +263,10 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     attached to the *Project Status Report* record. BCC was removed from the report; the CC field and recipients remain.
 72. **Never overwrite.** Patches and fixtures only create or fill what is missing or still equals the previous shipped value (stored Email
     Templates and PMS Settings values chosen by people are kept); stored data changes go through document saves, not raw SQL.
+73. **Install never deletes a Custom Field.** The *Enable for Auri PMS* field on Email Template is saved with `ignore_validate`, as fixture
+    import does, so Frappe does not re-check every Email Template field. A site restored from an older Frappe can hold a Custom Field that
+    duplicates a core field (`reference_doctype`); that used to stop `install-app`. The duplicate is left alone; removing it is the site
+    owner's step in Customize Form.
 
 ## Uninstall
 

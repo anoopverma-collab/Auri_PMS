@@ -94,6 +94,8 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
   corner.
 - Dark-mode readability of the Soft UI Convex and Pearl themes.
 - Singular wording ("1 ticket is waiting on the client", "1 day").
+- `install-app` no longer stops with *Email Template: Fieldname reference_doctype appears multiple times* on a site restored from an older Frappe, where a leftover Custom Field duplicates a field Frappe now ships. The *Enable for Auri PMS* field is saved without re-checking every Email Template field (as fixture import does); nothing is removed from the site.
+- CI: the Tests job runs on Ubuntu 24.04, because `ubuntu-latest` (26.04) has no `wkhtmltopdf` package.
 
 ## Earlier work
 
