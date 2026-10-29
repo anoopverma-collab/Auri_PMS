@@ -26,7 +26,8 @@ jobs:
 
   tests:
     name: Tests
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: 26.04 has no wkhtmltopdf package, which the status report PDF needs.
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
       mariadb:
