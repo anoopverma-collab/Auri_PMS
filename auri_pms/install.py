@@ -172,11 +172,28 @@ def template_html(filename: str) -> str:
 		return f.read()
 
 
+def remove_core_duplicate_custom_fields(doctype: str) -> None:
+	"""Drop Custom Fields of ``doctype`` whose fieldname the standard DocType now ships itself.
+
+	A site restored from an older Frappe can hold e.g. a Custom Field ``reference_doctype`` on Email Template;
+	once core has the field, saving any Custom Field of that DocType fails with "Fieldname ... appears
+	multiple times"."""
+	standard = set(frappe.get_all("DocField", filters={"parent": doctype}, pluck="fieldname"))
+	duplicates = frappe.get_all(
+		"Custom Field", filters={"dt": doctype, "fieldname": ("in", list(standard))}, pluck="name"
+	)
+	for name in duplicates:
+		frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
+	if duplicates:
+		frappe.clear_cache(doctype=doctype)
+
+
 def ensure_template_flag() -> None:
 	"""Make sure Email Template has its *Enable for Auri PMS* checkbox.
 
 	On a fresh install Frappe runs after_install before it syncs the app's fixtures, so the field is created here
 	first; the fixture later finds it already in place."""
+	remove_core_duplicate_custom_fields("Email Template")
 	name = "Email Template-auri_pms_enabled"
 	if frappe.db.exists("Custom Field", name):
 		return
