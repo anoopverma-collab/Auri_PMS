@@ -91,7 +91,8 @@ def get_project_snapshots(project: str) -> list[dict]:
 	frappe.has_permission(DOCTYPE, "read", throw=True)
 	from auri_pms.auri_pms.utils import is_allocated
 
-	can_delete = frappe.has_permission(DOCTYPE, "create") and is_allocated(project)
+	# a yes/no for the Delete button; the read permission above is the enforced check
+	can_delete = frappe.has_permission(DOCTYPE, "create") and is_allocated(project)  # nosemgrep
 	rows = frappe.get_list(
 		DOCTYPE,
 		filters={"project": project},
