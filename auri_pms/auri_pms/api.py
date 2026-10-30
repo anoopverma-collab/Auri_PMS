@@ -7,16 +7,16 @@ from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
 from auri_pms.auri_pms.utils import (
+	can_create_doctype,
 	get_capabilities,
 	get_descendants,
-	can_create_doctype,
-	pms_project_rows,
 	get_enabled_modules,
 	get_enabled_statuses,
-	get_parent_scope,
 	get_enabled_trackers,
+	get_parent_scope,
 	is_admin,
 	nearest_indicator,
+	pms_project_rows,
 	transition_allowed,
 )
 from auri_pms.permissions import can_see_project
@@ -140,7 +140,10 @@ def module_query(
 		[n]
 		for n in frappe.get_all(
 			"Project Module",
-			filters={"name": ["in", get_enabled_modules(project) or [""]], "module_name": ["like", _like(txt)]},
+			filters={
+				"name": ["in", get_enabled_modules(project) or [""]],
+				"module_name": ["like", _like(txt)],
+			},
 			pluck="name",
 			order_by="module_name asc",
 			limit_start=cint(start),

@@ -9,7 +9,9 @@ def execute() -> None:
 	Rows are inserted directly: patches run before the Project custom fields are synced."""
 	statuses = frappe.get_all("Work Item Status", filters={"is_active": 1}, pluck="name", order_by="sequence")
 	for project in frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name"):
-		if frappe.db.exists("Project Work Item Status", {"parent": project, "parentfield": "enabled_statuses"}):
+		if frappe.db.exists(
+			"Project Work Item Status", {"parent": project, "parentfield": "enabled_statuses"}
+		):
 			continue
 		for idx, status in enumerate(statuses, start=1):
 			frappe.get_doc(

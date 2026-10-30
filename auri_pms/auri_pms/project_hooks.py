@@ -201,7 +201,9 @@ def set_default_statuses(doc, old) -> None:
 		return
 	if doc.get("enabled_statuses"):
 		return
-	for name in frappe.get_all("Work Item Status", filters={"is_active": 1}, pluck="name", order_by="sequence"):
+	for name in frappe.get_all(
+		"Work Item Status", filters={"is_active": 1}, pluck="name", order_by="sequence"
+	):
 		doc.append("enabled_statuses", {"status": name})
 
 

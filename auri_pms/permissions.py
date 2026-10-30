@@ -233,9 +233,10 @@ def category_has_permission(doc, ptype: str | None = None, user: str | None = No
 		return True
 	if doc.is_new() and not doc.get("project"):
 		return can_create_doctype("Work Item Category", user)  # the form is opened before a project is chosen
-	return _has_project_permission(doc, ptype, user) and get_capabilities(doc.get("project"), user)[
-		"can_manage_categories"
-	]
+	return (
+		_has_project_permission(doc, ptype, user)
+		and get_capabilities(doc.get("project"), user)["can_manage_categories"]
+	)
 
 
 def sprint_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:

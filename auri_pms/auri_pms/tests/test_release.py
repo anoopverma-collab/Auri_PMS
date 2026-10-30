@@ -85,9 +85,19 @@ class TestReleaseAndTicketTypeVisibility(TrackerTestCase):
 
 		# MGR is a Manager project role; DEV a Developer; REP a Reporter (create items and log time); OUT is on no project
 		expected = {
-			MGR: dict.fromkeys(CREATE_RULES, True) | {"Project Status Report": False, "Project Dashboard Snapshot": False},
-			DEV: {"Work Item": True, "Time Entry": True, "Risk Register": True, "Sprint": False, "Release": False,
-				"Work Item Category": False, "Project Module": False, "Project Status Report": False, "Project Dashboard Snapshot": False},
+			MGR: dict.fromkeys(CREATE_RULES, True)
+			| {"Project Status Report": False, "Project Dashboard Snapshot": False},
+			DEV: {
+				"Work Item": True,
+				"Time Entry": True,
+				"Risk Register": True,
+				"Sprint": False,
+				"Release": False,
+				"Work Item Category": False,
+				"Project Module": False,
+				"Project Status Report": False,
+				"Project Dashboard Snapshot": False,
+			},
 			OUT: dict.fromkeys(CREATE_RULES, False),
 		}
 		for user, rules in expected.items():

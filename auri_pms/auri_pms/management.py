@@ -88,7 +88,9 @@ def get_management_data(
 	allowed = portfolio_projects()
 	if not allowed:
 		frappe.throw(
-			_("Delivery & Health is for people who are members of an Auri PMS project, and for Auri PMS Admins."),
+			_(
+				"Delivery & Health is for people who are members of an Auri PMS project, and for Auri PMS Admins."
+			),
 			frappe.PermissionError,
 		)
 	today_ = getdate(today())

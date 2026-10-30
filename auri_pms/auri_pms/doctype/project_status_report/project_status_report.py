@@ -15,7 +15,9 @@ def check_system_record(doc) -> None:
 	from auri_pms.auri_pms.utils import is_admin
 
 	if not doc.flags.ignore_permissions and not is_admin():
-		frappe.throw(_("{0} records are created by the system").format(_(doc.doctype)), frappe.PermissionError)
+		frappe.throw(
+			_("{0} records are created by the system").format(_(doc.doctype)), frappe.PermissionError
+		)
 
 
 class ProjectStatusReport(Document):

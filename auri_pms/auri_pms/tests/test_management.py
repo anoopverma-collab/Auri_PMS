@@ -35,7 +35,9 @@ class TestManagementDashboard(TrackerTestCase):
 	def test_admins_and_project_members_get_it(self):
 		with self.as_user(OUT), self.assertRaises(frappe.PermissionError):  # not a member of any project
 			api.get_management_dashboard()
-		self.assertEqual({p["name"] for p in self.data(DEV)["projects"]}, {self.ALP})  # a Developer sees their project only
+		self.assertEqual(
+			{p["name"] for p in self.data(DEV)["projects"]}, {self.ALP}
+		)  # a Developer sees their project only
 		self.assertIn(self.ALP, {p["name"] for p in self.data(MGR)["projects"]})
 		self.assertTrue({self.ALP, self.BET} <= {p["name"] for p in self.data(TM)["projects"]})
 		self.assertNotIn(self.GAM, {p["name"] for p in self.data(TM)["projects"]})  # Auri PMS is off there
@@ -438,7 +440,11 @@ class TestCompanyRestriction(TrackerTestCase):
 		frappe.db.set_single_value("PMS Settings", "projects_ignore_company_restrictions", 1)
 		with self.as_user(DEV):
 			rows = api.project_link_query("Project", "", "name", 0, 20, None)
-			self.assertEqual({r[0] for r in rows}, {self.ALP, self.BET})  # a member project and the public one
+			self.assertEqual(
+				{r[0] for r in rows}, {self.ALP, self.BET}
+			)  # a member project and the public one
 			self.assertEqual(api.project_link_query("Project", "zzz-no-match", "name", 0, 20, None), [])
 		with self.as_user(OUT):  # not a member of any project
-			self.assertNotIn(self.ALP, [r[0] for r in api.project_link_query("Project", "", "name", 0, 20, None)])
+			self.assertNotIn(
+				self.ALP, [r[0] for r in api.project_link_query("Project", "", "name", 0, 20, None)]
+			)

@@ -7,7 +7,9 @@ def execute() -> None:
 	"""Add every project-bound Project Module to its project's Enabled Modules. Safe to run twice.
 
 	Rows are inserted directly: patches run before the Project custom fields are synced."""
-	for module in frappe.get_all("Project Module", filters={"project": ["is", "set"]}, fields=["name", "project"]):
+	for module in frappe.get_all(
+		"Project Module", filters={"project": ["is", "set"]}, fields=["name", "project"]
+	):
 		if not frappe.db.exists("Project", module.project):
 			continue
 		filters = {"parent": module.project, "parentfield": "enabled_modules"}

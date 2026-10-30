@@ -140,7 +140,9 @@ class TestWorkItem(TrackerTestCase):
 		self.assertEqual(child.parent_work_item, in_parent.name)
 		frappe.db.set_value("Project", self.ALP, "parent_project", None)
 		other = self.new_item(MGR, self.BET)
-		self.assertThrows("Parent must be in the same project", lambda: self.new_item(MGR, parent_work_item=other.name))
+		self.assertThrows(
+			"Parent must be in the same project", lambda: self.new_item(MGR, parent_work_item=other.name)
+		)
 
 	def test_t035_parent_rules(self):
 		"""T-035: parent from another project, itself or its own grandchild is rejected."""
@@ -484,9 +486,16 @@ class TestCategoryVisibility(TrackerTestCase):
 
 		category = self.make_category()
 		with self.as_user(DEV):
-			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}), [[category.name]])
-			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.GAM}), [])
+			self.assertEqual(
+				category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}),
+				[[category.name]],
+			)
+			self.assertEqual(
+				category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.GAM}), []
+			)
 		with self.as_user(OUT):
-			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}), [])
+			self.assertEqual(
+				category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}), []
+			)
 		item = self.new_item(DEV, category=category.name)
 		self.assertEqual(item.category, category.name)

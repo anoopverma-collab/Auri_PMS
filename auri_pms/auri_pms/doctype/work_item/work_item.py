@@ -19,11 +19,11 @@ from auri_pms.auri_pms.utils import (
 	get_descendants,
 	get_enabled_modules,
 	get_enabled_statuses,
-	get_view_only_fields,
-	get_parent_scope,
 	get_enabled_trackers,
+	get_parent_scope,
 	get_settings,
 	get_subtree_height,
+	get_view_only_fields,
 	recalc_chain,
 	recalc_release,
 	recalc_sprint,
@@ -245,7 +245,9 @@ class WorkItem(Document):
 			and (self.is_new() or self.old.project_module != self.project_module)
 			and self.project_module not in get_enabled_modules(self.project)
 		):
-			frappe.throw(_("Module {0} is not enabled on Project {1}").format(self.project_module, self.project))
+			frappe.throw(
+				_("Module {0} is not enabled on Project {1}").format(self.project_module, self.project)
+			)
 		if self.release and (self.is_new() or self.old.release != self.release):
 			status = frappe.db.get_value("Release", self.release, "status")
 			if status != "Open":
@@ -281,7 +283,10 @@ class WorkItem(Document):
 		"""Stamp "waiting since" when a ticket becomes dependent on the client; clear it (and the note) when it stops."""
 		if cint(self.dependent_on_client):
 			# with the PMS Settings switch on, a Waiting Since the user entered is kept
-			keep = cint(frappe.db.get_single_value("PMS Settings", "waiting_since_editable")) and self.client_dependency_since
+			keep = (
+				cint(frappe.db.get_single_value("PMS Settings", "waiting_since_editable"))
+				and self.client_dependency_since
+			)
 			if not keep and (
 				self.is_new() or not cint(self.old.dependent_on_client) or not self.client_dependency_since
 			):

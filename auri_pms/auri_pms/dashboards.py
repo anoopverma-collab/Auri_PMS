@@ -28,8 +28,8 @@ from auri_pms.auri_pms.utils import (
 	get_settings,
 	is_admin,
 	managed_projects,
-	portfolio_projects,
 	pms_project_rows,
+	portfolio_projects,
 )
 
 LEVEL_ORDER = {"red": 0, "amber": 1, "green": 2, "none": 3}

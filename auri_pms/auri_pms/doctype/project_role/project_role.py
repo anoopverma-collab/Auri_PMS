@@ -44,7 +44,9 @@ class ProjectRole(Document):
 			if df.fieldtype == "Check" and cint(self.get(df.fieldname))
 		)
 		view_only = [
-			_(frappe.get_meta("Work Item").get_label(r.field_name)) for r in self.field_rules if not cint(r.can_edit)
+			_(frappe.get_meta("Work Item").get_label(r.field_name))
+			for r in self.field_rules
+			if not cint(r.can_edit)
 		]
 		self.role_permissions = f"{text} | {_('View only')}: {', '.join(view_only)}" if view_only else text
 

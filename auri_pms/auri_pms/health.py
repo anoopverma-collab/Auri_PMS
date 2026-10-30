@@ -11,7 +11,14 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.risk import risk_reasons
-from auri_pms.auri_pms.utils import form_target, get_burndown, get_enabled_modules, list_target, report_target, setting
+from auri_pms.auri_pms.utils import (
+	form_target,
+	get_burndown,
+	get_enabled_modules,
+	list_target,
+	report_target,
+	setting,
+)
 
 AGE_BUCKETS = (
 	(7, "0-7d"),

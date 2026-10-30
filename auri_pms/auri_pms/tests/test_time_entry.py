@@ -101,4 +101,6 @@ class TestTimeEntry(TrackerTestCase):
 		self.assertEqual((entry.work_item, entry.project), (None, self.ALP))
 
 	def test_comment_is_required(self):
-		self.assertThrows("comment", lambda: self.logged_time(DEV, project=self.ALP, comment=""), exc=frappe.MandatoryError)
+		self.assertThrows(
+			"comment", lambda: self.logged_time(DEV, project=self.ALP, comment=""), exc=frappe.MandatoryError
+		)

@@ -26,7 +26,13 @@ _FLAGS_ALL = (
 ).split()
 PROJECT_ROLES = {
 	"Manager": _FLAGS_ALL,
-	"Developer": ["can_create_items", "can_edit_any_item", "can_log_time", "can_be_assigned", "can_see_all_items"],
+	"Developer": [
+		"can_create_items",
+		"can_edit_any_item",
+		"can_log_time",
+		"can_be_assigned",
+		"can_see_all_items",
+	],
 	"Reporter": ["can_create_items", "can_log_time"],
 	"Functional": [
 		"can_create_items",
@@ -138,8 +144,12 @@ def create_default_data() -> None:
 			},
 		)
 	for role, flags in PROJECT_ROLES.items():
-		rules = [{"field_name": f, "can_edit": 0} for f in PLANNING_FIELDS] if role not in ("Manager",) else []
-		insert_if_missing("Project Role", role, {"role_name": role, **dict.fromkeys(flags, 1), "field_rules": rules})
+		rules = (
+			[{"field_name": f, "can_edit": 0} for f in PLANNING_FIELDS] if role not in ("Manager",) else []
+		)
+		insert_if_missing(
+			"Project Role", role, {"role_name": role, **dict.fromkeys(flags, 1), "field_rules": rules}
+		)
 	for tracker, colour in TRACKERS.items():
 		values = {
 			"tracker_name": tracker,

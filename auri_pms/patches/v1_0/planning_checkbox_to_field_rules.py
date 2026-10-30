@@ -27,7 +27,13 @@ def execute() -> None:
 			continue
 		for idx, field in enumerate(PLANNING_FIELDS, start=1):
 			frappe.get_doc(
-				{"doctype": "Project Role Field Rule", **filters, "idx": idx, "field_name": field, "can_edit": 0}
+				{
+					"doctype": "Project Role Field Rule",
+					**filters,
+					"idx": idx,
+					"field_name": field,
+					"can_edit": 0,
+				}
 			).db_insert()
 
 	for role in frappe.get_all("Project Role", pluck="name"):
