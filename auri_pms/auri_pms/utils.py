@@ -287,16 +287,12 @@ def can_create_doctype(doctype: str, user: str | None = None) -> bool:
 		return can_manage_modules(user)
 	if not rule.startswith("can_"):
 		return False
+	roles = frappe.get_all("Project Role", filters={rule: 1}, pluck="name")
+	if not roles:
+		return False
 	return bool(
-		frappe.db.sql(
-			f"""
-			select 1
-			from `tabProject Member` pm
-			join `tabProject Role` pr on pr.name = pm.project_role and pr.{rule} = 1
-			where pm.parenttype = 'Project' and pm.user = %s
-			limit 1
-			""",
-			user,
+		frappe.db.exists(
+			"Project Member", {"parenttype": "Project", "user": user, "project_role": ["in", roles]}
 		)
 	)
 
