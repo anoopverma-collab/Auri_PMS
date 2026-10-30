@@ -18,7 +18,6 @@ from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.health import make_buckets
 from auri_pms.auri_pms.utils import is_allocated
-from auri_pms.permissions import work_item_query
 
 REPORTS = {
 	"delivery": {
@@ -60,9 +59,27 @@ AGE_BUCKETS = [
 	("31-60 d", 31, 60),
 	("60+ d", 61, 10**6),
 ]
-ITEM_SQL = """select name, subject, project, tracker, status, priority, assigned_to, project_module, `release`, sprint,
-	is_closed, date(creation) as created, closed_on, due_date, estimated_hours, spent_hours, done_percent,
-	dependent_on_client, client_dependency_since from `tabWork Item` where project in %(projects)s"""
+ITEM_FIELDS = [
+	"name",
+	"subject",
+	"project",
+	"tracker",
+	"status",
+	"priority",
+	"assigned_to",
+	"project_module",
+	"release",
+	"sprint",
+	"is_closed",
+	"creation",
+	"closed_on",
+	"due_date",
+	"estimated_hours",
+	"spent_hours",
+	"done_percent",
+	"dependent_on_client",
+	"client_dependency_since",
+]
 
 
 @frappe.whitelist()
@@ -81,7 +98,7 @@ def get_insight(report: str, project: str | None = None, period: str = "3m") -> 
 		frappe.throw(_("Unknown report {0}").format(report))
 	projects = visible_projects(project)
 	ctx = Context(projects, period)
-	data = globals()[f"report_{report}"](ctx)
+	data = REPORT_FUNCTIONS[report](ctx)
 	data.setdefault("title", _(REPORTS[report]["title"]))
 	data["subtitle"] = _("{0} · {1}").format(
 		project or _("1 project") if len(projects) == 1 else _("{0} projects").format(len(projects)),
@@ -120,10 +137,16 @@ class Context:
 		self.projects = projects
 		self.period = period if period in period_notes() else "3m"
 		self.today = getdate(today())
-		# raw SQL skips the permission query, so a member who sees only their own tickets gets the same limit here
-		visible = work_item_query()
-		sql = f"{ITEM_SQL} and {visible.replace('%', '%%')}" if visible else ITEM_SQL
-		self.items = frappe.db.sql(sql, {"projects": projects}, as_dict=True) if projects else []
+		# get_list applies the Work Item permission query, so a member who sees only their own tickets gets the same limit here
+		self.items = (
+			frappe.get_list(
+				"Work Item", filters={"project": ["in", projects]}, fields=ITEM_FIELDS, limit_page_length=0
+			)
+			if projects
+			else []
+		)
+		for item in self.items:
+			item.created = getdate(item.creation)
 		earliest = min((i.created for i in self.items), default=None)
 		self.buckets = make_buckets(self.period, earliest, self.today)
 		self.start = self.buckets.first_day
@@ -804,3 +827,13 @@ def report_time(c: Context) -> dict:
 			},
 		],
 	}
+
+
+REPORT_FUNCTIONS = {
+	"delivery": report_delivery,
+	"workload": report_workload,
+	"releases": report_releases,
+	"quality": report_quality,
+	"client": report_client,
+	"time": report_time,
+}
