@@ -140,6 +140,13 @@ Test modules: `tests/test_management.py` (MD), `tests/test_functional_scope.py` 
 | NAV-07 | A site-saved sidebar arrangement overrides the file | Manual: after changing the order in the app, check *Custom Sidebar* on the site; entries missing from it are added at the end |
 | NAV-08 | Sidebar in the browser | E2E NAV-08 and NAV-02 |
 
+## 7b. Client Status Report preview
+
+| ID | Case | Steps | Expected | Type |
+|---|---|---|---|---|
+| CSR-01 | The preview uses the whole pane | Open Client Status Report with any layout (Summary, Detailed, Original) | The report fills the Preview pane's width; no grey margin on either side | Manual (not yet in the browser suite) |
+| CSR-02 | The sent report keeps its width | Email or download the same report | The email and PDF keep the layout's own width (640 to 720 px); only the on-screen preview is widened | Manual |
+
 ## 8. Browser checks (Playwright)
 
 `e2e/dashboards.py` drives a real Chromium against the running bench, read-only (it creates and changes no record; screenshots go to
