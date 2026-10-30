@@ -24,7 +24,13 @@ from auri_pms.auri_pms.health import (
 	time_summary,
 )
 from auri_pms.auri_pms.risk import my_risks, portfolio_risk_counts
-from auri_pms.auri_pms.utils import get_settings, is_admin, portfolio_projects
+from auri_pms.auri_pms.utils import (
+	get_settings,
+	is_admin,
+	managed_projects,
+	portfolio_projects,
+	pms_project_rows,
+)
 
 LEVEL_ORDER = {"red": 0, "amber": 1, "green": 2, "none": 3}
 CRITICAL_PRIORITIES = ("Urgent", "Immediate")
@@ -96,8 +102,8 @@ def project_notes(project: str, limit: int = 50) -> list[dict]:
 
 
 def add_project_note(project: str, note: str) -> list[dict]:
-	"""Add a note to a project of the Portfolio and return its notes. Only who may see the project on the Portfolio can."""
-	if project not in portfolio_projects():
+	"""Add a note to a project of the Portfolio and return its notes. Only those who manage the project can."""
+	if project not in managed_projects():
 		frappe.throw(_("You cannot add notes to Project {0}").format(project), frappe.PermissionError)
 	note = (note or "").strip()
 	if not note:
@@ -121,7 +127,7 @@ def add_project_note(project: str, note: str) -> list[dict]:
 
 def delete_project_note(project: str, note: str) -> list[dict]:
 	"""Delete a note of a project of the Portfolio; its author and the admins can. Returns the notes that are left."""
-	if project not in portfolio_projects():
+	if project not in managed_projects():
 		frappe.throw(_("You cannot change the notes of Project {0}").format(project), frappe.PermissionError)
 	comment = frappe.db.get_value(
 		"Comment",
@@ -194,12 +200,11 @@ def get_portfolio_ticket_counts(from_date: str | None = None, to_date: str | Non
 	allowed = portfolio_projects()
 	if not allowed:
 		frappe.throw(
-			_("The Portfolio is for Auri PMS Admins and for the managers of a project."),
+			_("The Portfolio is for people who are members of an Auri PMS project, and for Auri PMS Admins."),
 			frappe.PermissionError,
 		)
 	start, end = period_range(from_date, to_date)
-	projects = frappe.get_list(
-		"Project",
+	projects = pms_project_rows(
 		filters={"pms_enabled": 1, "name": ["in", allowed]},
 		fields=["name", "project_name", "tracker_identifier"],
 		order_by="project_name asc",
@@ -348,11 +353,10 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 	allowed = portfolio_projects()
 	if not allowed:
 		frappe.throw(
-			_("The Portfolio is for Auri PMS Admins and for the managers of a project."),
+			_("The Portfolio is for people who are members of an Auri PMS project, and for Auri PMS Admins."),
 			frappe.PermissionError,
 		)
-	projects = frappe.get_list(
-		"Project",
+	projects = pms_project_rows(
 		filters={"pms_enabled": 1, "name": ["in", allowed]},
 		fields=["name", "project_name", "tracker_identifier", "status", "is_public", "pms_budget_hours"],
 		order_by="modified desc",

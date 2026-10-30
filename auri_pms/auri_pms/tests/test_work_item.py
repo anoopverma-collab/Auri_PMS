@@ -132,6 +132,16 @@ class TestWorkItem(TrackerTestCase):
 		self.save_as(MGR, item, subject="Changed")  # unchanged release stays allowed
 		self.assertEqual(item.release, locked)
 
+	def test_parent_may_come_from_the_parent_project(self):
+		"""A work item can take its parent from its project's parent project, not from an unrelated one."""
+		frappe.db.set_value("Project", self.ALP, "parent_project", self.BET)
+		in_parent = self.new_item(MGR, self.BET)
+		child = self.new_item(MGR, parent_work_item=in_parent.name)
+		self.assertEqual(child.parent_work_item, in_parent.name)
+		frappe.db.set_value("Project", self.ALP, "parent_project", None)
+		other = self.new_item(MGR, self.BET)
+		self.assertThrows("Parent must be in the same project", lambda: self.new_item(MGR, parent_work_item=other.name))
+
 	def test_t035_parent_rules(self):
 		"""T-035: parent from another project, itself or its own grandchild is rejected."""
 		other = self.new_item(MGR, self.BET)
@@ -156,9 +166,10 @@ class TestWorkItem(TrackerTestCase):
 		self.assertThrows("Maximum subtask depth of 5", lambda: self.new_item(MGR, parent_work_item=parent))
 
 	def test_t037_reporter_edits_only_own(self):
-		"""T-037: rep edits own item but not dev's."""
+		"""T-037: rep edits own item but not dev's (the edit rule, so the reporter is allowed to see the item)."""
+		self.set_see_all(True, "Reporter")
 		own = self.new_item(REP)
-		self.save_as(REP, own, subject="mine")
+		self.save_as(REP, own, priority="High")
 		theirs = self.new_item(DEV)
 		self.assertThrows(
 			"You can only edit work items you created or are assigned to",
@@ -168,8 +179,48 @@ class TestWorkItem(TrackerTestCase):
 	def test_t038_developer_edits_any(self):
 		"""T-038: dev edits mgr's item (can_edit_any_item)."""
 		item = self.new_item(MGR)
-		self.save_as(DEV, item, subject="by dev")
-		self.assertEqual(frappe.db.get_value("Work Item", item.name, "subject"), "by dev")
+		self.save_as(DEV, item, priority="High")
+		self.assertEqual(frappe.db.get_value("Work Item", item.name, "priority"), "High")
+
+	def test_field_rules_follow_the_project_role(self):
+		"""Fields listed as view only on the Project Role cannot be changed by that role; a manager can."""
+		item = self.new_item(MGR)
+		for field, value in (
+			("subject", "by dev"),
+			("start_date", "2026-01-05"),
+			("due_date", "2026-01-09"),
+			("actual_start_date", "2026-01-05"),
+			("actual_end_date", "2026-01-09"),
+		):
+			self.assertThrows("may only view", lambda: self.save_as(DEV, item, **{field: value}))
+			item.reload()
+		self.save_as(MGR, item, subject="by manager", due_date="2026-01-09")
+		self.set_subject_editable("Developer", 1)
+		try:
+			self.save_as(DEV, item, subject="by dev")
+		finally:
+			self.set_subject_editable("Developer", 0)
+
+	def set_subject_editable(self, role_name, editable):
+		role = frappe.get_doc("Project Role", role_name)
+		next(r for r in role.field_rules if r.field_name == "subject").can_edit = editable
+		role.save(ignore_permissions=True)
+		frappe.local.track_cache = {}
+
+	def test_role_lists_every_work_item_field(self):
+		role = frappe.get_doc("Project Role", "Developer")
+		role.save(ignore_permissions=True)
+		names = {
+			df.fieldname
+			for df in frappe.get_meta("Work Item").fields
+			if df.fieldtype not in frappe.model.no_value_fields + frappe.model.table_fields
+		}
+		self.assertEqual({r.field_name for r in role.field_rules}, names)
+
+	def test_field_rule_must_name_a_work_item_field(self):
+		role = frappe.get_doc("Project Role", "Developer")
+		role.append("field_rules", {"field_name": "nonsense", "can_edit": 0})
+		self.assertThrows("is not a Work Item field", role.save)
 
 	# ---- Closed On: PMS Settings > Keep Closed On Visible and Editable ------------------------------
 	def close_with_date(self, date: str):
@@ -371,3 +422,71 @@ class TestWorkItem(TrackerTestCase):
 		item = self.new_item(MGR, tracker="Task")
 		self.save_as(MGR, item, status="Closed")
 		return item
+
+
+class TestProjectStatuses(TrackerTestCase):
+	"""Enabled Statuses on the project limit the statuses a work item can take."""
+
+	def enable_statuses(self, *statuses):
+		project = frappe.get_doc("Project", self.BET)
+		project.set("enabled_statuses", [{"status": s} for s in statuses])
+		project.save(ignore_permissions=True)
+
+	def test_only_the_project_statuses_are_listed(self):
+		from auri_pms.auri_pms.utils import get_enabled_statuses
+
+		self.enable_statuses("New", "In Progress")
+		self.assertEqual(set(get_enabled_statuses(self.BET)), {"New", "In Progress"})
+
+	def test_status_outside_the_project_set_is_refused(self):
+		self.enable_statuses("New", "In Progress")
+		item = self.new_item(MGR, self.BET, tracker="Task")
+		self.assertThrows("is not enabled on Project", lambda: self.save_as(MGR, item, status="Closed"))
+		item.reload()
+		self.save_as(MGR, item, status="In Progress")
+
+	def test_allowed_statuses_are_limited_to_the_project(self):
+		from auri_pms.auri_pms.api import get_allowed_statuses
+
+		self.enable_statuses("New", "In Progress")
+		item = self.new_item(MGR, self.BET, tracker="Task")
+		frappe.set_user(MGR)
+		self.assertEqual(get_allowed_statuses(item.name), ["In Progress"])
+
+
+class TestWaitingSince(TrackerTestCase):
+	def test_entered_date_is_kept_only_when_the_setting_is_on(self):
+		item = self.new_item(MGR, self.BET, tracker="Task")
+		frappe.db.set_single_value("PMS Settings", "waiting_since_editable", 0)
+		self.save_as(MGR, item, dependent_on_client=1, client_dependency_since="2026-01-05")
+		self.assertNotEqual(str(item.client_dependency_since), "2026-01-05")
+		frappe.db.set_single_value("PMS Settings", "waiting_since_editable", 1)
+		self.save_as(MGR, item, client_dependency_since="2026-01-05")
+		self.assertEqual(str(item.client_dependency_since), "2026-01-05")
+
+
+class TestCategoryVisibility(TrackerTestCase):
+	def make_category(self):
+		return frappe.get_doc(
+			{"doctype": "Work Item Category", "category_name": "Billing", "project": self.ALP}
+		).insert(ignore_permissions=True)
+
+	def test_category_list_is_for_those_who_manage_categories(self):
+		category = self.make_category()
+		with self.as_user(MGR):  # Manager project role
+			self.assertIn(category.name, frappe.get_list("Work Item Category", pluck="name"))
+		with self.as_user(DEV):
+			self.assertEqual(frappe.get_list("Work Item Category", pluck="name"), [])
+			self.assertFalse(frappe.has_permission("Work Item Category", "read", doc=category.name))
+
+	def test_members_still_pick_a_category_on_a_work_item(self):
+		from auri_pms.auri_pms.api import category_link_query
+
+		category = self.make_category()
+		with self.as_user(DEV):
+			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}), [[category.name]])
+			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.GAM}), [])
+		with self.as_user(OUT):
+			self.assertEqual(category_link_query("Work Item Category", "", "name", 0, 20, {"project": self.ALP}), [])
+		item = self.new_item(DEV, category=category.name)
+		self.assertEqual(item.category, category.name)

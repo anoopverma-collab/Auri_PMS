@@ -40,7 +40,7 @@ class Insights {
 		// only the Auri PMS projects the person is allocated to (all of them for an admin) are offered
 		this.project_field = page.add_field({
 			fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", change: () => this.show(this.report),
-			get_query: () => ({ filters: { name: ["in", this.project_names.length ? this.project_names : [""]] } }),
+			get_query: () => ({ query: "auri_pms.auri_pms.api.project_link_query", filters: { name: ["in", this.project_names.length ? this.project_names : [""]] } }),
 		});
 	}
 

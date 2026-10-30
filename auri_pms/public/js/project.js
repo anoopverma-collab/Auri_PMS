@@ -8,6 +8,7 @@ frappe.ui.form.on("Project", {
 		frm.set_query("user", "tracker_members", () => ({ filters: { enabled: 1 } }));
 		// enabled_trackers is a Table MultiSelect (no grid): the query goes on the field itself.
 		frm.set_query("enabled_trackers", () => ({ filters: { is_active: 1 } }));
+		frm.set_query("enabled_statuses", () => ({ filters: { is_active: 1 } }));
 	},
 	refresh(frm) {
 		frm._pms_was_enabled = cint(frm.doc.pms_enabled);
@@ -25,6 +26,11 @@ frappe.ui.form.on("Project", {
 		frappe.db.get_list("Ticket Type", { filters: { is_active: 1 }, pluck: "name", limit: 0 }).then((names) => {
 			names.forEach((name) => frm.add_child("enabled_trackers", { tracker: name }));
 			frm.refresh_field("enabled_trackers");
+		});
+		frappe.db.get_list("Work Item Status", { filters: { is_active: 1 }, pluck: "name", limit: 0 }).then((names) => {
+			if ((frm.doc.enabled_statuses || []).length) return;
+			names.forEach((name) => frm.add_child("enabled_statuses", { status: name }));
+			frm.refresh_field("enabled_statuses");
 		});
 	},
 	before_save(frm) {

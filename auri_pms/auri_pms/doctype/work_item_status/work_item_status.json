@@ -107,10 +107,6 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"read": 1,
-			"role": "Auri PMS User"
 		}
 	],
 	"search_fields": "status_name,sequence",

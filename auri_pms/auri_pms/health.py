@@ -11,7 +11,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.risk import risk_reasons
-from auri_pms.auri_pms.utils import form_target, get_burndown, list_target, report_target, setting
+from auri_pms.auri_pms.utils import form_target, get_burndown, get_enabled_modules, list_target, report_target, setting
 
 AGE_BUCKETS = (
 	(7, "0-7d"),
@@ -326,11 +326,13 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 
 
 def module_labels(project: str) -> dict[str, str]:
-	"""{Project Module name: module name} for one project."""
+	"""{Project Module name: module name} for the modules tagged on one project."""
 	return {
 		m.name: m.module_name
 		for m in frappe.get_all(
-			"Project Module", filters={"project": project}, fields=["name", "module_name"]
+			"Project Module",
+			filters={"name": ["in", get_enabled_modules(project) or [""]]},
+			fields=["name", "module_name"],
 		)
 	}
 

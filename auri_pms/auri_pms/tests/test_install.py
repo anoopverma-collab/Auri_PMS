@@ -64,7 +64,9 @@ class TestInstall(IntegrationTestCase):
 		self.assertNotIn("Home", [i.label for i in sidebar.items])
 		self.assertTrue(frappe.db.exists("Desktop Icon", "Auri PMS"))
 		board = frappe.get_doc("Kanban Board", install.BOARD_NAME)
-		self.assertEqual([c.column_name for c in board.columns], [s[0] for s in install.STATUSES])
+		shipped = [s[0] for s in install.STATUSES]
+		# a site may have added columns of its own: the shipped ones must all be there, in the shipped order
+		self.assertEqual([c.column_name for c in board.columns if c.column_name in shipped], shipped)
 
 	def test_tracker_roles_can_use_erpnext_doctypes(self):
 		"""Tracker roles may read Project and Activity Type (needed to log time) and Auri PMS Users may edit Project."""

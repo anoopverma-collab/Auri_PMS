@@ -177,7 +177,7 @@ class TestAllocationOnly(TrackerTestCase):
 
 
 class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
-	"""PMS Settings > Members See All Work Items: unticked, a member sees only the items assigned to them."""
+	"""Project Role > Can See All Work Items: unticked, a member sees only the items assigned to them."""
 
 	def setUp(self):
 		super().setUp()
@@ -189,10 +189,6 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 		self.nobody = self.new_item(MGR, subject="Unassigned")
 		self.raised = self.new_item(DEV, subject="Raised by dev", assigned_to=MGR)
 
-	def tearDown(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
-		super().tearDown()
-
 	def names(self, user):
 		with self.as_user(user):
 			return set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
@@ -200,25 +196,21 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 	def created(self):
 		return {i.name for i in (self.mine, self.extra, self.others, self.nobody, self.raised)}
 
-	def test_ticked_by_default_a_member_sees_every_item_of_their_project(self):
-		self.assertEqual(frappe.get_meta("PMS Settings").get_field("members_see_all_work_items").default, "1")
-		self.assertTrue(self.created() <= self.names(DEV))
+	def test_ticked_a_member_sees_every_item_of_their_project(self):
+		self.assertTrue(frappe.get_meta("Project Role").get_field("can_see_all_items"))
+		self.assertTrue(self.created() <= self.names(DEV))  # the shipped Developer role has it ticked
 
-	def test_a_site_that_never_saved_the_setting_keeps_members_seeing_everything(self):
-		"""An update must not narrow what members see: an unsaved Check reads as 0, the stored row is what counts."""
-		frappe.db.sql(
-			"delete from `tabSingles` where doctype = 'PMS Settings' and field = 'members_see_all_work_items'"
-		)
-		frappe.clear_document_cache("PMS Settings", "PMS Settings")
+	def test_the_box_is_per_role_so_a_reporter_sees_only_their_own(self):
 		self.assertTrue(self.created() <= self.names(DEV))
+		self.assertEqual(self.names(REP) & self.created(), set())  # the shipped Reporter role has it unticked
 
 	def test_unticked_a_member_sees_only_the_items_assigned_to_or_raised_by_them(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		seen = self.names(DEV) & self.created()
 		self.assertEqual(seen, {self.mine.name, self.extra.name, self.raised.name})
 
 	def test_unticked_a_member_cannot_open_an_item_assigned_to_someone_else(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		self.assertTrue(frappe.has_permission("Work Item", "read", doc=self.mine.name, user=DEV))
 		self.assertTrue(frappe.has_permission("Work Item", "write", doc=self.extra.name, user=DEV))
 		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.others.name, user=DEV))
@@ -226,18 +218,32 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 		self.assertTrue(frappe.has_permission("Work Item", "read", doc=self.raised.name, user=DEV))
 
 	def test_unticked_a_manager_and_an_admin_still_see_everything(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
-		self.assertTrue(self.created() <= self.names(MGR))  # Manager role: can manage members
+		self.set_see_all(False)
+		self.assertTrue(self.created() <= self.names(MGR))  # Manager role: can see all
 		self.assertTrue(self.created() <= self.names(TM))  # Auri PMS Admin
 
 	def test_unticked_a_public_project_stays_readable_for_a_non_member(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		item = self.new_item(MGR, self.BET, subject="Public ticket")
 		self.assertIn(item.name, self.names(OUT))
 
 	def test_unticked_a_member_can_still_create_an_item(self):
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		item = self.new_item(DEV, subject="Raised for the manager", assigned_to=MGR)
 		self.assertEqual(item.author, DEV)
 		self.assertIn(item.name, self.names(DEV))  # the member who raised it still sees it
 		self.assertNotIn(item.name, self.names(REP))
+
+
+class TestRoleBoxIsPerProject(TrackerTestCase):
+	def test_the_same_person_can_see_all_on_one_project_and_only_their_own_on_another(self):
+		"""Developer on Alpha and Reporter on Beta: the box of each role decides, project by project."""
+		bet = frappe.get_doc("Project", self.BET)
+		bet.append("tracker_members", {"user": DEV, "project_role": "Reporter"})
+		bet.save(ignore_permissions=True)
+		on_alpha = self.new_item(MGR, subject="Alpha item")
+		on_beta = self.new_item(MGR, self.BET, subject="Beta item")
+		with self.as_user(DEV):
+			seen = set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
+		self.assertIn(on_alpha.name, seen)  # Developer role: sees all
+		self.assertNotIn(on_beta.name, seen)  # Reporter role on Beta: only their own

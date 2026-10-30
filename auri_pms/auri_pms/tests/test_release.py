@@ -2,7 +2,8 @@
 
 import frappe
 
-from auri_pms.auri_pms.tests.utils import DEV, MGR, TM, TrackerTestCase
+from auri_pms.auri_pms import api
+from auri_pms.auri_pms.tests.utils import BOSS, DEV, MGR, OUT, REP, TM, TrackerTestCase
 
 
 class TestRelease(TrackerTestCase):
@@ -76,3 +77,35 @@ class TestRelease(TrackerTestCase):
 		self.new_item(MGR, tracker="Task", release=v1)
 		with self.as_user(TM):
 			self.assertRaises(frappe.LinkExistsError, frappe.delete_doc, "Release", v1)
+
+
+class TestReleaseAndTicketTypeVisibility(TrackerTestCase):
+	def test_new_button_follows_one_table_for_every_project_record(self):
+		from auri_pms.auri_pms.utils import CREATE_RULES, create_permissions
+
+		# MGR is a Manager project role; DEV a Developer; REP a Reporter (create items and log time); OUT is on no project
+		expected = {
+			MGR: dict.fromkeys(CREATE_RULES, True) | {"Project Status Report": False, "Project Dashboard Snapshot": False},
+			DEV: {"Work Item": True, "Time Entry": True, "Risk Register": True, "Sprint": False, "Release": False,
+				"Work Item Category": False, "Project Module": False, "Project Status Report": False, "Project Dashboard Snapshot": False},
+			OUT: dict.fromkeys(CREATE_RULES, False),
+		}
+		for user, rules in expected.items():
+			with self.as_user(user):
+				self.assertEqual(create_permissions(), rules, user)
+				self.assertEqual(api.can_create("Release"), rules["Release"], user)
+		with self.as_user(TM):  # an admin may create everything
+			self.assertTrue(all(create_permissions().values()))
+
+	def test_system_records_cannot_be_created_by_hand(self):
+		doc = frappe.get_doc({"doctype": "Project Status Report", "subject": "x", "project": self.ALP})
+		with self.as_user(MGR), self.assertRaises(frappe.PermissionError):
+			doc.insert()
+
+	def test_ticket_type_is_hidden_from_members_but_still_usable(self):
+		with self.as_user(DEV):
+			self.assertFalse(frappe.has_permission("Ticket Type", "read"))
+			self.assertIn(["Bug"], api.tracker_query("Ticket Type", "", "name", 0, 20, {"project": self.ALP}))
+			self.assertEqual(api.get_default_status("Bug"), "New")
+		with self.as_user(BOSS):  # an Auri PMS Manager
+			self.assertTrue(frappe.has_permission("Ticket Type", "read"))

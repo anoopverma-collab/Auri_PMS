@@ -148,7 +148,7 @@ Activity Types are left alone).
 
 | Where | What |
 |---|---|
-| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), **Members See All Work Items** (ticked by default: a member sees every ticket of their projects; unticked: only the tickets assigned to them (Assigned To or Additional Assignee) or raised by them (Author); admins and members whose Project Role can manage members still see all), time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
+| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), **Auri PMS Projects Ignore Company Restrictions** (ticked by default: the Auri PMS screens list a member's projects even when a Company User Permission would hide them), **Waiting Since Editable**; *Can See All Work Items* (a member sees every ticket of the project, or only those assigned to or raised by them) and the view-only *Field Rules* are set on each **Project Role**, time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
 | **PMS Settings > Risk & Health** | the Medium, High and Critical risk score levels and every project health threshold and score penalty (see *How the health status is worked out*) |
 | **PMS Settings > Status Report** | default Email Template, which sections the report includes, the Section Order table, default recipients and default subject (see *Client Status Report: layouts, sections and defaults*) |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
@@ -283,7 +283,7 @@ ruff check . && ruff format --check .                      # Python
 eslint --ext .js auri_pms                              # JS (default Frappe config)
 ```
 
-Tests live in `auri_pms/auri_pms/tests/`, one file per area (304 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
+Tests live in `auri_pms/auri_pms/tests/`, one file per area (451 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
 database savepoint. Business rules live in the DocType controllers and `auri_pms/utils.py`; client
 scripts are UX only.
 

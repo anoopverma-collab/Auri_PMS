@@ -9,26 +9,42 @@ from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, TM, TrackerTestCase
 
 
 class TestProjectModule(TrackerTestCase):
-	def make_module(self, name="Sales", user=MGR, project=None):
+	def make_module(self, name="Sales", user=TM, project=None, tag=True):
+		"""Create a shared module and (by default) tag it on ``project`` (ALP when not given)."""
 		with self.as_user(user):
-			return frappe.get_doc(
-				{"doctype": "Project Module", "module_name": name, "project": project or self.ALP}
-			).insert()
+			module = frappe.get_doc({"doctype": "Project Module", "module_name": name}).insert()
+		if tag:
+			doc = frappe.get_doc("Project", project or self.ALP)
+			doc.append("enabled_modules", {"module": module.name})
+			doc.save(ignore_permissions=True)
+		return module
 
-	def test_name_is_project_and_module(self):
-		self.assertEqual(self.make_module("Stock").name, f"{self.ALP}-Stock")
+	def test_name_is_the_module_name(self):
+		self.assertEqual(self.make_module("Stock").name, "Stock")
 
-	def test_only_project_managers_maintain_modules(self):
-		self.assertThrows("not allowed to manage modules", lambda: self.make_module("Dev made", user=DEV))
-		self.assertThrows("not allowed to manage modules", lambda: self.make_module("Out made", user=OUT))
+	def test_only_managers_maintain_modules(self):
+		for user in (DEV, OUT):
+			with self.assertRaises(frappe.PermissionError):
+				self.make_module("Not allowed", user=user)
 
-	def test_work_item_module_must_belong_to_the_same_project(self):
+	def test_modules_are_hidden_from_members_who_cannot_manage_them(self):
+		module = self.make_module("Hidden one")
+		with self.as_user(DEV):
+			self.assertFalse(frappe.has_permission("Project Module", "read", doc=module.name))
+			self.assertEqual(frappe.get_list("Project Module"), [])
+		with self.as_user(MGR):
+			self.assertTrue(frappe.has_permission("Project Module", "read", doc=module.name))
+
+	def test_project_managers_may_create_modules(self):
+		self.assertEqual(self.make_module("By manager", user=MGR).name, "By manager")
+
+	def test_work_item_module_must_be_enabled_on_the_project(self):
 		other = self.make_module("Beta module", project=self.BET)
 		self.assertThrows(
-			"does not belong to Project",
+			"is not enabled on Project",
 			lambda: self.new_item(MGR, tracker="Task", project_module=other.name),
 		)
-		mine = self.make_module("Accounts")
+		mine = self.make_module("Alpha module")
 		item = self.new_item(MGR, tracker="Task", project_module=mine.name)
 		self.assertEqual(item.project_module, mine.name)
 

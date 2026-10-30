@@ -82,7 +82,7 @@ class TestEndToEnd(TrackerTestCase):
 			self.assertEqual(get_allowed_statuses(bug.name), ["In Progress"])
 		self.move(DEV, bug.name, "In Progress")
 		with self.as_user(DEV):
-			log_time(bug.name, 2, "Development")
+			log_time(bug.name, 2, "Development", comment="Fixed it")
 		self.assertEqual(
 			frappe.db.get_value("Work Item", bug.name, ["status", "spent_hours"], as_dict=True),
 			{"status": "In Progress", "spent_hours": 2},
@@ -138,7 +138,7 @@ class TestEndToEnd(TrackerTestCase):
 			parent_work_item=parent.name,
 		)
 		with self.as_user(DEV):
-			log_time(first.name, 3, "Development")
+			log_time(first.name, 3, "Development", comment="Built it")
 		self.assertEqual(
 			frappe.db.get_value(
 				"Work Item", parent.name, ["total_estimated_hours", "total_spent_hours"], as_dict=True

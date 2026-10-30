@@ -66,6 +66,32 @@
   "options": "Project Ticket Type"
  },
  {
+  "description": "Only these statuses are offered on this project's work items",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "enabled_statuses",
+  "fieldtype": "Table MultiSelect",
+  "insert_after": "enabled_trackers",
+  "is_system_generated": 0,
+  "label": "Enabled Statuses",
+  "module": "Auri PMS",
+  "name": "Project-enabled_statuses",
+  "options": "Project Work Item Status"
+ },
+ {
+  "description": "Only these modules are offered on this project's work items",
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "enabled_modules",
+  "fieldtype": "Table MultiSelect",
+  "insert_after": "enabled_statuses",
+  "is_system_generated": 0,
+  "label": "Enabled Modules",
+  "module": "Auri PMS",
+  "name": "Project-enabled_modules",
+  "options": "Project Enabled Module"
+ },
+ {
   "default": "0",
   "depends_on": "eval:doc.pms_enabled",
   "description": "Visible to all Auri PMS Users",
@@ -331,7 +357,7 @@
   "dt": "Project",
   "fieldname": "tracker_sec_report",
   "fieldtype": "Section Break",
-  "insert_after": "enabled_trackers",
+  "insert_after": "enabled_modules",
   "is_system_generated": 0,
   "label": "Client Status Report",
   "module": "Auri PMS",

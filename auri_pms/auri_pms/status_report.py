@@ -168,9 +168,15 @@ def build_report(
 	for item in items:
 		item["module"] = module_names.get(item.project_module) or ""
 	statuses = frappe.get_all(
-		"Work Item Status", fields=["name", "sequence", "is_closed"], order_by="sequence asc"
+		"Work Item Status",
+		filters={"is_active": 1},
+		fields=["name", "sequence", "is_closed"],
+		order_by="sequence asc",
 	)
-	first_open = next((s.name for s in statuses if not cint(s.is_closed)), None)
+	open_statuses = [s.name for s in statuses if not cint(s.is_closed)]
+	# "not started" is the status a new ticket begins in; without a usable default, the first open status
+	default_status = frappe.db.get_single_value("PMS Settings", "default_status")
+	first_open = default_status if default_status in open_statuses else next(iter(open_statuses), None)
 	open_items = [i for i in items if not cint(i.is_closed)]
 	in_range = lambda value: bool(value) and start <= as_date(value) <= end  # noqa: E731
 

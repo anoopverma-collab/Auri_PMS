@@ -1,6 +1,6 @@
 {
 	"actions": [],
-	"autoname": "format:{project}-{module_name}",
+	"autoname": "format:{module_name}",
 	"creation": "2026-10-11 19:00:00.000000",
 	"doctype": "DocType",
 	"engine": "InnoDB",
@@ -23,12 +23,13 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
-			"label": "Project",
+			"label": "Project (legacy)",
 			"link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
 			"options": "Project",
-			"reqd": 1,
+			"reqd": 0,
 			"search_index": 1,
-			"set_only_once": 1
+			"set_only_once": 1,
+			"hidden": 1
 		},
 		{
 			"fieldname": "module_lead",
@@ -93,13 +94,13 @@
 		},
 		{
 			"create": 1,
+			"delete": 1,
 			"read": 1,
 			"role": "Auri PMS User",
-			"write": 1,
-			"delete": 1
+			"write": 1
 		}
 	],
-	"search_fields": "module_name,project",
+	"search_fields": "module_name",
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],

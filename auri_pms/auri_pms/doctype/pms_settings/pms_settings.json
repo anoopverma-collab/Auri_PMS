@@ -11,16 +11,17 @@
   "default_priority",
   "column_break_defaults_2",
   "public_project_role",
+  "projects_ignore_company_restrictions",
   "ticket_rules_section",
   "require_children_closed",
   "require_blockers_closed",
-  "members_see_all_work_items",
   "ticket_rules_col",
   "max_subtask_depth",
   "column_break_ticket_rules_2",
   "due_reminder_days",
   "closed_sprint_section",
   "keep_closed_on_editable",
+  "waiting_since_editable",
   "closed_sprint_col_1",
   "allow_completed_sprint_for_closed",
   "closed_sprint_col_2",
@@ -112,6 +113,13 @@
    "reqd": 1
   },
   {
+   "default": "1",
+   "description": "Ticked: the Auri PMS dashboards (Delivery & Health, Portfolio, Project Hub) and the project picker on a Work Item list the projects a person belongs to, whatever Company User Permission they have. Unticked: Frappe's company restriction also hides those projects. The standard Project list and form always follow the restriction.",
+   "fieldname": "projects_ignore_company_restrictions",
+   "fieldtype": "Check",
+   "label": "Auri PMS Projects Ignore Company Restrictions"
+  },
+  {
    "default": "Normal",
    "fieldname": "default_priority",
    "fieldtype": "Select",
@@ -149,13 +157,6 @@
    "label": "Item Closes Only After Blockers"
   },
   {
-   "default": "1",
-   "description": "Ticked: a project member sees every Work Item of the projects they are allocated to. Unticked: a member sees only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by them (Author). Admins and members whose Project Role can manage members always see all.",
-   "fieldname": "members_see_all_work_items",
-   "fieldtype": "Check",
-   "label": "Members See All Work Items"
-  },
-  {
    "fieldname": "ticket_rules_col",
    "fieldtype": "Column Break"
   },
@@ -191,6 +192,13 @@
    "fieldname": "keep_closed_on_editable",
    "fieldtype": "Check",
    "label": "Keep Closed On Visible and Editable"
+  },
+  {
+   "default": "0",
+   "description": "Let people edit Waiting Since on a ticket that depends on the client. A date entered there is kept; without one it is set to today.",
+   "fieldname": "waiting_since_editable",
+   "fieldtype": "Check",
+   "label": "Waiting Since Editable"
   },
   {
    "default": "0",

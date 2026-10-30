@@ -26,19 +26,23 @@ class TestPortfolio(TrackerTestCase):
 		_data, mgr = self.portfolio(MGR)  # Manager on Alpha and Beta
 		self.assertEqual(set(mgr), {self.ALP, self.BET})
 
-	def test_members_without_a_managing_role_have_no_portfolio(self):
-		"""A Developer (or anyone outside the projects) is refused, even on a public project."""
-		for user in (DEV, OUT):
-			with self.as_user(user), self.assertRaises(frappe.PermissionError):
-				api.get_portfolio("3m")
+	def test_only_people_outside_the_projects_have_no_portfolio(self):
+		"""Anyone outside the projects is refused, even on a public project; a Developer sees their own project."""
+		with self.as_user(OUT), self.assertRaises(frappe.PermissionError):
+			api.get_portfolio("3m")
+		_data, rows = self.portfolio(DEV)
+		self.assertEqual(set(rows), {self.ALP})
 
-	def test_a_project_manager_sees_only_the_projects_they_manage(self):
-		"""Developer on Alpha but Manager on Beta: the Portfolio shows Beta only."""
+	def test_a_member_sees_the_projects_they_belong_to(self):
+		"""Developer on Alpha and Manager on Beta: the Portfolio shows both, and notes only where they manage."""
 		bet = frappe.get_doc("Project", self.BET)
 		bet.append("tracker_members", {"user": DEV, "project_role": "Manager"})
 		bet.save(ignore_permissions=True)
 		_data, dev = self.portfolio(DEV)
-		self.assertEqual(set(dev), {self.BET})
+		self.assertEqual(set(dev), {self.ALP, self.BET})
+		with self.as_user(DEV):
+			api.add_project_note(self.BET, "managed")
+			self.assertRaises(frappe.PermissionError, api.add_project_note, self.ALP, "not managed")
 
 	def test_row_numbers(self):
 		"""Open, overdue, completion, hours and billable share per project."""
@@ -189,7 +193,7 @@ class TestPortfolio(TrackerTestCase):
 		self.assertEqual(swapped["created"], 4)  # the dates are put in order: the last 30 days up to today
 
 	def test_ticket_table_follows_the_portfolio_access_rules(self):
-		with self.as_user(DEV), self.assertRaises(frappe.PermissionError):
+		with self.as_user(OUT), self.assertRaises(frappe.PermissionError):
 			api.get_portfolio_tickets()
 		with self.as_user(MGR):
 			projects = {r["project"] for r in api.get_portfolio_tickets()}

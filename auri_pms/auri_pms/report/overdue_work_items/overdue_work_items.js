@@ -3,7 +3,7 @@
 
 frappe.query_reports["Overdue Work Items"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({query: "auri_pms.auri_pms.api.project_link_query", filters: { pms_enabled: 1 }})},
 		{fieldname: "assigned_to", label: __("Assigned To"), fieldtype: "Link", options: "User"},
 	],
 	formatter: (value, row, column, data, default_formatter) => auri_pms.ui.reportCell(value, row, column, data, default_formatter),

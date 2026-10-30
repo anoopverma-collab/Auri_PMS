@@ -94,7 +94,34 @@ Object.assign(auri_pms.ui, {
 	},
 });
 
-// Delivery & Health is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
+// One rule for every New button: the server sends {doctype: may create} at login (CREATE_RULES) and Frappe asks
+// frappe.model.can_create before it shows a New button, a menu shortcut or opens a new form.
+if (frappe.model && frappe.model.can_create && !frappe.model._auri_pms_can_create) {
+	const can_create = frappe.model.can_create;
+	frappe.model._auri_pms_can_create = true;
+	frappe.model.can_create = function (doctype) {
+		const rules = (frappe.boot && frappe.boot.auri_pms_can_create) || {};
+		return can_create.call(this, doctype) && rules[doctype] !== false;
+	};
+}
+
+// A Project dropdown on an Auri PMS list or form (a list filter, say) that has no query of its own uses the Auri PMS project query:
+// Frappe's own Project search would also apply a Company User Permission and hide a project the person belongs to.
+if (frappe.ui && frappe.ui.form && frappe.ui.form.ControlLink && !frappe.ui.form.ControlLink.prototype._auri_pms_project_query) {
+	const set_custom_query = frappe.ui.form.ControlLink.prototype.set_custom_query;
+	frappe.ui.form.ControlLink.prototype._auri_pms_project_query = true;
+	frappe.ui.form.ControlLink.prototype.set_custom_query = function (args) {
+		set_custom_query.call(this, args);
+		if (args.doctype !== "Project" || args.query) return;
+		const route = frappe.get_route() || [];
+		const own = (frappe.boot && frappe.boot.auri_pms_can_create) || {};
+		if (["List", "Form", "Report"].includes(route[0]) && route[1] in own) {
+			args.query = "auri_pms.auri_pms.api.project_link_query";
+		}
+	};
+}
+
+// Delivery & Health is for Auri PMS Admins and the members of a project (boot flag); hide its sidebar link from everyone else.
 if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_portfolio) {
 	const style = document.createElement("style");
 	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/management-dashboard"]) { display: none !important; }';

@@ -1,7 +1,7 @@
 # Auri PMS: functional test cases
 
 Covers Delivery & Health (with its Health and cost tab, the former Portfolio), the Quality Dashboard, the sidebar and
-the setting *Members See All Work Items*. **Auto** cases are run by `bench --site <site> run-tests --app auri_pms`; **Manual**
+the *Can See All Work Items* tick on the Project Role. **Auto** cases are run by `bench --site <site> run-tests --app auri_pms`; **Manual**
 cases need a browser (the UI was not driven by a script).
 
 Fixture users used below: **Admin** (Auri PMS Admin), **Manager** (Manager on Alpha and Beta), **Dev** (Developer on Alpha),
@@ -75,6 +75,8 @@ Test modules: `tests/test_management.py` (MD), `tests/test_functional_scope.py` 
 | HC-06 | Panels | Health cards, trends, billing graph, capacity, ticket table, notes | All draw; clicks open the filtered lists; adding a note updates the card | E2E HC-06 (cards and table draw); clicks and notes Manual |
 | HC-07 | Old route | Open `/desk/portfolio` or an old bookmark | Lands on Delivery & Health, Health and cost tab | Auto (script check): FS `test_the_old_portfolio_route_redirects_to_the_health_tab`; E2E HC-07 |
 | HC-08 | Project Hub button | Click "Delivery & Health" in the Project Hub | Opens the dashboard | Auto: FS `test_the_project_hub_buttons_open_the_dashboard`; E2E HC-08 |
+| HC-10b | Order of the blocks | Open Health and cost | Projects at a glance, then *Why this status* (a collapsed bar), then Trends by project, then Details | Manual (checked in a browser) |
+| HC-11 | Health shown per screen | In a Project, tick or untick *Show on Project Hub*, *Show on Portfolio*, *Show on Report* | Each box switches the health level and score on its own screen only (Hub, the Health and cost tab, the client report); an unticked project shows a dash on the tab and is left out of its health counts | Auto: `tests/test_health_visibility.py` |
 | HC-09 | Bundle is built | `bench build --app auri_pms` | `auri_portfolio.bundle.*.js` exists in `public/dist/js` | Auto (source): FS `test_the_dashboard_loads_the_health_bundle_that_exists`; E2E (the tab loads in a real browser) |
 
 ## 5. Quality Dashboard
@@ -86,7 +88,7 @@ Test modules: `tests/test_management.py` (MD), `tests/test_functional_scope.py` 
 | QD-03 | Density | Log 4 hours | Bugs per 100 hours = bugs × 100 / 4 | Auto: FS `test_hours_logged_feed_the_bug_density` |
 | QD-04 | Member sees own and public | Dev opens it with no project | Alpha and public projects; no private project they do not belong to | Auto: FS `test_a_member_sees_their_projects_and_the_public_ones_only` |
 | QD-05 | Hidden project leaves totals unchanged | Add a bug to a private project | Dev's totals do not change | Auto: FS `test_the_private_project_does_not_change_a_members_totals` |
-| QD-06 | Setting off | Untick Members See All Work Items | Dev counts only own or assigned bugs; Manager still sees all | Auto: FS `test_members_see_only_their_own_bugs_when_the_setting_is_off` |
+| QD-06 | Role box unticked | Untick Can See All Work Items on the Developer role | Dev counts only own or assigned bugs; Manager still sees all | Auto: FS `test_members_see_only_their_own_bugs_when_the_role_box_is_unticked` |
 | QD-07 | Empty project | Choose a project with no tickets | "No bugs yet" message, zero tiles, no error | Auto: FS `test_a_project_without_tickets_gives_an_empty_dashboard` |
 | QD-08 | No defect tracker | Untick Counts as Defect on every ticket type | "No defect tracker" message | Auto: FS `test_without_a_defect_tracker_the_dashboard_says_so` |
 | QD-09 | Periods | 1m, 3m, 6m, Overall | Series length equals the labels | Auto: FS `test_every_period_works_for_all_projects` |
@@ -94,18 +96,20 @@ Test modules: `tests/test_management.py` (MD), `tests/test_functional_scope.py` 
 | QD-11 | Same results as before the speed-up | Compare old and new code on the site data | Identical output (9 combinations checked) | Done once; existing tests in `tests/test_quality.py` (13) |
 | QD-12 | Speed | Open with all projects on a large site | Opens quickly; no full ticket load | Manual |
 
-## 6. Members See All Work Items (PMS Settings)
+## 6. Can See All Work Items (Project Role)
+
+The site-wide *Members See All Work Items* setting was replaced by the *Can See All Work Items* tick on each Project Role; the cases below are the same, per role.
 
 | ID | Case | Expected | Type / test |
 |---|---|---|---|
-| SET-01 | Ticked (default): a member sees every item of their projects | Auto: PM `test_ticked_by_default_a_member_sees_every_item_of_their_project` |
-| SET-02 | Setting never saved on an existing site | Behaves as ticked | Auto: PM `test_a_site_that_never_saved_the_setting_keeps_members_seeing_everything` |
+| SET-01 | Ticked: a member sees every item of their projects | Auto: PM `test_ticked_a_member_sees_every_item_of_their_project` |
+| SET-02 | The box is per role, so a Reporter sees only their own while a Developer sees all, and one person can differ per project | Auto: PM `test_the_box_is_per_role_so_a_reporter_sees_only_their_own`, `test_the_same_person_can_see_all_on_one_project_and_only_their_own_on_another` |
 | SET-03 | Unticked: only items assigned to, raised by, or with the member as additional assignee | Auto: PM `test_unticked_a_member_sees_only_the_items_assigned_to_or_raised_by_them` |
 | SET-04 | Unticked: opening someone else's item is refused | Auto: PM `test_unticked_a_member_cannot_open_an_item_assigned_to_someone_else` |
 | SET-05 | Unticked: managers and admins unchanged | Auto: PM `test_unticked_a_manager_and_an_admin_still_see_everything` |
 | SET-06 | Unticked: public project stays readable for a non-member | Auto: PM `test_unticked_a_public_project_stays_readable_for_a_non_member` |
 | SET-07 | Unticked: a member can still create an item | Auto: PM `test_unticked_a_member_can_still_create_an_item` |
-| SET-08 | Insights (raw SQL) follows the setting | Auto: FS `test_insights_follow_the_setting_too`; Manual in the UI |
+| SET-08 | Insights (raw SQL) follows the setting | Auto: FS `test_insights_follow_the_role_box_too`; Manual in the UI |
 
 ## 6b. Auri Insights scope
 
@@ -126,6 +130,22 @@ Test modules: `tests/test_management.py` (MD), `tests/test_functional_scope.py` 
 | SCP-02 | A project switched off after it got records | Leaves the Quality Dashboard, and asking for it by name is refused | Auto: FS `test_quality_leaves_out_a_project_that_was_switched_off` |
 | SCP-03 | Admin | Auri Insights, Delivery & Health, Health and cost and the Project Hub list the same Auri PMS projects | Auto: FS `test_every_dashboard_lists_the_same_pms_projects_for_an_admin` |
 | SCP-04 | Dropdowns in the browser | Insights, Quality and Client Status Report list only Auri PMS projects | E2E INS-01, QD-10, SR-01 |
+
+## 6d. Per-project configuration and access
+
+| ID | Check | Expect |
+|----|-------|--------|
+| PA-01 | Enabled Statuses limits the Status dropdown and the save | only the project's statuses are offered; another is refused |
+| PA-02 | Work Item with no project | Status and other project dropdowns show "Select a Project first" once and offer nothing |
+| PA-03 | Module not enabled on the project | refused; the dropdown lists only the project's modules |
+| PA-04 | Field rule: a role with Subject view only edits an existing item | refused on save (all five fields tested), allowed when ticked |
+| PA-05 | Can See All Work Items unticked vs ticked per role, per project | own items only vs every item; Developer on Alpha and Reporter on Beta differ |
+| PA-06 | New button table for Manager, Developer, an outsider and an admin | matches `CREATE_RULES`; system records are admin only |
+| PA-07 | Project Module and Work Item Category lists | hidden from members who cannot manage them; dropdowns still work |
+| PA-08 | Project Dashboard Snapshot of another project | not listed, not readable |
+| PA-09 | Delivery & Health for a Developer and an outsider | a member sees their own project; an outsider is refused |
+| PA-10 | Company User Permission on a member | dashboards and project dropdowns still list their project; unticked, they do not |
+| PA-11 | Project Role list | the Permissions column lists capabilities and the view-only fields |
 
 ## 7. Sidebar and pages
 
@@ -178,6 +198,8 @@ E-mails are muted and tickets go only to the project's manager.
 ## 10. Known limits
 
 * The browser checks run as the Administrator only. The manager and refused-user checks (ACC-01, ACC-02, ACC-04) need two test users; they are written but have not been run, because minting a login for a real user was refused. Create two dedicated test users or name two users you allow.
+* Run the browser checks like this: `SESSIONS=$(cd sites && ../env/bin/python ../apps/auri_pms/e2e/sessions.py <site> Administrator) SITE=<site> URL=http://localhost:8002 python3 apps/auri_pms/e2e/dashboards.py`.
+* The **Client Status Report preview** width (CSR-01, CSR-02) and the order of the Health and cost blocks (HC-10b) are checked by hand, not in the browser suite.
+* The test data ("[TEST]" records) lowers the health score on purpose: overdue tickets, a past-due release, a sprint behind and open risks. A project with them can show 0 ("Off Track"). `e2e/test_data.py remove` deletes only those records.
 * What stays **Manual**: tile counts compared with the list, notes and drill-down clicks on the health tab, theme menu, the speed on a large site.
-* The restored cloud database breaks 7 older tests that depend on fixture data (an extra "Dev complete" status, the Reporter role with
-  *Can Log Time* off, extra Alpha tickets). A fresh site, as in GitHub Actions, passes them.
+* The test setup puts the shipped statuses and Project Role capabilities back inside each test (rolled back), so a site's own extra status (for example "Dev complete") or a tuned role no longer breaks the suite.

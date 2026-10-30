@@ -293,6 +293,7 @@ permission_query_conditions = {
 	"Time Entry": "auri_pms.permissions.time_entry_query",
 	"Work Item Category": "auri_pms.permissions.category_query",
 	"Project Module": "auri_pms.permissions.project_module_query",
+	"Project Dashboard Snapshot": "auri_pms.permissions.snapshot_query",
 }
 
 has_permission = {
@@ -305,6 +306,7 @@ has_permission = {
 	"Time Entry": "auri_pms.permissions.time_entry_has_permission",
 	"Work Item Category": "auri_pms.permissions.category_has_permission",
 	"Project Module": "auri_pms.permissions.project_module_has_permission",
+	"Project Dashboard Snapshot": "auri_pms.permissions.snapshot_has_permission",
 }
 
 override_doctype_dashboards = {

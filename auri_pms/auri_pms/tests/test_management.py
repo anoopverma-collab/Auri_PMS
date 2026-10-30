@@ -32,10 +32,10 @@ class TestManagementDashboard(TrackerTestCase):
 				}
 			).insert()
 
-	def test_only_admins_and_project_managers_get_it(self):
-		for user in (DEV, OUT):
-			with self.as_user(user), self.assertRaises(frappe.PermissionError):
-				api.get_management_dashboard()
+	def test_admins_and_project_members_get_it(self):
+		with self.as_user(OUT), self.assertRaises(frappe.PermissionError):  # not a member of any project
+			api.get_management_dashboard()
+		self.assertEqual({p["name"] for p in self.data(DEV)["projects"]}, {self.ALP})  # a Developer sees their project only
 		self.assertIn(self.ALP, {p["name"] for p in self.data(MGR)["projects"]})
 		self.assertTrue({self.ALP, self.BET} <= {p["name"] for p in self.data(TM)["projects"]})
 		self.assertNotIn(self.GAM, {p["name"] for p in self.data(TM)["projects"]})  # Auri PMS is off there
@@ -365,8 +365,8 @@ class TestManagementDashboardFilters(TrackerTestCase):
 	def test_a_project_outside_the_audience_is_refused(self):
 		self.assertRaises(frappe.PermissionError, self.data, project=self.GAM)  # Auri PMS is off there
 		self.assertRaises(
-			frappe.PermissionError, self.data, DEV, project=self.ALP
-		)  # a Developer has no dashboard
+			frappe.PermissionError, self.data, DEV, project=self.BET
+		)  # a Developer is not a member of Beta
 
 	def test_a_manager_is_offered_only_the_releases_of_the_projects_they_manage(self):
 		bet = frappe.get_doc("Project", self.BET)
@@ -396,3 +396,49 @@ class TestManagementDashboardFilters(TrackerTestCase):
 		self.assertThrows(
 			"does not belong to Project", lambda: self.save_as(MGR, item, sprint=self.bet_sprint)
 		)
+
+
+class TestCompanyRestriction(TrackerTestCase):
+	"""PMS Settings > Auri PMS Projects Ignore Company Restrictions."""
+
+	def restrict_dev_to_another_company(self):
+		companies = frappe.get_all("Company", pluck="name", limit=2)
+		if len(companies) < 2:
+			self.skipTest("needs two companies")
+		frappe.db.set_value("Project", self.ALP, "company", companies[0])
+		frappe.get_doc(
+			{
+				"doctype": "User Permission",
+				"user": DEV,
+				"allow": "Company",
+				"for_value": companies[1],
+				"apply_to_all_doctypes": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def dashboard_projects(self):
+		with self.as_user(DEV):
+			frappe.local.cache = {}
+			return {p["name"] for p in api.get_management_dashboard()["projects"]}
+
+	def test_ticked_a_member_still_sees_their_project_on_the_dashboard(self):
+		self.restrict_dev_to_another_company()
+		frappe.db.set_single_value("PMS Settings", "projects_ignore_company_restrictions", 1)
+		self.assertEqual(self.dashboard_projects(), {self.ALP})
+		with self.as_user(DEV):  # the standard Project list still follows the restriction
+			self.assertNotIn(self.ALP, frappe.get_list("Project", pluck="name"))
+
+	def test_unticked_the_company_restriction_hides_it(self):
+		self.restrict_dev_to_another_company()
+		frappe.db.set_single_value("PMS Settings", "projects_ignore_company_restrictions", 0)
+		self.assertEqual(self.dashboard_projects(), set())
+
+	def test_project_dropdowns_list_the_members_projects_despite_a_company_restriction(self):
+		self.restrict_dev_to_another_company()
+		frappe.db.set_single_value("PMS Settings", "projects_ignore_company_restrictions", 1)
+		with self.as_user(DEV):
+			rows = api.project_link_query("Project", "", "name", 0, 20, None)
+			self.assertEqual({r[0] for r in rows}, {self.ALP, self.BET})  # a member project and the public one
+			self.assertEqual(api.project_link_query("Project", "zzz-no-match", "name", 0, 20, None), [])
+		with self.as_user(OUT):  # not a member of any project
+			self.assertNotIn(self.ALP, [r[0] for r in api.project_link_query("Project", "", "name", 0, 20, None)])

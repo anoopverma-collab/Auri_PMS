@@ -1,0 +1,32 @@
+{
+	"actions": [],
+	"creation": "2026-10-30 12:00:00",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"module"
+	],
+	"fields": [
+		{
+			"fieldname": "module",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Module",
+			"options": "Project Module",
+			"reqd": 1
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-10-30 12:00:00",
+	"modified_by": "Administrator",
+	"module": "Auri PMS",
+	"name": "Project Enabled Module",
+	"owner": "Administrator",
+	"permissions": [],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

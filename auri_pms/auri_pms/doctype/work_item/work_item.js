@@ -6,43 +6,59 @@ const WI_API = "auri_pms.auri_pms.api";
 frappe.ui.form.on("Work Item", {
 	setup(frm) {
 		frm.set_query("project", () => ({ query: `${WI_API}.project_create_query` }));
-		frm.set_query("tracker", () => ({
+		// Every project-bound dropdown waits for the project: say so once, then offer nothing.
+		const need_project = (query) => () => {
+			if (frm.doc.project) return query();
+			if (!frm._project_msg_shown) {
+				frm._project_msg_shown = true;
+				frappe.show_alert({ message: __("Select a Project first"), indicator: "orange" }, 5);
+			}
+			return { filters: { name: ["in", [""]] } };
+		};
+		frm.set_query("tracker", need_project(() => ({
 			query: `${WI_API}.tracker_query`,
 			filters: { project: frm.doc.project },
-		}));
-		frm.set_query("status", () => ({
+		})));
+		frm.set_query("status", need_project(() => ({
 			query: `${WI_API}.status_query`,
 			filters: {
 				work_item: frm.is_new() ? "" : frm.doc.name,
 				tracker: frm.doc.tracker,
 				project: frm.doc.project,
 			},
-		}));
-		frm.set_query("assigned_to", () => ({
+		})));
+		frm.set_query("assigned_to", need_project(() => ({
 			query: `${WI_API}.assignee_query`,
 			filters: { project: frm.doc.project },
-		}));
-		frm.set_query("user", "additional_assignees", () => ({
+		})));
+		frm.set_query("user", "additional_assignees", need_project(() => ({
 			query: `${WI_API}.assignee_query`,
 			filters: { project: frm.doc.project },
-		}));
-		frm.set_query("category", () => ({ filters: { project: frm.doc.project } }));
-		frm.set_query("project_module", () => ({ filters: { project: frm.doc.project } }));
-		frm.set_query("release", () => ({ filters: { project: frm.doc.project, status: "Open" } }));
-		frm.set_query("sprint", () => {
+		})));
+		frm.set_query("category", need_project(() => ({
+			query: `${WI_API}.category_link_query`,
+			filters: { project: frm.doc.project },
+		})));
+		frm.set_query("project_module", need_project(() => ({
+			query: `${WI_API}.module_query`,
+			filters: { project: frm.doc.project },
+		})));
+		frm.set_query("release", need_project(() => ({ filters: { project: frm.doc.project, status: "Open" } })));
+		frm.set_query("sprint", need_project(() => {
 			const statuses = ["Planned", "Active"];
 			// PMS Settings > Allow Completed Sprint for Closed Tickets
 			const closed_ok = frm.doc.__onload && cint(frm.doc.__onload.allow_completed_sprint_for_closed) && cint(frm.doc.is_closed);
 			if (closed_ok) statuses.push("Completed");
 			return { filters: { project: frm.doc.project, status: ["in", statuses] } };
-		});
-		frm.set_query("parent_work_item", () => ({
+		}));
+		frm.set_query("parent_work_item", need_project(() => ({
 			query: `${WI_API}.parent_query`,
 			filters: { project: frm.doc.project, work_item: frm.is_new() ? "" : frm.doc.name },
-		}));
+		})));
 	},
 
 	refresh(frm) {
+		frm.trigger("status_hint");
 		frm.trigger("move_connections");
 		frm.trigger("set_indicator");
 		frm.trigger("summary_chips");
@@ -50,6 +66,12 @@ frappe.ui.form.on("Work Item", {
 		frm.trigger("lock_done_percent");
 		// PMS Settings > Keep Closed On Visible and Editable: an editable field is also shown while empty
 		if (frm.doc.__onload && cint(frm.doc.__onload.keep_closed_on_editable)) frm.set_df_property("closed_on", "read_only", 0);
+		// Project Role > Field Rules: fields the role may only view are locked once the item exists.
+		if (!frm.is_new() && frm.doc.__onload) {
+			(frm.doc.__onload.view_only_fields || []).forEach((f) => frm.set_df_property(f, "read_only", 1));
+		}
+		// PMS Settings > Waiting Since Editable
+		if (frm.doc.__onload && cint(frm.doc.__onload.waiting_since_editable)) frm.set_df_property("client_dependency_since", "read_only", 0);
 		if (frm.is_new()) return;
 		frm.add_custom_button(__("Log Time"), () => wi_log_time(frm));
 		frm.add_custom_button(__("Add Subtask"), () => {
@@ -122,14 +144,23 @@ frappe.ui.form.on("Work Item", {
 
 	tracker(frm) {
 		if (!frm.is_new() || !frm.doc.tracker) return;
-		frappe.db.get_value("Ticket Type", frm.doc.tracker, "default_status").then((r) => {
-			if (r.message && r.message.default_status) frm.set_value("status", r.message.default_status);
+		frappe.xcall(`${WI_API}.get_default_status`, { tracker: frm.doc.tracker }).then((status) => {
+			if (status) frm.set_value("status", status);
 		});
 	},
 
+	status_hint(frm) {
+		// The statuses come from the project, so ask for it first.
+		const hint = frm.doc.project ? "" : __("Select a Project first to choose a Status");
+		frm.set_df_property("status", "description", hint);
+		frm.set_df_property("status", "placeholder", hint);
+	},
+
 	project(frm) {
+		frm._project_msg_shown = false;
+		frm.trigger("status_hint");
 		if (!frm.is_new()) return;
-		["tracker", "assigned_to", "category", "project_module", "release", "sprint", "parent_work_item"].forEach((f) => {
+		["tracker", "status", "assigned_to", "category", "project_module", "release", "sprint", "parent_work_item"].forEach((f) => {
 			if (frm.doc[f] && f !== "parent_work_item") frm.set_value(f, null);
 		});
 		wi_load_project_custom(frm);
@@ -162,7 +193,7 @@ function wi_log_time(frm) {
 			{ fieldname: "activity_type", label: __("Activity"), fieldtype: "Link", options: "Activity Type", reqd: 1 },
 			{ fieldname: "date", label: __("Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1 },
 			{ fieldname: "is_billable", label: __("Billable"), fieldtype: "Check", default: 1 },
-			{ fieldname: "comment", label: __("Comment"), fieldtype: "Small Text" },
+			{ fieldname: "comment", label: __("Comment"), fieldtype: "Small Text", reqd: 1 },
 		],
 		(values) => {
 			frappe

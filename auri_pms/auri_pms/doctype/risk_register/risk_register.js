@@ -4,6 +4,10 @@
 const RISK_COLORS = { Critical: "red", High: "orange", Medium: "yellow", Low: "green" };
 
 frappe.ui.form.on("Risk Register", {
+	setup(frm) {
+		frm.set_query("project", () => ({ query: "auri_pms.auri_pms.api.project_link_query" }));
+	},
+
 	refresh(frm) {
 		frm.status_on_load = frm.doc.status;
 		frm.set_df_property("closing_remark", "reqd", 0);

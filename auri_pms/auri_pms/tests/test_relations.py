@@ -40,6 +40,7 @@ class TestRelations(TrackerTestCase):
 
 	def test_t063_reporter_relates_to_item_it_cannot_edit(self):
 		"""T-063: rep relates own item to dev's item; the reverse row is written despite R-15."""
+		self.set_see_all(True, "Reporter")  # the rule under test is editing, so the reporter may see the item
 		own, theirs = self.new_item(REP), self.new_item(DEV)
 		self.relate(REP, own, "Relates to", theirs)
 		self.assertIn(("Relates to", own.name), self.rows(theirs))

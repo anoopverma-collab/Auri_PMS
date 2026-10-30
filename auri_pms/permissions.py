@@ -11,13 +11,14 @@ import frappe
 from frappe.utils import cint
 
 from auri_pms.auri_pms.utils import (
+	can_create_doctype,
+	can_manage_modules,
 	get_capabilities,
 	get_member_role,
 	has_unrestricted_project_view,
 	is_admin,
 	is_allocated,
 	is_user_enabled,
-	members_see_all_work_items,
 )
 
 
@@ -64,19 +65,18 @@ def project_query(user: str | None = None, doctype: str | None = None) -> str:
 def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
 	"""permission_query_conditions for Work Item.
 
-	With *Members See All Work Items* unticked, a member whose Project Role cannot manage members sees in
-	their projects only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by
-	them (Author); every other
-	project (a project they manage, or a public project they are not a member of) is unchanged."""
+	A member whose Project Role has *Can See All Work Items* ticked sees every Work Item of the project. With it
+	unticked the member sees only the Work Items assigned to them (Assigned To or Additional Assignees) or raised
+	by them (Author). Admins, and a public project the user is not a member of, are unchanged."""
 	user = user or frappe.session.user
 	scope = _project_scope(user, "`tabWork Item`.project")
-	if not scope or not is_user_enabled(user) or members_see_all_work_items():
+	if not scope or not is_user_enabled(user):
 		return scope
 	quoted = frappe.db.escape(user)
 	limited = (
 		"`tabWork Item`.project in (select pm.parent from `tabProject Member` pm "
 		f"where pm.parenttype = 'Project' and pm.user = {quoted} and ifnull(pm.project_role, '') not in "
-		"(select pr.name from `tabProject Role` pr where pr.can_manage_members = 1))"
+		"(select pr.name from `tabProject Role` pr where pr.can_see_all_items = 1))"
 	)
 	own = (
 		f"(`tabWork Item`.assigned_to = {quoted} or `tabWork Item`.author = {quoted} or `tabWork Item`.name in "
@@ -87,12 +87,12 @@ def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
 
 
 def sees_only_own_work_items(project: str | None, user: str) -> bool:
-	"""True when ``user`` is a member of ``project`` who may see only the Work Items assigned to them."""
-	if not project or is_admin(user) or members_see_all_work_items():
+	"""True when ``user`` is a member of ``project`` whose Project Role may see only the Work Items assigned to them."""
+	if not project or is_admin(user):
 		return False
 	if not get_member_role(project, user):
 		return False
-	return not get_capabilities(project, user, members_only=True)["can_manage_members"]
+	return not get_capabilities(project, user, members_only=True)["can_see_all_items"]
 
 
 def release_query(user: str | None = None, doctype: str | None = None) -> str:
@@ -121,13 +121,30 @@ def status_report_query(user: str | None = None, doctype: str | None = None) -> 
 
 
 def project_module_query(user: str | None = None, doctype: str | None = None) -> str:
-	"""permission_query_conditions for Project Module."""
-	return _project_scope(user or frappe.session.user, "`tabProject Module`.project")
+	"""permission_query_conditions for Project Module: shared modules are listed only to those who may manage them."""
+	user = user or frappe.session.user
+	return "" if can_manage_modules(user) else "(1=0)"
+
+
+def snapshot_query(user: str | None = None, doctype: str | None = None) -> str:
+	"""permission_query_conditions for Project Dashboard Snapshot."""
+	return _project_scope(user or frappe.session.user, "`tabProject Dashboard Snapshot`.project")
 
 
 def category_query(user: str | None = None, doctype: str | None = None) -> str:
-	"""permission_query_conditions for Work Item Category."""
-	return _project_scope(user or frappe.session.user, "`tabWork Item Category`.project")
+	"""permission_query_conditions for Work Item Category: only the categories of projects the user manages them in.
+
+	Members still pick a category on a work item: that dropdown has its own query (``category_link_query``)."""
+	user = user or frappe.session.user
+	if is_admin(user):
+		return ""
+	if not is_user_enabled(user):
+		return "(1=0)"
+	return (
+		"`tabWork Item Category`.project in (select pm.parent from `tabProject Member` pm "
+		"join `tabProject Role` pr on pr.name = pm.project_role and pr.can_manage_categories = 1 "
+		f"where pm.parenttype = 'Project' and pm.user = {frappe.db.escape(user)})"
+	)
 
 
 # --------------------------------------------------------------------------- has_permission
@@ -200,13 +217,25 @@ def time_entry_has_permission(doc, ptype: str | None = None, user: str | None = 
 
 
 def project_module_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
-	"""has_permission hook for Project Module."""
+	"""has_permission hook for Project Module: only those who may manage modules see or change them."""
+	return can_manage_modules(user or frappe.session.user)
+
+
+def snapshot_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
+	"""has_permission hook for Project Dashboard Snapshot."""
 	return _has_project_permission(doc, ptype, user)
 
 
 def category_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
-	"""has_permission hook for Work Item Category."""
-	return _has_project_permission(doc, ptype, user)
+	"""has_permission hook for Work Item Category: only those who may manage categories on its project."""
+	user = user or frappe.session.user
+	if is_admin(user):
+		return True
+	if doc.is_new() and not doc.get("project"):
+		return can_create_doctype("Work Item Category", user)  # the form is opened before a project is chosen
+	return _has_project_permission(doc, ptype, user) and get_capabilities(doc.get("project"), user)[
+		"can_manage_categories"
+	]
 
 
 def sprint_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:

@@ -3,6 +3,6 @@
 
 frappe.ui.form.on("Project Module", {
 	refresh(frm) {
-		frm.set_query("module_lead", () => ({ query: "auri_pms.auri_pms.api.assignee_query", filters: { project: frm.doc.project } }));
+		frm.set_query("module_lead", () => ({ filters: { enabled: 1 } }));
 	},
 });

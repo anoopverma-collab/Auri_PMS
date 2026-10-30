@@ -29,3 +29,8 @@ auri_pms.patches.v1_0.add_sections_to_summary_templates
 auri_pms.patches.v1_0.remove_report_bcc
 auri_pms.patches.v1_0.set_summary_tile_switches
 auri_pms.patches.v1_0.realign_project_tab
+auri_pms.patches.v1_0.set_project_statuses
+auri_pms.patches.v1_0.tag_modules_to_projects
+auri_pms.patches.v1_0.set_role_permissions_summary
+auri_pms.patches.v1_0.planning_checkbox_to_field_rules
+auri_pms.patches.v1_0.members_see_all_to_project_role

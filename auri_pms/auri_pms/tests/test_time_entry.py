@@ -99,3 +99,6 @@ class TestTimeEntry(TrackerTestCase):
 		"""T-100: an entry without a work item saves on the project."""
 		entry = self.logged_time(DEV, None, 1, project=self.ALP)
 		self.assertEqual((entry.work_item, entry.project), (None, self.ALP))
+
+	def test_comment_is_required(self):
+		self.assertThrows("comment", lambda: self.logged_time(DEV, project=self.ALP, comment=""), exc=frappe.MandatoryError)

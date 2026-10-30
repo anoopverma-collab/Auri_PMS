@@ -5,7 +5,7 @@ from __future__ import annotations
 import frappe
 
 from auri_pms.auri_pms.risk import risk_thresholds
-from auri_pms.auri_pms.utils import portfolio_projects
+from auri_pms.auri_pms.utils import create_permissions, portfolio_projects
 
 SIDEBAR = "Auri PMS"
 
@@ -41,5 +41,7 @@ def boot_session(bootinfo) -> None:
 	drop_stale_generated_sidebar()
 	if frappe.session.user != "Guest":
 		bootinfo.auri_pms_risk_thresholds = risk_thresholds()
-		# managers, and members who manage at least one project (their Project Role can manage members)
+		# Auri PMS Admins, and everyone who is a member of at least one Auri PMS project
 		bootinfo.auri_pms_portfolio = bool(portfolio_projects())
+		# the New button of each project record follows the same table as the server (CREATE_RULES)
+		bootinfo.auri_pms_can_create = create_permissions()
