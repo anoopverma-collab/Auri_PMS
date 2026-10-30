@@ -58,7 +58,8 @@ def _take_for_all(period_type: str) -> None:
 			take_snapshot(project, period_type)
 		except Exception:
 			frappe.log_error(title=f"Dashboard snapshot failed for {project}")
-	frappe.db.commit()
+	# a scheduled job has no request to commit it; each project's snapshot is kept even if a later one fails
+	frappe.db.commit()  # nosemgrep
 
 
 def weekly() -> None:
