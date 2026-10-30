@@ -22,11 +22,17 @@ INDICATORS = {s[0]: s[5] for s in STATUSES}
 
 _FLAGS_ALL = (
 	"can_create_items can_edit_any_item can_delete_items can_manage_releases can_manage_categories "
-	"can_log_time can_edit_others_time can_manage_members can_be_assigned"
+	"can_log_time can_edit_others_time can_manage_members can_be_assigned can_see_all_items"
 ).split()
 PROJECT_ROLES = {
 	"Manager": _FLAGS_ALL,
-	"Developer": ["can_create_items", "can_edit_any_item", "can_log_time", "can_be_assigned"],
+	"Developer": [
+		"can_create_items",
+		"can_edit_any_item",
+		"can_log_time",
+		"can_be_assigned",
+		"can_see_all_items",
+	],
 	"Reporter": ["can_create_items", "can_log_time"],
 	"Functional": [
 		"can_create_items",
@@ -34,8 +40,21 @@ PROJECT_ROLES = {
 		"can_manage_categories",
 		"can_log_time",
 		"can_be_assigned",
+		"can_see_all_items",
 	],
 }
+
+# Work Item fields a role other than Manager may only view once the item exists (Project Role > Field Rules).
+PLANNING_FIELDS = (
+	"subject",
+	"project",
+	"sprint",
+	"release",
+	"start_date",
+	"due_date",
+	"actual_start_date",
+	"actual_end_date",
+)
 
 BUG_WORKFLOW = [
 	("New", "In Progress", None),
@@ -125,7 +144,12 @@ def create_default_data() -> None:
 			},
 		)
 	for role, flags in PROJECT_ROLES.items():
-		insert_if_missing("Project Role", role, {"role_name": role, **dict.fromkeys(flags, 1)})
+		rules = (
+			[{"field_name": f, "can_edit": 0} for f in PLANNING_FIELDS] if role not in ("Manager",) else []
+		)
+		insert_if_missing(
+			"Project Role", role, {"role_name": role, **dict.fromkeys(flags, 1), "field_rules": rules}
+		)
 	for tracker, colour in TRACKERS.items():
 		values = {
 			"tracker_name": tracker,

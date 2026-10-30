@@ -21,7 +21,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from auri_pms.auri_pms.utils import portfolio_projects
+from auri_pms.auri_pms.utils import pms_project_rows, portfolio_projects
 
 UPCOMING_DAYS = 14
 LIST_LIMIT = 15
@@ -88,7 +88,9 @@ def get_management_data(
 	allowed = portfolio_projects()
 	if not allowed:
 		frappe.throw(
-			_("Delivery & Health is for Auri PMS Admins and for the managers of a project."),
+			_(
+				"Delivery & Health is for people who are members of an Auri PMS project, and for Auri PMS Admins."
+			),
 			frappe.PermissionError,
 		)
 	today_ = getdate(today())
@@ -97,8 +99,7 @@ def get_management_data(
 	for name in selected:
 		if name not in allowed:
 			frappe.throw(_("{0} is not one of your projects").format(name), frappe.PermissionError)
-	managed = frappe.get_list(
-		"Project",
+	managed = pms_project_rows(
 		filters={"pms_enabled": 1, "name": ["in", allowed]},
 		fields=["name", "project_name", "tracker_identifier", "status"],
 		order_by="project_name asc",

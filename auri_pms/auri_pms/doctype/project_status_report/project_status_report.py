@@ -3,14 +3,29 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, now_datetime
 
 OPEN_STATUSES = ("Queued", "Partially Sent")
 
 
+def check_system_record(doc) -> None:
+	"""Records made by a job or a report action are saved with ignore_permissions; anyone else needs an admin role."""
+	from auri_pms.auri_pms.utils import is_admin
+
+	if not doc.flags.ignore_permissions and not is_admin():
+		frappe.throw(
+			_("{0} records are created by the system").format(_(doc.doctype)), frappe.PermissionError
+		)
+
+
 class ProjectStatusReport(Document):
 	"""A sent (or scheduled) client status report with the exact HTML that went out and what happened to each email."""
+
+	def before_insert(self) -> None:
+		"""Status reports are logged when they are sent; only an admin may create one by hand."""
+		check_system_record(self)
 
 	def onload(self) -> None:
 		"""Show the current delivery state when an unfinished report is opened."""

@@ -6,18 +6,41 @@
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
-		"work_item",
+		"section_details",
 		"project",
-		"user",
-		"employee",
+		"work_item",
+		"column_break_details",
 		"date",
+		"user",
+		"section_time",
 		"hours",
 		"activity_type",
+		"column_break_time",
 		"is_billable",
+		"section_comment",
 		"comment",
+		"section_links",
+		"employee",
+		"column_break_links",
 		"release"
 	],
 	"fields": [
+		{
+			"fieldname": "section_details",
+			"fieldtype": "Section Break",
+			"label": "Details"
+		},
+		{
+			"fieldname": "project",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Project",
+			"link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
+			"options": "Project",
+			"reqd": 1,
+			"search_index": 1
+		},
 		{
 			"description": "Optional: time can be logged on project only",
 			"fieldname": "work_item",
@@ -28,13 +51,15 @@
 			"search_index": 1
 		},
 		{
-			"fieldname": "project",
-			"fieldtype": "Link",
+			"fieldname": "column_break_details",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Today",
+			"fieldname": "date",
+			"fieldtype": "Date",
 			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Project",
-			"link_filters": "[[\"Project\",\"pms_enabled\",\"=\",1]]",
-			"options": "Project",
+			"label": "Date",
 			"reqd": 1,
 			"search_index": 1
 		},
@@ -49,19 +74,9 @@
 			"search_index": 1
 		},
 		{
-			"fieldname": "employee",
-			"fieldtype": "Link",
-			"label": "Employee",
-			"options": "Employee"
-		},
-		{
-			"default": "Today",
-			"fieldname": "date",
-			"fieldtype": "Date",
-			"in_list_view": 1,
-			"label": "Date",
-			"reqd": 1,
-			"search_index": 1
+			"fieldname": "section_time",
+			"fieldtype": "Section Break",
+			"label": "Time"
 		},
 		{
 			"fieldname": "hours",
@@ -79,6 +94,10 @@
 			"reqd": 1
 		},
 		{
+			"fieldname": "column_break_time",
+			"fieldtype": "Column Break"
+		},
+		{
 			"default": "1",
 			"description": "Counts towards billable hours in the project health dashboard",
 			"fieldname": "is_billable",
@@ -88,9 +107,33 @@
 			"label": "Billable"
 		},
 		{
+			"fieldname": "section_comment",
+			"fieldtype": "Section Break",
+			"label": "What was done"
+		},
+		{
 			"fieldname": "comment",
 			"fieldtype": "Small Text",
-			"label": "Comment"
+			"label": "Comment",
+			"reqd": 1
+		},
+		{
+			"fieldname": "section_links",
+			"fieldtype": "Section Break",
+			"label": "Linked records",
+			"collapsible": 1,
+			"depends_on": "eval:doc.employee || doc.release"
+		},
+		{
+			"fieldname": "employee",
+			"fieldtype": "Link",
+			"label": "Employee",
+			"options": "Employee",
+			"depends_on": "eval:doc.employee"
+		},
+		{
+			"fieldname": "column_break_links",
+			"fieldtype": "Column Break"
 		},
 		{
 			"fetch_from": "work_item.release",
@@ -98,7 +141,8 @@
 			"fieldtype": "Link",
 			"label": "Release",
 			"options": "Release",
-			"read_only": 1
+			"read_only": 1,
+			"depends_on": "eval:doc.release"
 		}
 	],
 	"issingle": 0,

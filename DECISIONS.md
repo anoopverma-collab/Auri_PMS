@@ -295,6 +295,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     `get_insight_projects`: the Auri PMS projects the user is a member of, or every one for an admin (`is_allocated`). Reading a public
     project elsewhere is unchanged; it simply is not part of a person's analysis. The Work Item condition (*Members See All Work Items*) still applies on top.
 
+79. **Raw SQL in Insights is gone.** `Context` reads Work Items with `frappe.get_list`, which applies the same permission query
+    (*Members See All Work Items*) the raw SQL copied by hand, so the rule lives in one place. `get_insight` dispatches through the fixed
+    `REPORT_FUNCTIONS` map. The Frappe Semgrep rules are the reference for what counts as a finding; run them before a release
+    (`semgrep --config <semgrep-rules>/rules .`).
+
 ## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.
@@ -318,3 +323,16 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 * **Changing a record needs allocation.** `has_permission` refuses write, delete, submit, cancel and amend on any project-bound
   document (and on a PMS-enabled Project) unless `is_allocated(project, user)`: a member of the project, an Auri PMS Admin or a
   System Manager. An ERPNext Projects role does not change that.
+
+
+## Per-project access and visibility (Oct-Nov 2026)
+
+* **Configuration lives on the project.** Statuses and modules are shared records that each project tags (*Enabled Statuses*, *Enabled Modules*). An empty table offers nothing; switching Auri PMS on, and a one-time patch for existing projects, list everything as a start. Nothing is hard coded to a company or a name.
+* **Field rules on the Project Role, not on the Frappe role.** Frappe field permissions (permlevel) follow Frappe roles, which cannot tell a Developer from a Manager on the same project. *Project Role > Work Item Field Rules* lists every Work Item field and makes unticked ones view only. It is checked on save, so the form, list edits, bulk moves and the API are all covered; admins and system actions (`ignore_tracker_rules`) skip it. Rules apply to existing items: whoever may create an item fills every field.
+* **Who sees which work items is a role setting.** *Can See All Work Items* is on the Project Role, so one person can see everything on one project and only their own on another. The site-wide switch was removed so there is one control.
+* **Management is the Auri PMS Admin role.** Management must see and edit every project, so no separate read-only role was added; Admin skips the project rules.
+* **One create table.** Frappe decides the New button from the doctype permission, which only knows the Frappe role. `CREATE_RULES` maps each project record to the capability it needs, the server sends the answer at login and `frappe.model.can_create` is wrapped to use it. The save checks stay as the real control.
+* **Hiding a record without taking the permission away.** Project managers hold only the *Auri PMS User* Frappe role, so Project Module and Work Item Category keep it and are hidden with `permission_query_conditions` and `has_permission` hooks instead. Their dropdowns use their own queries (`module_query`, `category_link_query`). Project Role, Work Item Status and Ticket Type simply lose read for *Auri PMS User*.
+* **Company User Permissions.** A Company permission hides a project from Frappe's Project list, which the dashboards used, even for a member. `pms_project_rows` reads the project rows without it and applies the membership rule itself, controlled by *Auri PMS Projects Ignore Company Restrictions*. The standard Project list and form still follow Frappe's restriction because an app cannot grant back what a User Permission denies.
+* **Two project lists.** `portfolio_projects` (every project the user belongs to) feeds Delivery & Health and the Portfolio; `managed_projects` (roles that can manage members) still gates project notes and the team workload.
+* **Patches insert child rows directly.** Patches run before the Custom Fields are synced, so they write the child rows of the new tables themselves instead of appending through the Project document.

@@ -2,6 +2,10 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Release", {
+	setup(frm) {
+		frm.set_query("project", () => ({ query: "auri_pms.auri_pms.api.project_link_query" }));
+	},
+
 	refresh(frm) {
 		if (frm.is_new()) return;
 		const colors = { Open: "green", Locked: "orange", Closed: "gray" };

@@ -90,18 +90,18 @@ class TestQualityAllProjects(TrackerTestCase):
 		self.assertEqual(self.quality(DEV).tiles.open, before.open)
 		self.assertEqual(self.quality(DEV).tiles.opened_period, before.opened_period)
 
-	def test_members_see_only_their_own_bugs_when_the_setting_is_off(self):
+	def test_members_see_only_their_own_bugs_when_the_role_box_is_unticked(self):
 		mine = self.bug(self.ALP, assigned_to=DEV)
 		self.bug(self.ALP)  # somebody else's
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
+		self.set_see_all(True)
 		self.assertEqual(self.quality(DEV, self.ALP).tiles.open, 2)
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		limited = self.quality(DEV, self.ALP)
 		self.assertEqual(limited.tiles.open, 1)
 		self.assertEqual(self.quality(MGR, self.ALP).tiles.open, 2)  # a project manager still sees all
 		self.assertTrue(mine.name)
 
-	def test_insights_follow_the_setting_too(self):
+	def test_insights_follow_the_role_box_too(self):
 		"""Insights reads with raw SQL, so it carries the same condition as the Work Item list."""
 		from auri_pms.auri_pms import insights
 
@@ -117,9 +117,9 @@ class TestQualityAllProjects(TrackerTestCase):
 				if "pen" in str(k["label"]).lower() or "open" in str(k["label"]).lower()
 			)
 
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
+		self.set_see_all(True)
 		everything = int(open_total())
-		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.set_see_all(False)
 		self.assertLess(int(open_total()), everything)
 
 	def test_a_project_without_tickets_gives_an_empty_dashboard(self):
@@ -289,7 +289,7 @@ class TestHealthAndCostTab(TrackerTestCase):
 			self.assertEqual(k.closed, m["tasks_completed"], user)
 
 	def test_the_same_users_are_refused_by_both(self):
-		for user in (DEV, OUT):
+		for user in (OUT,):
 			with self.as_user(user):
 				with self.assertRaises(frappe.PermissionError):
 					api.get_portfolio("3m")
@@ -299,7 +299,7 @@ class TestHealthAndCostTab(TrackerTestCase):
 	def test_the_health_tab_boot_flag_matches_the_dashboard_access(self):
 		from auri_pms.auri_pms.utils import portfolio_projects
 
-		for user, allowed in ((TM, True), (MGR, True), (DEV, False), (OUT, False)):
+		for user, allowed in ((TM, True), (MGR, True), (DEV, True), (OUT, False)):
 			with self.as_user(user):
 				self.assertEqual(bool(portfolio_projects()), allowed, user)
 

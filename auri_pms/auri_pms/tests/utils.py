@@ -115,6 +115,13 @@ def ensure_outgoing_account() -> None:
 	).insert(ignore_permissions=True)
 
 
+def flags_all() -> list[str]:
+	"""The capability checkboxes of a Project Role."""
+	from auri_pms.auri_pms.utils import CAPABILITY_FIELDS
+
+	return list(CAPABILITY_FIELDS)
+
+
 def build_world() -> frappe._dict:
 	"""Create the shared fixture world (spec section 8) and return its record names."""
 	ensure_outgoing_account()
@@ -156,7 +163,26 @@ class TrackerTestCase(IntegrationTestCase):
 		super().setUp()
 		frappe.set_user("Administrator")
 		frappe.db.savepoint("track_test")
+		self.use_shipped_defaults()
 		clear_cache()
+
+	def set_see_all(self, value: bool, role: str = "Developer") -> None:
+		"""Project Role > Can See All Work Items for ``role`` (within this test only)."""
+		frappe.db.set_value("Project Role", role, "can_see_all_items", int(value))
+		clear_cache()
+
+	def use_shipped_defaults(self) -> None:
+		"""Within this test only (the savepoint is rolled back): the statuses and Project Role capabilities the app installs.
+
+		A site that added a status (for example "Dev complete") or tuned a role would otherwise change what the tests expect."""
+		from auri_pms.install import PROJECT_ROLES, STATUSES
+
+		shipped = {s[0] for s in STATUSES}
+		for name in frappe.get_all("Work Item Status", pluck="name"):
+			frappe.db.set_value("Work Item Status", name, "is_active", int(name in shipped))
+		for role, flags in PROJECT_ROLES.items():
+			if frappe.db.exists("Project Role", role):
+				frappe.db.set_value("Project Role", role, {f: int(f in flags) for f in flags_all()})
 
 	def tearDown(self) -> None:
 		frappe.set_user("Administrator")
@@ -205,6 +231,7 @@ class TrackerTestCase(IntegrationTestCase):
 		self, user, work_item=None, hours=1, project=None, date=None, activity="Development", **kw
 	):
 		"""Insert a Time Entry as ``user``."""
+		kw.setdefault("comment", "Worked on it")  # a comment is required on every entry
 		with self.as_user(user):
 			return frappe.get_doc(
 				{

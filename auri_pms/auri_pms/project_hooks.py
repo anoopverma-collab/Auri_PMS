@@ -40,6 +40,7 @@ TRACKER_FIELDS = {
 	"is_public",
 	"tracker_members",
 	"enabled_trackers",
+	"enabled_statuses",
 }
 
 
@@ -53,6 +54,7 @@ def validate(doc, method: str | None = None) -> None:
 	set_role_permissions(doc)
 	validate_tracker_permissions(doc, old)
 	set_default_ticket_types(doc, old)
+	set_default_statuses(doc, old)
 
 
 def sync_custom_values(doc) -> None:
@@ -193,6 +195,18 @@ def set_default_ticket_types(doc, old) -> None:
 		doc.append("enabled_trackers", {"tracker": name})
 
 
+def set_default_statuses(doc, old) -> None:
+	"""When Auri PMS is switched on, list every active Work Item Status unless some were already chosen."""
+	if not cint(doc.get("pms_enabled")) or (old and cint(old.get("pms_enabled"))):
+		return
+	if doc.get("enabled_statuses"):
+		return
+	for name in frappe.get_all(
+		"Work Item Status", filters={"is_active": 1}, pluck="name", order_by="sequence"
+	):
+		doc.append("enabled_statuses", {"status": name})
+
+
 def validate_identifier(doc, old) -> None:
 	"""R-02: 2-10 chars, uppercase letters/digits, starts with a letter, unique, set once."""
 	value = doc.get("tracker_identifier")
@@ -267,12 +281,13 @@ def _tracker_state(doc) -> tuple:
 		cint(doc.get("is_public")),
 		sorted((r.user, r.project_role) for r in doc.get("tracker_members") or []),
 		sorted(r.tracker for r in doc.get("enabled_trackers") or []),
+		sorted(r.status for r in doc.get("enabled_statuses") or []),
 	)
 
 
 def validate_tracker_permissions(doc, old) -> None:
 	"""Only a manager or a member with can_manage_members changes members, visibility or trackers."""
-	empty = (0, [], [])
+	empty = (0, [], [], [])
 	before = _tracker_state(old) if old else empty
 	if _tracker_state(doc) != before and not is_admin():
 		allowed = bool(old) and get_capabilities(doc.name)["can_manage_members"]

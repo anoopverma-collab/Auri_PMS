@@ -18,6 +18,7 @@ CAPABILITY_FIELDS: tuple[str, ...] = (
 	"can_edit_others_time",
 	"can_manage_members",
 	"can_be_assigned",
+	"can_see_all_items",
 )
 # Full access to every project. Auri PMS Manager is not here: a Manager works like a member and sees only the projects they are on.
 ADMIN_ROLES = frozenset({"Auri PMS Admin", "System Manager"})
@@ -69,12 +70,44 @@ def has_unrestricted_project_view(user: str) -> bool:
 	return is_admin(user) or bool((ERPNEXT_PROJECT_ROLES) & set(frappe.get_roles(user)))
 
 
+def ignore_company_restrictions() -> bool:
+	"""PMS Settings > Auri PMS Projects Ignore Company Restrictions. A site that never saved the setting keeps it ticked.
+
+	A Check that was never saved reads as 0 through the settings document, so the stored row is looked at itself:
+	no row means the field default (ticked)."""
+	row = frappe.db.sql(
+		"select value from `tabSingles` where doctype = 'PMS Settings' and field = 'projects_ignore_company_restrictions'"
+	)
+	return True if not row else bool(cint(row[0][0]))
+
+
+def pms_project_rows(filters: dict | None = None, **kwargs) -> list:
+	"""Project rows for the Auri PMS screens: like ``frappe.get_list``, but with *Auri PMS Projects Ignore Company
+	Restrictions* ticked the rows are the projects the person belongs to (or that are public), not what a Company
+	User Permission leaves of them. An admin, or someone with an ERPNext project role, sees every project as before."""
+	if not ignore_company_restrictions():
+		return frappe.get_list("Project", filters=filters, **kwargs)
+	user = frappe.session.user
+	filters = dict(filters or {})
+	if not has_unrestricted_project_view(user):
+		if not is_user_enabled(user):
+			return []
+		visible = set(
+			frappe.get_all("Project Member", filters={"parenttype": "Project", "user": user}, pluck="parent")
+		) | set(frappe.get_all("Project", filters={"is_public": 1}, pluck="name"))
+		existing = filters.get("name")
+		if isinstance(existing, (list, tuple)) and len(existing) == 2 and existing[0] == "in":
+			visible &= set(existing[1])
+		filters["name"] = ["in", sorted(visible) or [""]]
+	return frappe.get_all("Project", filters=filters, **kwargs)
+
+
 def portfolio_projects(user: str | None = None) -> list[str]:
-	"""Projects whose figures ``user`` sees on the Portfolio.
+	"""Projects whose figures ``user`` sees on Delivery & Health (the Portfolio).
 
 	Auri PMS Admins and System Managers see every project with Auri PMS switched on. Anyone else (an Auri PMS
-	Manager included) sees only the projects where their Project Role can manage members; an empty list
-	means no Portfolio at all.
+	Manager or Auri PMS User) sees the projects they are a member of, whatever their Project Role; an empty list
+	means no Delivery & Health at all.
 	"""
 	user = user or frappe.session.user
 	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
@@ -82,12 +115,30 @@ def portfolio_projects(user: str | None = None) -> list[str]:
 		return enabled
 	if not is_user_enabled(user):
 		return []
+	mine = set(
+		frappe.get_all(
+			"Project Member",
+			filters={"parenttype": "Project", "user": user, "parent": ["in", enabled or [""]]},
+			pluck="parent",
+		)
+	)
+	return [p for p in enabled if p in mine]
+
+
+def managed_projects(user: str | None = None) -> list[str]:
+	"""Projects ``user`` manages: every project for an admin, otherwise those where their Project Role can manage members.
+
+	Notes on a project and its team workload are for these people, not for every member."""
+	user = user or frappe.session.user
+	enabled = portfolio_projects(user)
+	if is_admin(user) or not enabled:
+		return enabled
 	managing_roles = set(frappe.get_all("Project Role", filters={"can_manage_members": 1}, pluck="name"))
 	mine = {
 		m.parent
 		for m in frappe.get_all(
 			"Project Member",
-			filters={"parenttype": "Project", "user": user, "parent": ["in", enabled or [""]]},
+			filters={"parenttype": "Project", "user": user, "parent": ["in", enabled]},
 			fields=["parent", "project_role"],
 		)
 		if m.project_role in managing_roles
@@ -99,17 +150,6 @@ def portfolio_projects(user: str | None = None) -> list[str]:
 def get_settings():
 	"""Return the cached PMS Settings document."""
 	return frappe.get_cached_doc("PMS Settings")
-
-
-def members_see_all_work_items() -> bool:
-	"""PMS Settings > Members See All Work Items. A site that never saved the setting keeps it ticked.
-
-	A Check that was never saved reads as 0 through the settings document, so the stored row is looked at
-	itself: no row means the field default (ticked), so an update never narrows what members see."""
-	row = frappe.db.sql(
-		"select value from `tabSingles` where doctype = 'PMS Settings' and field = 'members_see_all_work_items'"
-	)
-	return True if not row else bool(cint(row[0][0]))
 
 
 def setting(fieldname: str):
@@ -183,6 +223,29 @@ def get_capabilities(project: str, user: str | None = None, members_only: bool =
 	return dict(caps)
 
 
+def get_view_only_fields(project: str, user: str | None = None) -> set[str]:
+	"""Return the Work Item fields ``user`` may only view on ``project`` (Project Role > Field Rules).
+
+	Admins, non-members and disabled users get none here: they are handled by the capability checks."""
+	user = user or frappe.session.user
+	if not project or is_admin(user) or not is_user_enabled(user):
+		return set()
+	role = get_member_role(project, user)
+	if not role:
+		return set()
+	key = ("view_only", role)
+	cache = _cache()
+	if key not in cache:
+		cache[key] = set(
+			frappe.get_all(
+				"Project Role Field Rule",
+				filters={"parent": role, "parenttype": "Project Role", "can_edit": 0},
+				pluck="field_name",
+			)
+		)
+	return set(cache[key])
+
+
 def is_allocated(project: str | None, user: str | None = None) -> bool:
 	"""True when ``user`` may change data of ``project``: an Auri PMS Admin / System Manager or a member of the project."""
 	user = user or frappe.session.user
@@ -194,6 +257,74 @@ def is_allocated(project: str | None, user: str | None = None) -> bool:
 def has_capability(project: str, capability: str, user: str | None = None) -> bool:
 	"""Shortcut for ``get_capabilities(project, user)[capability]``."""
 	return bool(get_capabilities(project, user).get(capability))
+
+
+# Who may create each doctype: the Project Role capability needed on at least one project. "admin" = only Auri PMS Admins
+# and System Managers (system generated records); "modules" = can_manage_modules. The New button and the menu shortcuts
+# follow this table; each record still checks the capability on its own project when it is saved.
+CREATE_RULES: dict[str, str] = {
+	"Work Item": "can_create_items",
+	"Time Entry": "can_log_time",
+	"Risk Register": "can_create_items",
+	"Sprint": "can_manage_releases",
+	"Release": "can_manage_releases",
+	"Work Item Category": "can_manage_categories",
+	"Project Module": "modules",
+	"Project Status Report": "admin",
+	"Project Dashboard Snapshot": "admin",
+}
+
+
+def can_create_doctype(doctype: str, user: str | None = None) -> bool:
+	"""Return True when ``user`` may create ``doctype`` on some project (see ``CREATE_RULES``); unlisted doctypes: True."""
+	user = user or frappe.session.user
+	rule = CREATE_RULES.get(doctype)
+	if rule is None or is_admin(user):
+		return True
+	if rule == "admin":
+		return False
+	if rule == "modules":
+		return can_manage_modules(user)
+	if not rule.startswith("can_"):
+		return False
+	return bool(
+		frappe.db.sql(
+			f"""
+			select 1
+			from `tabProject Member` pm
+			join `tabProject Role` pr on pr.name = pm.project_role and pr.{rule} = 1
+			where pm.parenttype = 'Project' and pm.user = %s
+			limit 1
+			""",
+			user,
+		)
+	)
+
+
+def create_permissions(user: str | None = None) -> dict[str, bool]:
+	"""{doctype: may create} for every doctype of ``CREATE_RULES``, sent to the browser at login."""
+	return {doctype: can_create_doctype(doctype, user) for doctype in CREATE_RULES}
+
+
+def can_manage_modules(user: str | None = None) -> bool:
+	"""Return True when ``user`` may create or change the shared Project Modules.
+
+	Admins and Auri PMS Managers always may; so may a member whose Project Role on any project can manage categories."""
+	user = user or frappe.session.user
+	if is_admin(user) or "Auri PMS Manager" in frappe.get_roles(user):
+		return True
+	return bool(
+		frappe.db.sql(
+			"""
+			select 1
+			from `tabProject Member` pm
+			join `tabProject Role` pr on pr.name = pm.project_role and pr.can_manage_categories = 1
+			where pm.parenttype = 'Project' and pm.user = %s
+			limit 1
+			""",
+			user,
+		)
+	)
 
 
 # --------------------------------------------------------------------------- hierarchy
@@ -369,6 +500,30 @@ def get_enabled_trackers(project: str) -> list[str]:
 	if enabled:
 		return enabled
 	return frappe.get_all("Ticket Type", filters={"is_active": 1}, pluck="name")
+
+
+def get_parent_scope(project: str) -> list[str]:
+	"""Return the projects a work item of ``project`` may take its parent from: the project and its parent project."""
+	parent = frappe.db.get_value("Project", project, "parent_project")
+	return [project, parent] if parent else [project]
+
+
+def get_enabled_modules(project: str) -> list[str]:
+	"""Return the Project Modules tagged on ``project`` (Enabled Modules); only these are offered on its work items."""
+	return frappe.get_all(
+		"Project Enabled Module",
+		filters={"parent": project, "parenttype": "Project", "parentfield": "enabled_modules"},
+		pluck="module",
+	)
+
+
+def get_enabled_statuses(project: str) -> list[str]:
+	"""Return the statuses set on ``project`` (Enabled Statuses); only these are offered on its work items."""
+	return frappe.get_all(
+		"Project Work Item Status",
+		filters={"parent": project, "parenttype": "Project", "parentfield": "enabled_statuses"},
+		pluck="status",
+	)
 
 
 def follow_work_item(work_item: str, user: str | None) -> None:

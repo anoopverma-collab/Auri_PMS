@@ -7,6 +7,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"role_name",
+		"role_permissions",
 		"can_create_items",
 		"can_edit_any_item",
 		"can_delete_items",
@@ -15,7 +16,10 @@
 		"can_log_time",
 		"can_edit_others_time",
 		"can_manage_members",
-		"can_be_assigned"
+		"can_be_assigned",
+		"can_see_all_items",
+		"section_field_rules",
+		"field_rules"
 	],
 	"fields": [
 		{
@@ -25,6 +29,15 @@
 			"label": "Role Name",
 			"reqd": 1,
 			"unique": 1
+		},
+		{
+			"fieldname": "role_permissions",
+			"fieldtype": "Small Text",
+			"in_list_view": 1,
+			"label": "Permissions",
+			"read_only": 1,
+			"no_copy": 1,
+			"description": "What this role allows; filled in on save"
 		},
 		{
 			"default": "0",
@@ -79,6 +92,25 @@
 			"fieldname": "can_be_assigned",
 			"fieldtype": "Check",
 			"label": "Can Be Assigned"
+		},
+		{
+			"default": "0",
+			"description": "Unticked: this role sees only the work items assigned to it or raised by it, in the projects it is a member of",
+			"fieldname": "can_see_all_items",
+			"fieldtype": "Check",
+			"label": "Can See All Work Items"
+		},
+		{
+			"fieldname": "section_field_rules",
+			"fieldtype": "Section Break",
+			"label": "Work Item Field Rules",
+			"description": "Every Work Item field is listed. Untick Can Edit to make a field view only for this role. Applies to existing work items."
+		},
+		{
+			"fieldname": "field_rules",
+			"fieldtype": "Table",
+			"label": "Field Rules",
+			"options": "Project Role Field Rule"
 		}
 	],
 	"issingle": 0,
@@ -127,10 +159,6 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"read": 1,
-			"role": "Auri PMS User"
 		}
 	],
 	"search_fields": "role_name",

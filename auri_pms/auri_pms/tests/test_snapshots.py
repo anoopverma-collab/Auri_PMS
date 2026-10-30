@@ -6,7 +6,7 @@ import frappe
 from frappe.utils import add_days, today
 
 from auri_pms.auri_pms import snapshots
-from auri_pms.auri_pms.tests.utils import MGR, OUT, TrackerTestCase
+from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, TrackerTestCase
 
 
 class TestSnapshots(TrackerTestCase):
@@ -41,3 +41,15 @@ class TestSnapshots(TrackerTestCase):
 		with self.as_user(MGR):
 			snapshots.delete_project_snapshot(name)
 		self.assertFalse(frappe.db.exists("Project Dashboard Snapshot", name))
+
+
+class TestSnapshotVisibility(TrackerTestCase):
+	def test_a_snapshot_is_only_visible_to_members_of_its_project(self):
+		snap = frappe.get_doc(
+			{"doctype": "Project Dashboard Snapshot", "project": self.ALP, "snapshot_date": today()}
+		).insert(ignore_permissions=True)
+		with self.as_user(DEV):
+			self.assertIn(snap.name, frappe.get_list("Project Dashboard Snapshot", pluck="name"))
+		with self.as_user(OUT):
+			self.assertNotIn(snap.name, frappe.get_list("Project Dashboard Snapshot", pluck="name"))
+			self.assertFalse(frappe.has_permission("Project Dashboard Snapshot", "read", doc=snap.name))

@@ -3,8 +3,8 @@
 
 frappe.query_reports["Work Item Summary"] = {
 	filters: [
-		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({filters: {pms_enabled: 1}})},
-		{fieldname: "tracker", label: __("Ticket Type"), fieldtype: "Link", options: "Ticket Type"},
+		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", get_query: () => ({query: "auri_pms.auri_pms.api.project_link_query", filters: { pms_enabled: 1 }})},
+		{fieldname: "tracker", label: __("Ticket Type"), fieldtype: "Link", options: "Ticket Type", get_query: () => ({query: "auri_pms.auri_pms.api.tracker_query"})},
 		{
 			fieldname: "project_module",
 			label: __("Module"),

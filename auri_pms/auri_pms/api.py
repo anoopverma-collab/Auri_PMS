@@ -7,11 +7,16 @@ from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
 from auri_pms.auri_pms.utils import (
+	can_create_doctype,
 	get_capabilities,
 	get_descendants,
+	get_enabled_modules,
+	get_enabled_statuses,
 	get_enabled_trackers,
+	get_parent_scope,
 	is_admin,
 	nearest_indicator,
+	pms_project_rows,
 	transition_allowed,
 )
 from auri_pms.permissions import can_see_project
@@ -30,9 +35,12 @@ def get_allowed_statuses(work_item: str | None = None, doc: str | dict | None = 
 	else:
 		item = frappe._dict(frappe.parse_json(doc) if isinstance(doc, str) else (doc or {}))
 		item.status = None
+	if not item.project:
+		return []  # statuses come from the project, so none until one is chosen
+	filters = {"is_active": 1, "name": ["in", get_enabled_statuses(item.project) or [""]]}
 	statuses = frappe.get_all(
 		"Work Item Status",
-		filters={"is_active": 1},
+		filters=filters,
 		fields=["name", "is_closed"],
 		order_by="sequence asc, name asc",
 	)
@@ -88,6 +96,63 @@ def tracker_query(
 
 
 @frappe.whitelist()
+def category_link_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
+	"""Link query for Work Item.category: the categories of the project (members cannot open Work Item Category itself)."""
+	project = (filters or {}).get("project")
+	if not project or not can_see_project(project):
+		return []
+	return [
+		[n]
+		for n in frappe.get_all(
+			"Work Item Category",
+			filters={"project": project, "category_name": ["like", _like(txt)]},
+			pluck="name",
+			order_by="category_name asc",
+			limit_start=cint(start),
+			limit_page_length=cint(page_len) or 20,
+		)
+	]
+
+
+@frappe.whitelist()
+def can_create(doctype: str) -> bool:
+	"""Whether the New button of ``doctype`` is offered to the current user (the CREATE_RULES table)."""
+	return can_create_doctype(doctype)
+
+
+@frappe.whitelist()
+def get_default_status(tracker: str) -> str | None:
+	"""The status a new work item of ``tracker`` starts in (readable by project members, who cannot open Ticket Type)."""
+	return frappe.db.get_value("Ticket Type", tracker, "default_status")
+
+
+@frappe.whitelist()
+def module_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
+	"""Link query for Work Item.project_module: the modules tagged on the project."""
+	project = (filters or {}).get("project")
+	if not project:
+		return []
+	return [
+		[n]
+		for n in frappe.get_all(
+			"Project Module",
+			filters={
+				"name": ["in", get_enabled_modules(project) or [""]],
+				"module_name": ["like", _like(txt)],
+			},
+			pluck="name",
+			order_by="module_name asc",
+			limit_start=cint(start),
+			limit_page_length=cint(page_len) or 20,
+		)
+	]
+
+
+@frappe.whitelist()
 def assignee_query(
 	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
 ):
@@ -114,14 +179,14 @@ def assignee_query(
 def parent_query(
 	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
 ):
-	"""Link query for Work Item.parent_work_item: same project, not self, not a descendant."""
+	"""Link query for Work Item.parent_work_item: this project or its parent project, not self, not a descendant."""
 	filters = frappe._dict(filters or {})
 	if not filters.project:
 		return []
 	excluded = [filters.work_item, *get_descendants(filters.work_item)] if filters.work_item else []
 	return frappe.get_list(
 		"Work Item",
-		filters={"project": filters.project, "name": ["not in", excluded or [""]]},
+		filters={"project": ["in", get_parent_scope(filters.project)], "name": ["not in", excluded or [""]]},
 		or_filters={"name": ["like", _like(txt)], "subject": ["like", _like(txt)]},
 		fields=["name", "subject"],
 		order_by="modified desc",
@@ -132,12 +197,31 @@ def parent_query(
 
 
 @frappe.whitelist()
+def project_link_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
+):
+	"""Link query for every Project dropdown of Auri PMS: its projects the person belongs to (see ``pms_project_rows``).
+
+	Frappe's own Project search also applies a Company User Permission, which would hide a project the person is a member of."""
+	extra = frappe.parse_json(filters) if filters else {}
+	filters = {"pms_enabled": 1, **(extra if isinstance(extra, dict) else {})}
+	rows = pms_project_rows(
+		filters=filters,
+		or_filters={"name": ["like", _like(txt)], "project_name": ["like", _like(txt)]},
+		fields=["name", "project_name"],
+		order_by="modified desc",
+		limit_start=cint(start),
+		limit_page_length=cint(page_len) or 20,
+	)
+	return [[r.name, r.project_name] for r in rows]
+
+
+@frappe.whitelist()
 def project_create_query(
 	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str | None
 ):
 	"""Link query for Work Item.project: projects (with an identifier) the user may create items in."""
-	candidates = frappe.get_list(
-		"Project",
+	candidates = pms_project_rows(
 		filters={"pms_enabled": 1},
 		or_filters={"name": ["like", _like(txt)], "project_name": ["like", _like(txt)]},
 		fields=["name", "project_name"],
@@ -231,8 +315,7 @@ def move_to_sprint(work_items: str | list, sprint: str | None = None) -> dict:
 @frappe.whitelist()
 def get_hub_projects() -> list[dict]:
 	"""Projects the user can see, with the numbers shown on the Project Hub cards."""
-	projects = frappe.get_list(
-		"Project",
+	projects = pms_project_rows(
 		filters={"pms_enabled": 1},
 		fields=[
 			"name",
@@ -488,16 +571,14 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 	from auri_pms.auri_pms.allocation import project_team
 	from auri_pms.auri_pms.dashboards import notes_summary, project_billing
 	from auri_pms.auri_pms.risk import risk_summary
-	from auri_pms.auri_pms.utils import portfolio_projects
+	from auri_pms.auri_pms.utils import managed_projects
 
 	data = get_health(project, period)
 	data["risks"] = risk_summary(project)
 	data["billing"] = project_billing(project)
 	data["notes"] = notes_summary(project)
-	data["can_note"] = (
-		project in portfolio_projects()
-	)  # whoever sees the project on the Portfolio may keep notes on it
-	data["team"] = project_team(project, portfolio_projects())
+	data["can_note"] = project in managed_projects()  # whoever manages the project may keep notes on it
+	data["team"] = project_team(project, managed_projects())
 	if not health_visible(project, "hub"):
 		data["status"] = None
 	return data
@@ -546,9 +627,9 @@ def get_portfolio_tickets(from_date: str | None = None, to_date: str | None = No
 def get_project_notes(project: str) -> list[dict]:
 	"""The notes of a Portfolio project, newest first."""
 	from auri_pms.auri_pms.dashboards import project_notes
-	from auri_pms.auri_pms.utils import portfolio_projects
+	from auri_pms.auri_pms.utils import managed_projects
 
-	if project not in portfolio_projects():
+	if project not in managed_projects():
 		frappe.throw(_("You cannot see the notes of Project {0}").format(project), frappe.PermissionError)
 	return project_notes(project)
 

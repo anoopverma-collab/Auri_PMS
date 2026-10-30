@@ -4,7 +4,7 @@
 frappe.query_reports["Sprint Burndown"] = {
 	filters: [
 		{fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project",
-			get_query: () => ({filters: {pms_enabled: 1}}),
+			get_query: () => ({query: "auri_pms.auri_pms.api.project_link_query", filters: { pms_enabled: 1 }}),
 			// a sprint of another project no longer applies
 			on_change: () => {
 				frappe.query_report.set_filter_value("sprint", "");

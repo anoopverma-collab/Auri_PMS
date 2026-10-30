@@ -97,7 +97,7 @@ class TestProjectHealth(TrackerTestCase):
 		item = self.aged_item(-1)
 		self.assertEqual(self.logged_time(DEV, item.name, 1).is_billable, 1)
 		with self.as_user(DEV):
-			name = api.log_time(item.name, 1, "Meeting", is_billable=0)
+			name = api.log_time(item.name, 1, "Meeting", comment="Sync", is_billable=0)
 		self.assertEqual(frappe.db.get_value("Time Entry", name, "is_billable"), 0)
 
 	def test_status_green_when_clean(self):

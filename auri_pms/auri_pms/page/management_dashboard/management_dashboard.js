@@ -93,7 +93,7 @@ class ManagementDashboard {
 		}
 		if (this.tab === "health") ui.addPeriodMenu(this.page, () => this.load());
 		if (!frappe.boot.auri_pms_portfolio) {
-			this.$body.html(`<div class="hub-panel p-4"><h6>${__("Delivery & Health")}</h6><div class="text-muted">${__("Delivery & Health is for Auri PMS Admins and for the managers of a project.")}</div></div>`);
+			this.$body.html(`<div class="hub-panel p-4"><h6>${__("Delivery & Health")}</h6><div class="text-muted">${__("Delivery & Health is for people who are members of an Auri PMS project, and for Auri PMS Admins.")}</div></div>`);
 			return;
 		}
 		if (this.tab === "health") return this.load_health();

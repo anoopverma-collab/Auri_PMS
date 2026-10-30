@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("Time Entry", {
 	setup(frm) {
+		frm.set_query("project", () => ({ query: "auri_pms.auri_pms.api.project_link_query" }));
 		frm.set_query("work_item", () => ({
 			filters: frm.doc.project ? { project: frm.doc.project } : {},
 		}));

@@ -7,7 +7,7 @@ from frappe import _
 from frappe.desk.form import assign_to
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from frappe.utils import cint, flt, now_datetime, today
+from frappe.utils import cint, cstr, flt, now_datetime, today
 
 from auri_pms.auri_pms.utils import (
 	compute_progress,
@@ -17,9 +17,13 @@ from auri_pms.auri_pms.utils import (
 	get_capabilities,
 	get_children,
 	get_descendants,
+	get_enabled_modules,
+	get_enabled_statuses,
 	get_enabled_trackers,
+	get_parent_scope,
 	get_settings,
 	get_subtree_height,
+	get_view_only_fields,
 	recalc_chain,
 	recalc_release,
 	recalc_sprint,
@@ -49,6 +53,11 @@ class WorkItem(Document):
 		self.set_onload(
 			"allow_completed_sprint_for_closed",
 			cint(frappe.db.get_single_value("PMS Settings", "allow_completed_sprint_for_closed")),
+		)
+		self.set_onload("view_only_fields", sorted(get_view_only_fields(self.project)))
+		self.set_onload(
+			"waiting_since_editable",
+			cint(frappe.db.get_single_value("PMS Settings", "waiting_since_editable")),
 		)
 		self.set_onload(
 			"keep_closed_on_editable",
@@ -82,9 +91,11 @@ class WorkItem(Document):
 		"""Run all server-side rules for the document."""
 		self.old = self.get_doc_before_save()
 		self.validate_edit_permission()
+		self.validate_field_rules()
 		self.set_defaults()
 		self.set_project_custom_values()
 		self.validate_tracker()
+		self.validate_status_enabled()
 		self.validate_dates_and_numbers()
 		self.validate_assignee()
 		self.validate_additional_assignees()
@@ -119,6 +130,18 @@ class WorkItem(Document):
 			return
 		frappe.throw(_("You can only edit work items you created or are assigned to"))
 
+	def validate_field_rules(self) -> None:
+		"""Project Role > Field Rules: a field the role may only view cannot be changed on an existing item."""
+		if self.is_new() or self.flags.get("ignore_tracker_rules"):
+			return
+		changed = [
+			_(self.meta.get_label(f))
+			for f in sorted(get_view_only_fields(self.project))
+			if self.meta.has_field(f) and cstr(self.get(f)) != cstr(self.old.get(f))
+		]
+		if changed:
+			frappe.throw(_("Your role may only view {0}; ask a project manager").format(", ".join(changed)))
+
 	def set_defaults(self) -> None:
 		"""R-06 default status, R-07 author, priority default from settings."""
 		settings = get_settings()
@@ -129,12 +152,33 @@ class WorkItem(Document):
 					frappe.db.get_value("Ticket Type", self.tracker, "default_status")
 					or settings.default_status
 				)
+				enabled = get_enabled_statuses(self.project)
+				if self.status not in enabled:
+					# the default is switched off on this project: start in its first open status
+					self.status = next(
+						(
+							s.name
+							for s in frappe.get_all(
+								"Work Item Status",
+								filters={"name": ["in", enabled], "is_closed": 0},
+								order_by="sequence asc, name asc",
+							)
+						),
+						self.status,
+					)
 			if cint(frappe.db.get_value("Work Item Status", self.status, "is_closed")):
 				frappe.throw(_("A new work item cannot start in a closed status"))
 		else:
 			self.author = self.old.author
 		if not self.priority:
 			self.priority = settings.default_priority
+
+	def validate_status_enabled(self) -> None:
+		"""The status must be enabled on the project (an unchanged status is left alone)."""
+		if not self.is_new() and self.old.status == self.status:
+			return
+		if self.status not in get_enabled_statuses(self.project):
+			frappe.throw(_("Status {0} is not enabled on Project {1}").format(self.status, self.project))
 
 	def validate_tracker(self) -> None:
 		"""R-05: the tracker must be active and enabled on the project."""
@@ -191,12 +235,19 @@ class WorkItem(Document):
 		"""R-12 same project, R-13 only Open releases accept (new) items."""
 		for fieldname, doctype in (
 			("category", "Work Item Category"),
-			("project_module", "Project Module"),
 			("release", "Release"),
 		):
 			value = self.get(fieldname)
 			if value and frappe.db.get_value(doctype, value, "project") != self.project:
 				frappe.throw(_("{0} does not belong to Project {1}").format(value, self.project))
+		if (
+			self.project_module
+			and (self.is_new() or self.old.project_module != self.project_module)
+			and self.project_module not in get_enabled_modules(self.project)
+		):
+			frappe.throw(
+				_("Module {0} is not enabled on Project {1}").format(self.project_module, self.project)
+			)
 		if self.release and (self.is_new() or self.old.release != self.release):
 			status = frappe.db.get_value("Release", self.release, "status")
 			if status != "Open":
@@ -231,20 +282,29 @@ class WorkItem(Document):
 	def sync_client_dependency(self) -> None:
 		"""Stamp "waiting since" when a ticket becomes dependent on the client; clear it (and the note) when it stops."""
 		if cint(self.dependent_on_client):
-			if self.is_new() or not cint(self.old.dependent_on_client) or not self.client_dependency_since:
+			# with the PMS Settings switch on, a Waiting Since the user entered is kept
+			keep = (
+				cint(frappe.db.get_single_value("PMS Settings", "waiting_since_editable"))
+				and self.client_dependency_since
+			)
+			if not keep and (
+				self.is_new() or not cint(self.old.dependent_on_client) or not self.client_dependency_since
+			):
 				self.client_dependency_since = today()
 		else:
 			self.client_dependency_since = None
 			self.client_dependency_note = None
 
 	def validate_parent(self) -> None:
-		"""R-14: same project, no cycles, depth limit."""
+		"""R-14: this project or its parent project, no cycles, depth limit."""
 		if not self.parent_work_item:
 			return
 		if not self.is_new() and self.old.parent_work_item == self.parent_work_item:
 			return
-		if frappe.db.get_value("Work Item", self.parent_work_item, "project") != self.project:
-			frappe.throw(_("Parent must be in the same project"))
+		if frappe.db.get_value("Work Item", self.parent_work_item, "project") not in get_parent_scope(
+			self.project
+		):
+			frappe.throw(_("Parent must be in the same project or its parent project"))
 		if not self.is_new() and (
 			self.parent_work_item == self.name or self.parent_work_item in get_descendants(self.name)
 		):
