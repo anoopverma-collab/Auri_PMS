@@ -27,5 +27,6 @@ for user in users:
 	frappe.local.login_manager = frappe.auth.LoginManager()
 	frappe.local.login_manager.login_as(user)
 	out[user] = frappe.session.sid
-frappe.db.commit()
+# a separate script run, not a request; the session rows must be saved for the browser to use them
+frappe.db.commit()  # nosemgrep
 print(json.dumps(out))

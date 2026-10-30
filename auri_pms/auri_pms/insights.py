@@ -85,13 +85,15 @@ def get_insight(report: str, project: str | None = None, period: str = "3m") -> 
 	data.setdefault("title", _(REPORTS[report]["title"]))
 	data["subtitle"] = _("{0} · {1}").format(
 		project or _("1 project") if len(projects) == 1 else _("{0} projects").format(len(projects)),
-		PERIOD_NOTE[ctx.period],
+		period_notes()[ctx.period],
 	)
 	data["period"] = ctx.period
 	return data
 
 
-PERIOD_NOTE = {"1m": _("last month"), "3m": _("last 3 months"), "6m": _("last 6 months"), "all": _("overall")}
+def period_notes() -> dict[str, str]:
+	# built per call: translations follow the user's language, which a module-level dict would fix at import time
+	return {"1m": _("last month"), "3m": _("last 3 months"), "6m": _("last 6 months"), "all": _("overall")}
 
 
 @frappe.whitelist()
@@ -116,7 +118,7 @@ class Context:
 
 	def __init__(self, projects: list[str], period: str):
 		self.projects = projects
-		self.period = period if period in PERIOD_NOTE else "3m"
+		self.period = period if period in period_notes() else "3m"
 		self.today = getdate(today())
 		# raw SQL skips the permission query, so a member who sees only their own tickets gets the same limit here
 		visible = work_item_query()

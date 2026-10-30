@@ -38,7 +38,8 @@ def check(case, ok, detail=""):
 
 def sessions(users):
 	out = (
-		subprocess.run(
+		# a fixed argument list, no shell; the values are this script's own SITE and user names
+		subprocess.run(  # nosemgrep
 			[str(BENCH / "env/bin/python"), "-W", "ignore", str(HERE / "sessions.py"), SITE, *users],
 			cwd=BENCH / "sites",
 			capture_output=True,
