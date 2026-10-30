@@ -150,7 +150,7 @@ Clear filters (FLT-13), the Health and cost tab and its filter (HC-04, HC-06, HC
 button (HC-07, HC-08), the Quality Dashboard's Project dropdown (QD-10), no script errors (MD-00, QD-13), dark mode and phone width
 (UI-01, UI-02).
 
-Run it: `ADMIN=Administrator python3 apps/auri_pms/e2e/dashboards.py` from the bench folder. Add `MANAGER=<user>` and `DENIED=<user>` to
+Run it from the bench folder with `SESSIONS` set to the output of `e2e/sessions.py` (the header of `e2e/dashboards.py` has the full command). Add `MANAGER=<user>` and `DENIED=<user>` to
 also check the manager and the refused user (ACC-01, ACC-02, ACC-04).
 
 The first run found a real defect (HC-10): opening Health and cost while a Release was chosen reloaded the tab twice and the charts

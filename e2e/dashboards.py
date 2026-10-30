@@ -2,17 +2,17 @@
 
 Run from the bench folder; the bench must be running:
 
+    SESSIONS=$(cd sites && ../env/bin/python ../apps/auri_pms/e2e/sessions.py standard-v16.local Administrator) \\
     SITE=standard-v16.local URL=http://localhost:8002 \\
     ADMIN=Administrator MANAGER=<a user with a manager role> DENIED=<a user with no managed project> \\
     python3 apps/auri_pms/e2e/dashboards.py
 
-It logs in with a session id made by ``sessions.py`` (no password is used) and only reads and clicks: no record is created or
+It logs in with a session id made by ``sessions.py``, passed in SESSIONS as its JSON output (no password is used) and only reads and clicks: no record is created or
 changed. Screenshots go to ``e2e/screenshots``. Exit code 1 when a check fails.
 """
 
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -37,19 +37,15 @@ def check(case, ok, detail=""):
 
 
 def sessions(users):
-	out = (
-		# a fixed argument list, no shell; the values are this script's own SITE and user names
-		subprocess.run(  # nosemgrep
-			[str(BENCH / "env/bin/python"), "-W", "ignore", str(HERE / "sessions.py"), SITE, *users],
-			cwd=BENCH / "sites",
-			capture_output=True,
-			text=True,
-			check=True,
-		)
-		.stdout.strip()
-		.splitlines()[-1]
-	)
-	return json.loads(out)
+	"""The session ids printed by sessions.py, passed in SESSIONS as JSON (see the header)."""
+	raw = os.environ.get("SESSIONS", "")
+	if not raw.startswith("{"):
+		sys.exit("Set SESSIONS to the output of sessions.py (see the header of this file)")
+	sids = json.loads(raw)
+	missing = [u for u in users if u not in sids]
+	if missing:
+		sys.exit(f"SESSIONS has no session for {', '.join(missing)}")
+	return sids
 
 
 def api(page, method, **args):
