@@ -139,8 +139,8 @@ class Portfolio {
 			${gauges}
 			${kpis}
 			${glance}
-			${this.trend_panel()}
 			${why}
+			${this.trend_panel()}
 			<div class="pf-sec"><h5>${__("Details")}</h5><span>${__("click a project in the table, or use the filters, to focus everything below")}</span></div>
 			<div class="hub-panel pf-projects ph2-in"><h6>${__("Projects")}${ui.viewAll(ui.go("Project", { pms_enabled: 1 }))}</h6>
 				<div class="hub-toolbar"><div class="hub-search"><input type="text" class="form-control" placeholder="${__("Search or pick a project")}" value="${esc(this.query)}" autocomplete="off"><div class="pf-suggest"></div></div></div>
