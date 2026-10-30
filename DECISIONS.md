@@ -267,8 +267,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     import does, so Frappe does not re-check every Email Template field. A site restored from an older Frappe can hold a Custom Field that
     duplicates a core field (`reference_doctype`); that used to stop `install-app`. The duplicate is left alone; removing it is the site
     owner's step in Customize Form.
+74. **Members See All Work Items.** A PMS Settings switch, ticked by default. Unticked, the Work Item visibility rule (the permission query and
+    `has_permission`) limits a *member* whose Project Role cannot manage members to the tickets assigned to them, in their projects only;
+    managers, admins and non-members of a public project are unchanged. Insights reads Work Items with raw SQL, so it applies the same
+    condition. A Check on a Single that was never saved reads as 0, so the stored row is read: no row means ticked.
 
-## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.
     Frappe keeps the *database columns* of deleted custom fields (so identifiers survive a re-install), and the

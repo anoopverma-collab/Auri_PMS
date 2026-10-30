@@ -101,6 +101,17 @@ def get_settings():
 	return frappe.get_cached_doc("PMS Settings")
 
 
+def members_see_all_work_items() -> bool:
+	"""PMS Settings > Members See All Work Items. A site that never saved the setting keeps it ticked.
+
+	A Check that was never saved reads as 0 through the settings document, so the stored row is looked at
+	itself: no row means the field default (ticked), so an update never narrows what members see."""
+	row = frappe.db.sql(
+		"select value from `tabSingles` where doctype = 'PMS Settings' and field = 'members_see_all_work_items'"
+	)
+	return True if not row else bool(cint(row[0][0]))
+
+
 def setting(fieldname: str):
 	"""A PMS Settings value; a threshold never saved (new install) falls back to the field default."""
 	value = get_settings().get(fieldname)

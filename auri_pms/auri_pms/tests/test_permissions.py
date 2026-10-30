@@ -174,3 +174,66 @@ class TestAllocationOnly(TrackerTestCase):
 		self.assertFalse(frappe.has_permission("Project", "write", doc=self.BET, user=OUT))
 		self.assertFalse(frappe.has_permission("Project", "write", doc=self.BET, user=DEV))
 		self.assertTrue(frappe.has_permission("Project", "write", doc=self.ALP, user=MGR))
+
+
+class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
+	"""PMS Settings > Members See All Work Items: unticked, a member sees only the items assigned to them."""
+
+	def setUp(self):
+		super().setUp()
+		self.mine = self.new_item(MGR, subject="Assigned to dev", assigned_to=DEV)
+		self.extra = self.new_item(
+			MGR, subject="Dev is an extra assignee", additional_assignees=[{"user": DEV}]
+		)
+		self.others = self.new_item(MGR, subject="Assigned to the manager", assigned_to=MGR)
+		self.nobody = self.new_item(MGR, subject="Unassigned")
+
+	def tearDown(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
+		super().tearDown()
+
+	def names(self, user):
+		with self.as_user(user):
+			return set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
+
+	def created(self):
+		return {i.name for i in (self.mine, self.extra, self.others, self.nobody)}
+
+	def test_ticked_by_default_a_member_sees_every_item_of_their_project(self):
+		self.assertEqual(frappe.get_meta("PMS Settings").get_field("members_see_all_work_items").default, "1")
+		self.assertTrue(self.created() <= self.names(DEV))
+
+	def test_a_site_that_never_saved_the_setting_keeps_members_seeing_everything(self):
+		"""An update must not narrow what members see: an unsaved Check reads as 0, the stored row is what counts."""
+		frappe.db.sql(
+			"delete from `tabSingles` where doctype = 'PMS Settings' and field = 'members_see_all_work_items'"
+		)
+		frappe.clear_document_cache("PMS Settings", "PMS Settings")
+		self.assertTrue(self.created() <= self.names(DEV))
+
+	def test_unticked_a_member_sees_only_the_items_assigned_to_them(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		seen = self.names(DEV) & self.created()
+		self.assertEqual(seen, {self.mine.name, self.extra.name})
+
+	def test_unticked_a_member_cannot_open_an_item_assigned_to_someone_else(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.assertTrue(frappe.has_permission("Work Item", "read", doc=self.mine.name, user=DEV))
+		self.assertTrue(frappe.has_permission("Work Item", "write", doc=self.extra.name, user=DEV))
+		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.others.name, user=DEV))
+		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.nobody.name, user=DEV))
+
+	def test_unticked_a_manager_and_an_admin_still_see_everything(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		self.assertTrue(self.created() <= self.names(MGR))  # Manager role: can manage members
+		self.assertTrue(self.created() <= self.names(TM))  # Auri PMS Admin
+
+	def test_unticked_a_public_project_stays_readable_for_a_non_member(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		item = self.new_item(MGR, self.BET, subject="Public ticket")
+		self.assertIn(item.name, self.names(OUT))
+
+	def test_unticked_a_member_can_still_create_an_item(self):
+		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
+		item = self.new_item(DEV, subject="Raised by dev", assigned_to=DEV)
+		self.assertIn(item.name, self.names(DEV))

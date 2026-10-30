@@ -14,6 +14,7 @@
   "ticket_rules_section",
   "require_children_closed",
   "require_blockers_closed",
+  "members_see_all_work_items",
   "ticket_rules_col",
   "max_subtask_depth",
   "column_break_ticket_rules_2",
@@ -146,6 +147,13 @@
    "fieldname": "require_blockers_closed",
    "fieldtype": "Check",
    "label": "Item Closes Only After Blockers"
+  },
+  {
+   "default": "1",
+   "description": "Ticked: a project member sees every Work Item of the projects they are allocated to. Unticked: a member sees only the Work Items assigned to them (Assigned To or Additional Assignees). Admins and members whose Project Role can manage members always see all.",
+   "fieldname": "members_see_all_work_items",
+   "fieldtype": "Check",
+   "label": "Members See All Work Items"
   },
   {
    "fieldname": "ticket_rules_col",
@@ -592,7 +600,7 @@
  ],
  "issingle": 1,
  "istable": 0,
- "modified": "2026-10-24 19:00:00.000000",
+ "modified": "2026-10-30 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "PMS Settings",

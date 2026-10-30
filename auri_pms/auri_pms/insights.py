@@ -17,7 +17,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.health import make_buckets
-from auri_pms.permissions import can_see_project
+from auri_pms.permissions import can_see_project, work_item_query
 
 REPORTS = {
 	"delivery": {
@@ -109,7 +109,10 @@ class Context:
 		self.projects = projects
 		self.period = period if period in PERIOD_NOTE else "3m"
 		self.today = getdate(today())
-		self.items = frappe.db.sql(ITEM_SQL, {"projects": projects}, as_dict=True) if projects else []
+		# raw SQL skips the permission query, so a member who sees only their own tickets gets the same limit here
+		visible = work_item_query()
+		sql = f"{ITEM_SQL} and {visible.replace('%', '%%')}" if visible else ITEM_SQL
+		self.items = frappe.db.sql(sql, {"projects": projects}, as_dict=True) if projects else []
 		earliest = min((i.created for i in self.items), default=None)
 		self.buckets = make_buckets(self.period, earliest, self.today)
 		self.start = self.buckets.first_day

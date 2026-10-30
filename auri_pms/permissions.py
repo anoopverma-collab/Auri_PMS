@@ -11,11 +11,13 @@ import frappe
 from frappe.utils import cint
 
 from auri_pms.auri_pms.utils import (
+	get_capabilities,
 	get_member_role,
 	has_unrestricted_project_view,
 	is_admin,
 	is_allocated,
 	is_user_enabled,
+	members_see_all_work_items,
 )
 
 
@@ -60,8 +62,36 @@ def project_query(user: str | None = None, doctype: str | None = None) -> str:
 
 
 def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
-	"""permission_query_conditions for Work Item."""
-	return _project_scope(user or frappe.session.user, "`tabWork Item`.project")
+	"""permission_query_conditions for Work Item.
+
+	With *Members See All Work Items* unticked, a member whose Project Role cannot manage members sees in
+	their projects only the Work Items assigned to them (Assigned To or Additional Assignees); every other
+	project (a project they manage, or a public project they are not a member of) is unchanged."""
+	user = user or frappe.session.user
+	scope = _project_scope(user, "`tabWork Item`.project")
+	if not scope or not is_user_enabled(user) or members_see_all_work_items():
+		return scope
+	quoted = frappe.db.escape(user)
+	limited = (
+		"`tabWork Item`.project in (select pm.parent from `tabProject Member` pm "
+		f"where pm.parenttype = 'Project' and pm.user = {quoted} and ifnull(pm.project_role, '') not in "
+		"(select pr.name from `tabProject Role` pr where pr.can_manage_members = 1))"
+	)
+	own = (
+		f"(`tabWork Item`.assigned_to = {quoted} or `tabWork Item`.name in "
+		"(select wa.parent from `tabWork Item Assignee` wa "
+		f"where wa.parenttype = 'Work Item' and wa.user = {quoted}))"
+	)
+	return f"({scope} and not ({limited} and not {own}))"
+
+
+def sees_only_own_work_items(project: str | None, user: str) -> bool:
+	"""True when ``user`` is a member of ``project`` who may see only the Work Items assigned to them."""
+	if not project or is_admin(user) or members_see_all_work_items():
+		return False
+	if not get_member_role(project, user):
+		return False
+	return not get_capabilities(project, user, members_only=True)["can_manage_members"]
 
 
 def release_query(user: str | None = None, doctype: str | None = None) -> str:
@@ -143,7 +173,14 @@ def project_has_permission(doc, ptype: str | None = None, user: str | None = Non
 
 def work_item_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Work Item."""
-	return _has_project_permission(doc, ptype, user)
+	user = user or frappe.session.user
+	if not _has_project_permission(doc, ptype, user):
+		return False
+	if ptype == "create" or doc.is_new() or not sees_only_own_work_items(doc.get("project"), user):
+		return True
+	return doc.get("assigned_to") == user or any(
+		row.user == user for row in doc.get("additional_assignees") or []
+	)
 
 
 def release_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
