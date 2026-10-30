@@ -94,10 +94,10 @@ Object.assign(auri_pms.ui, {
 	},
 });
 
-// The Portfolio is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
+// Delivery & Health is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
 if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_portfolio) {
 	const style = document.createElement("style");
-	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/portfolio"]) { display: none !important; }';
+	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/management-dashboard"]) { display: none !important; }';
 	document.head.appendChild(style);
 }
 
@@ -118,7 +118,7 @@ try {
 // Frappe remembers a sidebar per screen in localStorage and keeps the sidebar that was open before, so after visiting another app
 // (for example ERPNext's Projects) our screens could show that app's sidebar until a hard refresh. Our own screens (the dashboards
 // and every screen that only the Auri PMS sidebar links to) therefore always switch to the Auri PMS sidebar.
-const PMS_PAGES = ["project-hub", "portfolio", "my-work", "quality-dashboard", "status-report"];
+const PMS_PAGES = ["project-hub", "portfolio", "management-dashboard", "pms-insights", "my-work", "quality-dashboard", "status-report"];
 const is_pms_screen = (sidebar) => {
 	const route = frappe.get_route() || [];
 	if (PMS_PAGES.includes(route[0])) return true;

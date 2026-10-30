@@ -68,12 +68,16 @@ class TestHealthVisibility(TrackerTestCase):
 		start, end = self.window()
 		shown = build_report(self.ALP, start, end)
 		self.assertIsNotNone(shown.status)
-		self.assertIn(shown.status.label, render_html(shown))
+		html = render_html(shown)
+		client = ("On track", "On track, with a few items to watch", "Needs attention", "No data yet")
+		self.assertTrue(any(f">{label}<" in html or f"{label}</" in html for label in client))
+		if shown.status.label not in client:  # "No data yet" reads the same to both
+			self.assertNotIn(shown.status.label, html)  # the internal label ("At Risk", "Off Track") stays with the team
 		self.hide("show_health_report")
 		hidden = build_report(self.ALP, start, end)
 		self.assertIsNone(hidden.status)
 		html = render_html(hidden)
-		self.assertNotIn(shown.status.label, html)
+		self.assertFalse(any(f">{label}<" in html or f"{label}</" in html for label in client))
 		self.assertIn("Delivered", html)  # the rest of the report is unchanged
 		with self.as_user(MGR):
 			preview = api.get_status_report_html(self.ALP, start, end)

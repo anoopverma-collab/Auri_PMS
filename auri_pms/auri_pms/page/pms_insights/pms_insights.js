@@ -33,10 +33,15 @@ const has_values = (v) => (v.datasets ? v.datasets.some((d) => (d.values || []).
 
 class Insights {
 	constructor(wrapper) {
-		const { page, $body } = ui.initPage(wrapper, "Insights");
+		const { page, $body } = ui.initPage(wrapper, "Auri Insights");
 		this.page = page;
 		this.$body = $body;
-		this.project_field = page.add_field({ fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", change: () => this.show(this.report) });
+		this.project_names = [];
+		// only the Auri PMS projects the person is allocated to (all of them for an admin) are offered
+		this.project_field = page.add_field({
+			fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", change: () => this.show(this.report),
+			get_query: () => ({ filters: { name: ["in", this.project_names.length ? this.project_names : [""]] } }),
+		});
 	}
 
 	show(report) {
@@ -48,6 +53,7 @@ class Insights {
 		ui.addThemeMenu(this.page, () => this.show(this.report));
 		this.page.add_inner_button(__("Project Hub"), () => frappe.set_route("project-hub"));
 		this.$body.html(`<div class="text-muted p-4">${__("Loading...")}</div>`);
+		frappe.xcall(`${INSIGHTS_API}.get_insight_projects`).then((names) => (this.project_names = names));
 		frappe.xcall(`${INSIGHTS_API}.get_reports`).then((reports) => {
 			this.reports = reports;
 			if (!this.report || !reports.some((r) => r.key === this.report)) return this.gallery();
@@ -64,7 +70,7 @@ class Insights {
 	gallery() {
 		const base = window.location.pathname.split("/pms-insights")[0] + "/pms-insights";
 		this.$body.html(`<div class="ph2 ins">${this.nav()}
-			<div class="ins-hero"><h3>${__("Insights")}</h3><p>${__("Ready-made dashboards on your Auri PMS data. Pick a project above to focus on one, or leave it empty to see every project you can access.")}</p></div>
+			<div class="ins-hero"><h3>${__("Auri Insights")}</h3><p>${__("Ready-made dashboards on your Auri PMS data. Pick a project above to focus on one, or leave it empty to see every project you can access.")}</p></div>
 			<div class="ins-gallery">${this.reports.map((r) => `<a class="ins-card" href="${base}/${r.key}"><span class="ins-ico">${icon(r.icon)}</span><b>${r.title}</b><p>${r.about}</p><em>${__("Open dashboard")} →</em></a>`).join("")}</div></div>`);
 	}
 

@@ -31,7 +31,7 @@ class StatusReport {
 		this.sections = {}; // section switches changed for this report only
 		this.order = []; // section order changed for this report only (empty: PMS Settings or the layout's own)
 		const refresh = () => this.refresh();
-		this.project_field = page.add_field({ fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", reqd: 1, change: () => this.on_project_change() });
+		this.project_field = page.add_field({ fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", reqd: 1, get_query: () => ({ filters: { pms_enabled: 1 } }), change: () => this.on_project_change() });
 		this.period_field = page.add_field({ fieldname: "period", label: __("Period"), fieldtype: "Select", options: Object.entries(SR_PERIODS).map(([k, v]) => ({ value: k, label: __(v) })), default: "7", change: () => this.on_period_change() });
 		this.from_field = page.add_field({ fieldname: "from_date", label: __("From"), fieldtype: "Date", change: refresh });
 		this.to_field = page.add_field({ fieldname: "to_date", label: __("To"), fieldtype: "Date", change: refresh });
@@ -198,7 +198,8 @@ class StatusReport {
 				/* keep the default height */
 			}
 		});
-		frame.srcdoc = preview.html;
+		// the emails keep their own narrow width; only this preview lets the report use the whole pane
+		frame.srcdoc = `<style>table[style*="max-width"]{max-width:none !important}</style>${preview.html}`;
 		this.page.clear_primary_action();
 		if (preview.can_send) this.page.set_primary_action(__("Email report"), () => this.email_dialog(), "mail");
 		this.page.add_inner_button(__("Sections"), () => this.section_dialog());

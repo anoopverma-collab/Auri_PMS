@@ -61,6 +61,40 @@ REPORT_SECTIONS = (
 LEVEL_COLOUR = {"green": "#10b981", "amber": "#f59e0b", "red": "#ef4444", "none": "#9ca3af"}
 
 
+def client_status(status: dict | None, waiting: int = 0) -> dict | None:
+	"""The status as a client reads it: a plain heading and one line per area, without the score or internal figures.
+
+	What waits on the client is listed in its own section and only counted here, as "needs your input"."""
+	if not status:
+		return None
+	level = status["level"]
+	if level in (None, "none"):  # nothing to judge yet: the report keeps saying so
+		return {"label": _("No data yet"), "level": "none", "points": []}
+	label = {"green": _("On track"), "amber": _("On track, with a few items to watch"), "red": _("Needs attention")}
+	lines = {  # translated when used, so the reader's language applies
+		"plan": _("Some planned release or sprint dates are under pressure."),
+		"issues": _("Some tickets are past their planned date."),
+		"time": _("Effort is running ahead of the planned estimate."),
+		"risks": _("Some project risks are being watched."),
+		"in_progress": _("More work has been raised than completed recently."),
+	}
+	areas = []
+	for reason in status["reasons"]:
+		area = reason.get("section")
+		if reason["level"] in ("red", "amber") and area in lines and area not in areas:
+			areas.append(area)
+	points = [lines[a] for a in areas]
+	if level == "green":
+		points = [_("There is nothing to flag in this period.")]
+	if waiting:
+		points.append(
+			_("1 item needs your input (see below).")
+			if waiting == 1
+			else _("{0} items need your input (see below).").format(waiting)
+		)
+	return {"label": label[level], "level": level, "points": points}
+
+
 def build_report(
 	project: str,
 	from_date,
@@ -426,6 +460,7 @@ def render_html(
 		"r": report,
 		"note": (note or "").strip(),
 		"colour": LEVEL_COLOUR.get(status["level"] if status else "none", LEVEL_COLOUR["none"]),
+		"client_status": client_status(status, report.summary.waiting if switches["waiting"] else 0),
 		"tiles": tiles,
 		"risk_releases": [rel for rel in report.releases if rel["risk"] in ("late", "risk")],
 		"show": frappe._dict(switches),

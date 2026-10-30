@@ -524,6 +524,15 @@ def get_portfolio(period: str = "3m") -> dict:
 
 
 @frappe.whitelist()
+def get_management_dashboard(project: str | None = None, release: str | None = None, sprint: str | None = None) -> dict:
+	"""Delivery & Health: projects, releases, sprints, tasks, workload and delivery health in one payload,
+	optionally narrowed to one or several projects (a name, comma-separated names or a JSON list), a release and a sprint."""
+	from auri_pms.auri_pms.management import get_management_data
+
+	return get_management_data(project or None, release or None, sprint or None)
+
+
+@frappe.whitelist()
 def get_portfolio_tickets(from_date: str | None = None, to_date: str | None = None) -> list[dict]:
 	"""Tickets created, closed and in progress per Portfolio project for a period (all time without dates)."""
 	from auri_pms.auri_pms.dashboards import get_portfolio_ticket_counts

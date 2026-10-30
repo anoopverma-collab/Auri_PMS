@@ -13,10 +13,10 @@
   <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:24px;font-weight:600;color:#0a3d62;margin-top:6px;">{{ r.project.project_name | e }}</div>
   <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#566170;margin-top:4px;">{{ _("Reporting period") }}: {{ frappe.utils.formatdate(r.from_date) }} &ndash; {{ frappe.utils.formatdate(r.to_date) }}</div>
 </td></tr>
-{% if r.status %}<tr><td style="padding:22px 36px 0;">
+{% if r.status and client_status %}<tr><td style="padding:22px 36px 0;">
   <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#566170;">{{ _("Overall status") }}</div>
-  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:18px;font-weight:600;color:{{ colour }};margin-top:3px;">{{ r.status.label | e }}{% if r.status.score is not none %}<span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:400;color:#566170;"> &nbsp;{{ r.status.score }} / 100</span>{% endif %}</div>
-  {% if r.status.reasons %}<ul style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:#3e4c59;">{% for reason in r.status.reasons %}<li>{{ reason.text | e }}</li>{% endfor %}</ul>{% endif %}
+  <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:18px;font-weight:600;color:{{ colour }};margin-top:3px;">{{ client_status.label | e }}</div>
+  {% if client_status.points %}<ul style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:#3e4c59;">{% for point in client_status.points %}<li>{{ point | e }}</li>{% endfor %}</ul>{% endif %}
 </td></tr>{% endif %}
 {% if note %}<tr><td style="padding:20px 36px 0;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;border-left:3px solid #a9b2be;padding:2px 0 2px 14px;font-size:14px;line-height:1.65;color:#3e4c59;">{{ note | e | replace("\n", "<br>") | safe }}</div></td></tr>{% endif %}
 <tr><td style="padding:24px 36px 0;">

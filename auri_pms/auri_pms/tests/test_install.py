@@ -50,10 +50,13 @@ class TestInstall(IntegrationTestCase):
 			self.assertTrue(frappe.db.exists("Custom Field", f"Project-{fieldname}"), fieldname)
 		for fieldname in ("tracker_project", "tracker_default_tracker"):
 			self.assertTrue(frappe.db.exists("Custom Field", f"Email Account-{fieldname}"), fieldname)
-		# the app has no home workspace: the sidebar starts with the Project Hub and the icon is called Tracker
+		# the app has no home workspace: the sidebar starts with Insights and Delivery & Health (the Portfolio is a tab of it)
 		self.assertFalse(frappe.db.exists("Workspace", "Tracker"))
 		sidebar = frappe.get_doc("Workspace Sidebar", "Auri PMS")
-		self.assertEqual(sidebar.items[0].link_to, "project-hub")
+		links = [i.link_to for i in sidebar.items]
+		self.assertEqual(links[:3], ["pms-insights", "management-dashboard", "status-report"])
+		for gone in ("portfolio", "project-hub", "quality-dashboard"):  # the pages exist; the sidebar does not list them
+			self.assertNotIn(gone, links)
 		self.assertNotIn("Home", [i.label for i in sidebar.items])
 		self.assertTrue(frappe.db.exists("Desktop Icon", "Auri PMS"))
 		board = frappe.get_doc("Kanban Board", install.BOARD_NAME)

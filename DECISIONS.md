@@ -271,7 +271,31 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     `has_permission`) limits a *member* whose Project Role cannot manage members to the tickets assigned to them or raised by them (*Author*), in their projects only;
     managers, admins and non-members of a public project are unchanged. Insights reads Work Items with raw SQL, so it applies the same
     condition. A Check on a Single that was never saved reads as 0, so the stored row is read: no row means ticked.
+75. **Delivery & Health.** A new page with the Portfolio's access rule (Auri PMS Admins, and the managers of a project for their projects),
+    covering projects with Auri PMS switched on. Definitions: *delayed project* = Open with an overdue release, sprint or task; *overdue
+    release* = not Closed with a due date in the past; *overdue sprint* = not Completed with an end date in the past; *completed task* = closed
+    and not Rejected. A Release has only a due date, so its actual date is the day its last ticket was closed (no new fields); a Sprint has no
+    release link, so it is listed under the releases of its tickets. Data is read with `get_list`, so the visibility rules, including *Members
+    See All Work Items*, apply. Its Project, Release and Sprint filters are project-wise like the rest of the app: a release or sprint
+    must belong to the chosen project (the server refuses a mismatch), the dropdowns offer only what was created for that project, and a
+    release keeps the sprints that hold its tickets and the other way round. The *Sprint Burndown* report got the same Project filter.
 
+76. **Portfolio merged into Delivery & Health.** Both pages had the same audience (`portfolio_projects`) and repeated project, open,
+    overdue, closed and waiting-on-client numbers. The Portfolio class moved unchanged into `auri_portfolio.bundle.js` and the Management
+    Dashboard shows it as a second tab (Delivery | Health and cost); the Project filter focuses it, Release and Sprint do not apply to it.
+    `get_portfolio` and its tests stay, so nothing about the numbers changed. The `portfolio` Page remains as a redirect (`?tab=health`) so old
+    links and bookmarks keep working; only its sidebar item was removed.
+
+77. **The client reads a plain status.** The internal status (Off Track, score, percentages, release codes) is for the team. The report
+    shows `client_status`: a heading by level and one fixed sentence per area (plan, issues, time, risks, backlog), and the tickets that
+    wait on the client are counted but listed only in their own section. Nothing about how the level is worked out changed. The four
+    ready-made Email Templates already saved on a site keep their wording until *Update* is run on them; the built-in layout changed.
+
+78. **Auri Insights covers allocated projects.** Insights reads with raw SQL across projects, so its scope is stated once, in
+    `get_insight_projects`: the Auri PMS projects the user is a member of, or every one for an admin (`is_allocated`). Reading a public
+    project elsewhere is unchanged; it simply is not part of a person's analysis. The Work Item condition (*Members See All Work Items*) still applies on top.
+
+## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.
     Frappe keeps the *database columns* of deleted custom fields (so identifiers survive a re-install), and the

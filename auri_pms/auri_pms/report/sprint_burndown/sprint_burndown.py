@@ -15,6 +15,8 @@ def execute(filters: dict | None = None) -> tuple:
 		frappe.throw(_("Sprint is required"))
 	if not frappe.has_permission("Sprint", "read", doc=filters.sprint):
 		frappe.throw(_("You do not have access to {0}").format(filters.sprint), frappe.PermissionError)
+	if filters.project and frappe.db.get_value("Sprint", filters.sprint, "project") != filters.project:
+		frappe.throw(_("{0} does not belong to Project {1}").format(filters.sprint, filters.project))
 	burndown = get_burndown(filters.sprint)
 	unit = _("Hours") if burndown["unit"] == "hours" else _("Items")
 	columns = [

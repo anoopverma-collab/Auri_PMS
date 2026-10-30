@@ -398,6 +398,53 @@ class TestStatusReport(TrackerTestCase):
 		self.assertEqual((clear["level"], clear["score"]), ("green", 100))
 		self.assertEqual([r["level"] for r in clear["reasons"]], ["green"])
 
+	def test_the_client_reads_a_plain_status_without_the_score(self):
+		"""The client sees a heading and one plain line per area: no score, percentages or release codes."""
+		from auri_pms.auri_pms.status_report import client_status
+
+		status = {
+			"level": "red",
+			"label": "Off Track",
+			"score": 45,
+			"reasons": [
+				{"level": "red", "text": "Release R5 is past its due date at 43.0%", "section": "plan"},
+				{"level": "amber", "text": "Release R6 is at 0.0% and close", "section": "plan"},
+				{"level": "amber", "text": "The backlog grew", "section": "in_progress"},
+				{"level": "info", "text": "2 tickets are waiting on the client", "section": "waiting"},
+			],
+		}
+		friendly = client_status(status, waiting=2)
+		self.assertEqual(friendly["label"], "Needs attention")
+		text = " ".join(friendly["points"])
+		for internal in ("45", "43.0", "R5", "R6", "%", "score", "Off Track", "backlog grew"):
+			self.assertNotIn(internal, text)
+		self.assertEqual(len(friendly["points"]), 3)  # plan (once), backlog, and what waits on the client
+		self.assertIn("2 items need your input", friendly["points"][-1])
+		self.assertEqual(client_status({**status, "level": "amber", "reasons": status["reasons"][2:3]})["label"], "On track, with a few items to watch")
+		clear = client_status({"level": "green", "reasons": [{"level": "green", "text": "ok", "section": None}]})
+		self.assertEqual((clear["label"], clear["points"]), ("On track", ["There is nothing to flag in this period."]))
+		self.assertEqual(client_status({"level": "none", "reasons": []})["label"], "No data yet")
+		self.assertEqual(client_status(None), None)
+
+	def test_the_report_shows_the_client_status_not_the_internal_one(self):
+		"""Built-in, detailed and summary layouts show the plain wording; the score and internal reasons stay out."""
+		from auri_pms.install import ensure_email_templates
+
+		ensure_email_templates(overwrite=True)
+		self.new_item(MGR, tracker="Task", due_date=days(-5))
+		self.new_item(MGR, tracker="Task", due_date=days(-4))
+		frappe.db.set_value("Project", self.ALP, "show_health_report", 1)
+		report = build_report(self.ALP, days(-7), days(0))
+		self.assertIsNotNone(report.status)
+		layouts = [None, "__builtin__", "PMS Status Report - Summary", "PMS Status Report - Summary Dark"]
+		layouts += [n for n in frappe.get_all("Email Template", filters={"name": ["like", "PMS Status Report%"]}, pluck="name")]
+		for layout in layouts:
+			html = render_html(report, template=layout)
+			self.assertNotIn("/ 100", html, layout)
+			self.assertNotIn("score", html.lower().replace("scoring", ""), layout)
+			self.assertNotIn("of open tickets are overdue", html, layout)
+			self.assertTrue(any(w in html for w in ("Needs attention", "On track")), layout)
+
 	def test_section_order_can_be_set_per_report_and_in_settings(self):
 		"""A report lists its sections in the order chosen for it, else the PMS Settings order, else its own."""
 		from auri_pms.auri_pms.status_report import (

@@ -3,7 +3,7 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-10-26 20:00:00.000000",
+ "modified": "2026-10-30 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "pms-insights",
@@ -25,5 +25,5 @@
  ],
  "standard": "Yes",
  "system_page": 0,
- "title": "Insights"
+ "title": "Auri Insights"
 }

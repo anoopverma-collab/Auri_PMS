@@ -74,7 +74,7 @@ class ProjectHub {
 				this.render_cards();
 			});
 			this.render_cards();
-			if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Portfolio"), () => frappe.set_route("portfolio"));
+			if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Delivery & Health"), () => frappe.set_route("management-dashboard"));
 			this.page.add_inner_button(__("My Work"), () => frappe.set_route("my-work"));
 			this.page.add_inner_button(__("Quality"), () => frappe.set_route("quality-dashboard"));
 			ui.addThemeMenu(this.page, () => this.show(this.route_project, this.view, this.snapshot));
@@ -238,7 +238,7 @@ class ProjectHub {
 		this.page.add_inner_button(__("All Projects"), () => frappe.set_route("project-hub"));
 		if (this.view === "health") ui.addPeriodMenu(this.page, () => this.show(this.project, "health"));
 		const dash = __("Dashboards");
-		if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Portfolio"), () => frappe.set_route("portfolio"), dash);
+		if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Delivery & Health"), () => frappe.set_route("management-dashboard"), dash);
 		this.page.add_inner_button(__("My Work"), () => frappe.set_route("my-work"), dash);
 		this.page.add_inner_button(__("Quality of this project"), () => {
 			frappe.route_options = { project };
@@ -734,7 +734,8 @@ class ProjectHub {
 		const p_tk = ui.billableTicketsPanel(bill, this.project);
 		const category = ui.categoryPanel(cats, this.project);
 		const p_cat = category.html;
-		const p_est = panel(__("Estimated vs spent hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}`);
+		const billable_share = t.spent ? Math.round((t.billable * 100) / t.spent) : null;
+		const p_est = panel(__("Estimated vs spent vs billable hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}<div class="small text-muted mt-2">${billable_share === null ? __("No hours logged yet") : __("Billable is {0}% of the {1} h spent", [billable_share, flt(t.spent, 1)])}</div>`);
 		const p_activity = panel(__("Hours by activity (billable vs non-billable)") + ui.viewAll(ui.go("Time Entry", { project: this.project })), stack(t.by_activity.map((a) => [a.label, a.billable, a.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]));
 		const p_vel = panel(__("Sprint velocity (tickets closed per completed sprint)") + ui.viewAll(ui.go("Sprint", { project: this.project })), h.velocity.length ? `<div class="hub-chart" id="hc-velocity"></div><div class="small text-muted mt-2">${__("Average {0} tickets / {1} hours per sprint", [flt(h.velocity.reduce((a, v) => a + v.items, 0) / h.velocity.length, 1), flt(h.velocity.reduce((a, v) => a + v.hours, 0) / h.velocity.length, 1)])}</div>` : `<div class="text-muted small">${__("No completed sprints yet")}</div>`);
 		const age_day = (n) => frappe.datetime.add_days(frappe.datetime.get_today(), -n);

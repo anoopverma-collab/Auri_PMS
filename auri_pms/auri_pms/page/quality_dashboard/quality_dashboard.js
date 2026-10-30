@@ -33,6 +33,8 @@ class QualityDashboard {
 			label: __("Project"),
 			fieldtype: "Link",
 			options: "Project",
+			// only projects that have Auri PMS switched on hold tickets
+			get_query: () => ({ filters: { pms_enabled: 1 } }),
 			change: () => this.load(),
 		});
 	}

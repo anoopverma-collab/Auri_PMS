@@ -17,7 +17,8 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.health import make_buckets
-from auri_pms.permissions import can_see_project, work_item_query
+from auri_pms.auri_pms.utils import is_allocated
+from auri_pms.permissions import work_item_query
 
 REPORTS = {
 	"delivery": {
@@ -93,13 +94,21 @@ def get_insight(report: str, project: str | None = None, period: str = "3m") -> 
 PERIOD_NOTE = {"1m": _("last month"), "3m": _("last 3 months"), "6m": _("last 6 months"), "all": _("overall")}
 
 
+@frappe.whitelist()
+def get_insight_projects() -> list[str]:
+	"""The projects Insights covers for the user: Auri PMS projects they are allocated to (all of them for an admin).
+
+	A public project the user is not a member of stays readable elsewhere but is not part of their analysis."""
+	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
+	return [p for p in enabled if is_allocated(p)]
+
+
 def visible_projects(project: str | None) -> list[str]:
 	if project:
-		if not frappe.db.exists("Project", project) or not can_see_project(project):
+		if not frappe.db.exists("Project", project) or project not in get_insight_projects():
 			frappe.throw(_("You do not have access to {0}").format(project), frappe.PermissionError)
 		return [project]
-	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
-	return [p for p in enabled if can_see_project(p)]
+	return get_insight_projects()
 
 
 class Context:
