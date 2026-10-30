@@ -129,7 +129,9 @@ def get_management_data(
 	project_label = {p.name: p.project_name or p.name for p in projects}
 	identifier = {p.name: p.tracker_identifier for p in projects}
 	if release and release not in {r.name for r in releases_all}:
-		frappe.throw(_("{0} is not a release of the selected project").format(release), frappe.ValidationError)
+		frappe.throw(
+			_("{0} is not a release of the selected project").format(release), frappe.ValidationError
+		)
 	if sprint and sprint not in {s.name for s in sprints_all}:
 		frappe.throw(_("{0} is not a sprint of the selected project").format(sprint), frappe.ValidationError)
 	options = {
@@ -183,7 +185,16 @@ def get_management_data(
 	time_filters = {"project": ["in", names]}
 	if release or sprint:
 		time_filters["work_item"] = ["in", [i.name for i in items] or [""]]
-	actual = {r.project: flt(r.hours) for r in frappe.get_list("Time Entry", filters=time_filters, fields=["project", {"SUM": "hours", "as": "hours"}], group_by="project", limit_page_length=0)}
+	actual = {
+		r.project: flt(r.hours)
+		for r in frappe.get_list(
+			"Time Entry",
+			filters=time_filters,
+			fields=["project", {"SUM": "hours", "as": "hours"}],
+			group_by="project",
+			limit_page_length=0,
+		)
+	}
 	billable = {
 		r.project: flt(r.hours)
 		for r in frappe.get_list(
@@ -210,7 +221,9 @@ def get_management_data(
 			}
 		)
 	hour_total = {k: flt(sum(r[k] for r in hour_rows), 2) for k in ("estimated", "actual", "billable")}
-	hour_total["billable_pct"] = flt(hour_total["billable"] * 100 / hour_total["actual"], 1) if hour_total["actual"] else None
+	hour_total["billable_pct"] = (
+		flt(hour_total["billable"] * 100 / hour_total["actual"], 1) if hour_total["actual"] else None
+	)
 	hour_total["variance"] = flt(hour_total["actual"] - hour_total["estimated"], 2)
 
 	# ---- releases: planned against actual
@@ -218,7 +231,9 @@ def get_management_data(
 	for r in releases:
 		counts = _task_counts(by_release.get(r.name, []), today_)
 		closed = r.status == "Closed"
-		closed_days = [getdate(i.closed_on) for i in by_release.get(r.name, []) if i.closed_on and cint(i.is_closed)]
+		closed_days = [
+			getdate(i.closed_on) for i in by_release.get(r.name, []) if i.closed_on and cint(i.is_closed)
+		]
 		actual = max(closed_days) if closed and closed_days else None
 		due = getdate(r.due_date) if r.due_date else None
 		overdue = bool(due and not closed and due < today_)
@@ -232,16 +247,16 @@ def get_management_data(
 				"status": r.status,
 				"planned": _date(due),
 				"actual": _date(actual),
-				"late_days": (
-					max(0, ((actual or today_) - due).days) if due and (closed or overdue) else 0
-				),
+				"late_days": (max(0, ((actual or today_) - due).days) if due and (closed or overdue) else 0),
 				"late": overdue,
 				"upcoming": bool(due and not closed and today_ <= due <= soon),
 				"percent": flt(r.percent_complete),
 				"sprints_total": len(linked),
 				"sprints_open": sum(1 for s in linked if s.status != "Completed"),
 				"sprints_overdue": sum(
-					1 for s in linked if s.status != "Completed" and s.end_date and getdate(s.end_date) < today_
+					1
+					for s in linked
+					if s.status != "Completed" and s.end_date and getdate(s.end_date) < today_
 				),
 				**counts,
 			}
@@ -376,7 +391,9 @@ def get_management_data(
 	delayed_releases = sorted((r for r in release_rows if r["late"]), key=lambda r: -r["late_days"])
 	upcoming_releases = [r for r in release_rows if r["upcoming"]]
 	upcoming_sprints = [
-		s for s in sprint_rows if s["status"] != "Completed" and s["end"] and today_ <= getdate(s["end"]) <= soon
+		s
+		for s in sprint_rows
+		if s["status"] != "Completed" and s["end"] and today_ <= getdate(s["end"]) <= soon
 	]
 	completed_projects = sum(1 for p in projects if p.status == "Completed")
 	all_counts = _task_counts(items, today_)

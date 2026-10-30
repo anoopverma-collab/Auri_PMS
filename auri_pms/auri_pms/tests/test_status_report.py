@@ -420,9 +420,16 @@ class TestStatusReport(TrackerTestCase):
 			self.assertNotIn(internal, text)
 		self.assertEqual(len(friendly["points"]), 3)  # plan (once), backlog, and what waits on the client
 		self.assertIn("2 items need your input", friendly["points"][-1])
-		self.assertEqual(client_status({**status, "level": "amber", "reasons": status["reasons"][2:3]})["label"], "On track, with a few items to watch")
-		clear = client_status({"level": "green", "reasons": [{"level": "green", "text": "ok", "section": None}]})
-		self.assertEqual((clear["label"], clear["points"]), ("On track", ["There is nothing to flag in this period."]))
+		self.assertEqual(
+			client_status({**status, "level": "amber", "reasons": status["reasons"][2:3]})["label"],
+			"On track, with a few items to watch",
+		)
+		clear = client_status(
+			{"level": "green", "reasons": [{"level": "green", "text": "ok", "section": None}]}
+		)
+		self.assertEqual(
+			(clear["label"], clear["points"]), ("On track", ["There is nothing to flag in this period."])
+		)
 		self.assertEqual(client_status({"level": "none", "reasons": []})["label"], "No data yet")
 		self.assertEqual(client_status(None), None)
 
@@ -437,7 +444,12 @@ class TestStatusReport(TrackerTestCase):
 		report = build_report(self.ALP, days(-7), days(0))
 		self.assertIsNotNone(report.status)
 		layouts = [None, "__builtin__", "PMS Status Report - Summary", "PMS Status Report - Summary Dark"]
-		layouts += [n for n in frappe.get_all("Email Template", filters={"name": ["like", "PMS Status Report%"]}, pluck="name")]
+		layouts += [
+			n
+			for n in frappe.get_all(
+				"Email Template", filters={"name": ["like", "PMS Status Report%"]}, pluck="name"
+			)
+		]
 		for layout in layouts:
 			html = render_html(report, template=layout)
 			self.assertNotIn("/ 100", html, layout)

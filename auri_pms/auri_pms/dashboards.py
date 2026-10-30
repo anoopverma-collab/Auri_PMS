@@ -961,7 +961,9 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 		sum(
 			flt(r.hours)
 			for r in frappe.get_list(
-				"Time Entry", filters={**filters, "date": [">=", start]}, fields=[{"SUM": "hours", "as": "hours"}]
+				"Time Entry",
+				filters={**filters, "date": [">=", start]},
+				fields=[{"SUM": "hours", "as": "hours"}],
 			)
 		)
 	)

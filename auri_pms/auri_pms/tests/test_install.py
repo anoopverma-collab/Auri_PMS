@@ -55,7 +55,11 @@ class TestInstall(IntegrationTestCase):
 		sidebar = frappe.get_doc("Workspace Sidebar", "Auri PMS")
 		links = [i.link_to for i in sidebar.items]
 		self.assertEqual(links[:3], ["pms-insights", "management-dashboard", "status-report"])
-		for gone in ("portfolio", "project-hub", "quality-dashboard"):  # the pages exist; the sidebar does not list them
+		for gone in (
+			"portfolio",
+			"project-hub",
+			"quality-dashboard",
+		):  # the pages exist; the sidebar does not list them
 			self.assertNotIn(gone, links)
 		self.assertNotIn("Home", [i.label for i in sidebar.items])
 		self.assertTrue(frappe.db.exists("Desktop Icon", "Auri PMS"))

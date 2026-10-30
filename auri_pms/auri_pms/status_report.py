@@ -70,7 +70,11 @@ def client_status(status: dict | None, waiting: int = 0) -> dict | None:
 	level = status["level"]
 	if level in (None, "none"):  # nothing to judge yet: the report keeps saying so
 		return {"label": _("No data yet"), "level": "none", "points": []}
-	label = {"green": _("On track"), "amber": _("On track, with a few items to watch"), "red": _("Needs attention")}
+	label = {
+		"green": _("On track"),
+		"amber": _("On track, with a few items to watch"),
+		"red": _("Needs attention"),
+	}
 	lines = {  # translated when used, so the reader's language applies
 		"plan": _("Some planned release or sprint dates are under pressure."),
 		"issues": _("Some tickets are past their planned date."),

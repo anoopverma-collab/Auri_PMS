@@ -27,7 +27,9 @@ class TestQualityAllProjects(TrackerTestCase):
 
 	def bug(self, project=None, user=MGR, created=-1, **kw):
 		item = self.new_item(user, project=project, tracker="Bug", **kw)
-		frappe.db.set_value("Work Item", item.name, "creation", f"{days(created)} 09:00:00", update_modified=False)
+		frappe.db.set_value(
+			"Work Item", item.name, "creation", f"{days(created)} 09:00:00", update_modified=False
+		)
 		return item
 
 	def quality(self, user=TM, project=None, period="3m"):
@@ -49,9 +51,7 @@ class TestQualityAllProjects(TrackerTestCase):
 		pms = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name")
 		per_project = [self.quality(project=p) for p in pms]
 		for key in ("open", "closed", "opened_period", "critical_open"):
-			self.assertEqual(
-				everything.tiles[key], sum(d.tiles[key] for d in per_project if d.has_data), key
-			)
+			self.assertEqual(everything.tiles[key], sum(d.tiles[key] for d in per_project if d.has_data), key)
 
 	def test_the_share_of_bugs_among_new_tickets_counts_all_projects(self):
 		before = self.quality().tiles
@@ -111,7 +111,11 @@ class TestQualityAllProjects(TrackerTestCase):
 		def open_total():
 			with self.as_user(DEV):
 				kpis = insights.get_insight("delivery", self.ALP)["kpis"]
-			return next(k["value"] for k in kpis if "pen" in str(k["label"]).lower() or "open" in str(k["label"]).lower())
+			return next(
+				k["value"]
+				for k in kpis
+				if "pen" in str(k["label"]).lower() or "open" in str(k["label"]).lower()
+			)
 
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
 		everything = int(open_total())
@@ -168,10 +172,18 @@ class TestProjectScopeEverywhere(TrackerTestCase):
 				if field.get("fieldtype") == "Link" and field.get("options") == "Project":
 					if "pms_enabled" not in (field.get("link_filters") or ""):
 						missing.append(f"{path.parent.name}.{field['fieldname']}")
-		for path in [*(APP / "auri_pms/page").glob("*/*.js"), *(APP / "auri_pms/report").glob("*/*.js"), *(APP / "auri_pms/doctype").glob("*/*calendar.js")]:
+		for path in [
+			*(APP / "auri_pms/page").glob("*/*.js"),
+			*(APP / "auri_pms/report").glob("*/*.js"),
+			*(APP / "auri_pms/doctype").glob("*/*calendar.js"),
+		]:
 			text = path.read_text()
 			for line in text.splitlines():
-				if 'options: "Project"' in line and "get_query" not in text.split(line)[1][:200] and "get_query" not in line:
+				if (
+					'options: "Project"' in line
+					and "get_query" not in text.split(line)[1][:200]
+					and "get_query" not in line
+				):
 					missing.append(path.name)
 		self.assertEqual(missing, [])
 
@@ -232,7 +244,9 @@ class TestInsightsScope(TrackerTestCase):
 		with self.as_user(DEV):
 			for key in insights.REPORTS:
 				data = insights.get_insight(key)
-				self.assertIn("1 project", data["subtitle"], key)  # Alpha only; Beta (public) and Delta are not counted
+				self.assertIn(
+					"1 project", data["subtitle"], key
+				)  # Alpha only; Beta (public) and Delta are not counted
 
 	def test_a_project_outside_the_scope_is_refused(self):
 		from auri_pms.auri_pms import insights
@@ -259,7 +273,9 @@ class TestHealthAndCostTab(TrackerTestCase):
 	def test_both_views_list_the_same_projects(self):
 		for user in (TM, MGR):
 			health, management = self.both(user)
-			self.assertEqual({p.name for p in health.projects}, {p["name"] for p in management["projects"]}, user)
+			self.assertEqual(
+				{p.name for p in health.projects}, {p["name"] for p in management["projects"]}, user
+			)
 
 	def test_both_views_agree_on_the_ticket_numbers(self):
 		self.new_item(MGR, tracker="Task", due_date=days(-3))
@@ -302,7 +318,11 @@ class TestSidebarAndPages(TrackerTestCase):
 		for path in self.FILES:
 			links = [i.get("link_to") for i in self.items(path)]
 			self.assertEqual(links[:3], ["pms-insights", "management-dashboard", "status-report"], path)
-			for gone in ("portfolio", "project-hub", "quality-dashboard"):  # the pages still exist; the sidebar does not list them
+			for gone in (
+				"portfolio",
+				"project-hub",
+				"quality-dashboard",
+			):  # the pages still exist; the sidebar does not list them
 				self.assertNotIn(gone, links, path)
 
 	def test_the_installed_sidebar_matches_the_file(self):
@@ -318,10 +338,19 @@ class TestSidebarAndPages(TrackerTestCase):
 					continue
 				kind = kinds.get(item["link_type"])
 				self.assertTrue(kind, f"{item['label']}: unknown link type {item['link_type']}")
-				self.assertTrue(frappe.db.exists(kind, item["link_to"]), f"{path}: {item['label']} points nowhere")
+				self.assertTrue(
+					frappe.db.exists(kind, item["link_to"]), f"{path}: {item['label']} points nowhere"
+				)
 
 	def test_the_dashboard_pages_exist_for_the_pms_roles(self):
-		for page in ("management-dashboard", "portfolio", "quality-dashboard", "pms-insights", "project-hub", "my-work"):
+		for page in (
+			"management-dashboard",
+			"portfolio",
+			"quality-dashboard",
+			"pms-insights",
+			"project-hub",
+			"my-work",
+		):
 			roles = {r.role for r in frappe.get_doc("Page", page).roles}
 			self.assertIn("Auri PMS User", roles, page)
 

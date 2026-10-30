@@ -524,7 +524,9 @@ def get_portfolio(period: str = "3m") -> dict:
 
 
 @frappe.whitelist()
-def get_management_dashboard(project: str | None = None, release: str | None = None, sprint: str | None = None) -> dict:
+def get_management_dashboard(
+	project: str | None = None, release: str | None = None, sprint: str | None = None
+) -> dict:
 	"""Delivery & Health: projects, releases, sprints, tasks, workload and delivery health in one payload,
 	optionally narrowed to one or several projects (a name, comma-separated names or a JSON list), a release and a sprint."""
 	from auri_pms.auri_pms.management import get_management_data

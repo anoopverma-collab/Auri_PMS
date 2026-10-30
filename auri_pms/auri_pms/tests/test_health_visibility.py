@@ -72,7 +72,9 @@ class TestHealthVisibility(TrackerTestCase):
 		client = ("On track", "On track, with a few items to watch", "Needs attention", "No data yet")
 		self.assertTrue(any(f">{label}<" in html or f"{label}</" in html for label in client))
 		if shown.status.label not in client:  # "No data yet" reads the same to both
-			self.assertNotIn(shown.status.label, html)  # the internal label ("At Risk", "Off Track") stays with the team
+			self.assertNotIn(
+				shown.status.label, html
+			)  # the internal label ("At Risk", "Off Track") stays with the team
 		self.hide("show_health_report")
 		hidden = build_report(self.ALP, start, end)
 		self.assertIsNone(hidden.status)

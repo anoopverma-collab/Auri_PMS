@@ -12,9 +12,8 @@ import frappe
 import frappe.auth
 
 site, users = sys.argv[1], sys.argv[2:]
-from werkzeug.test import EnvironBuilder
-
 from frappe.app import Request
+from werkzeug.test import EnvironBuilder
 
 frappe.init(site=site)
 frappe.connect()

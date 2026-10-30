@@ -23,7 +23,13 @@ class TestManagementDashboard(TrackerTestCase):
 	def release(self, name, due, status="Open"):
 		with self.as_user(MGR):
 			return frappe.get_doc(
-				{"doctype": "Release", "release_name": name, "project": self.ALP, "due_date": due, "status": status}
+				{
+					"doctype": "Release",
+					"release_name": name,
+					"project": self.ALP,
+					"due_date": due,
+					"status": status,
+				}
 			).insert()
 
 	def test_only_admins_and_project_managers_get_it(self):
@@ -158,7 +164,9 @@ class TestManagementDashboard(TrackerTestCase):
 		self.logged_time(MGR, work_item=outside.name, hours=2, is_billable=1)
 		rows, _total = self.hours(release=release.name, project=self.ALP)
 		self.assertEqual(set(rows), {self.ALP})
-		self.assertEqual((rows[self.ALP]["estimated"], rows[self.ALP]["actual"], rows[self.ALP]["billable"]), (8, 3, 3))
+		self.assertEqual(
+			(rows[self.ALP]["estimated"], rows[self.ALP]["actual"], rows[self.ALP]["billable"]), (8, 3, 3)
+		)
 		rows, _total = self.hours(project=self.BET)
 		self.assertEqual(set(rows), {self.BET})
 
@@ -196,21 +204,29 @@ class TestManagementDashboardFilters(TrackerTestCase):
 
 	def make_release(self, project, name):
 		with self.as_user(MGR):
-			return frappe.get_doc(
-				{"doctype": "Release", "release_name": name, "project": project, "due_date": days(20)}
-			).insert().name
+			return (
+				frappe.get_doc(
+					{"doctype": "Release", "release_name": name, "project": project, "due_date": days(20)}
+				)
+				.insert()
+				.name
+			)
 
 	def make_sprint(self, project, name, start, end):
 		with self.as_user(MGR):
-			return frappe.get_doc(
-				{
-					"doctype": "Sprint",
-					"sprint_name": name,
-					"project": project,
-					"start_date": days(start),
-					"end_date": days(end),
-				}
-			).insert().name
+			return (
+				frappe.get_doc(
+					{
+						"doctype": "Sprint",
+						"sprint_name": name,
+						"project": project,
+						"start_date": days(start),
+						"end_date": days(end),
+					}
+				)
+				.insert()
+				.name
+			)
 
 	def data(self, user=TM, **filters):
 		with self.as_user(user):
@@ -227,7 +243,9 @@ class TestManagementDashboardFilters(TrackerTestCase):
 
 	def test_the_dropdowns_list_only_what_was_created_for_the_chosen_project(self):
 		options = self.data(project=self.ALP)["options"]
-		self.assertTrue({self.ALP, self.BET} <= self.names(options["projects"]))  # every project stays offered for the next pick
+		self.assertTrue(
+			{self.ALP, self.BET} <= self.names(options["projects"])
+		)  # every project stays offered for the next pick
 		self.assertTrue({self.alp_rel, self.alp_rel2} <= self.names(options["releases"]))
 		self.assertNotIn(self.bet_rel, self.names(options["releases"]))
 		self.assertIn(self.alp_sprint, self.names(options["sprints"]))
@@ -236,7 +254,10 @@ class TestManagementDashboardFilters(TrackerTestCase):
 
 	def test_the_link_field_dropdowns_are_project_wise_too(self):
 		"""What the Release and Sprint Link fields on the page search: only the chosen project's records."""
-		for doctype, mine, other in (("Release", self.alp_rel, self.bet_rel), ("Sprint", self.alp_sprint, self.bet_sprint)):
+		for doctype, mine, other in (
+			("Release", self.alp_rel, self.bet_rel),
+			("Sprint", self.alp_sprint, self.bet_sprint),
+		):
 			with self.as_user(MGR):
 				found = {r["value"] for r in search_link(doctype, "", filters={"project": self.ALP})}
 			self.assertIn(mine, found)
@@ -283,7 +304,8 @@ class TestManagementDashboardFilters(TrackerTestCase):
 	def test_the_filters_are_echoed_so_the_page_can_show_them(self):
 		data = self.data(project=self.ALP, release=self.alp_rel)
 		self.assertEqual(
-			data["filters"], {"projects": [self.ALP], "project": self.ALP, "release": self.alp_rel, "sprint": ""}
+			data["filters"],
+			{"projects": [self.ALP], "project": self.ALP, "release": self.alp_rel, "sprint": ""},
 		)
 
 	def test_several_projects_can_be_chosen(self):
@@ -293,7 +315,9 @@ class TestManagementDashboardFilters(TrackerTestCase):
 		both = f"{self.ALP},{self.BET}"
 		for value in ([self.ALP, self.BET], both, json.dumps([self.ALP, self.BET])):
 			data = self.data(project=value)
-			self.assertEqual({p["name"] for p in data["projects"]} & {self.ALP, self.BET}, {self.ALP, self.BET})
+			self.assertEqual(
+				{p["name"] for p in data["projects"]} & {self.ALP, self.BET}, {self.ALP, self.BET}
+			)
 			self.assertEqual(data["filters"]["projects"], [self.ALP, self.BET])
 			self.assertEqual(data["filters"]["project"], "")  # more than one: no single project
 		one = self.data(project=[self.ALP, self.ALP])  # a repeated name counts once
@@ -306,7 +330,10 @@ class TestManagementDashboardFilters(TrackerTestCase):
 		both = self.data(project=[self.ALP, self.BET])
 		self.assertEqual(both["kpis"]["projects"], 2)
 		self.assertEqual(both["kpis"]["tasks_total"], alp["kpis"]["tasks_total"] + bet["kpis"]["tasks_total"])
-		self.assertEqual({r["project"] for r in both["releases"]}, {r["project"] for r in alp["releases"] + bet["releases"]})
+		self.assertEqual(
+			{r["project"] for r in both["releases"]},
+			{r["project"] for r in alp["releases"] + bet["releases"]},
+		)
 		hours = {r["name"] for r in both["hours"]["projects"]}
 		self.assertEqual(hours, {self.ALP, self.BET})
 
@@ -315,7 +342,9 @@ class TestManagementDashboardFilters(TrackerTestCase):
 		self.assertTrue({self.alp_rel, self.bet_rel} <= self.names(options["releases"]))
 		only_alp = self.data(project=[self.ALP])["options"]
 		self.assertNotIn(self.bet_rel, self.names(only_alp["releases"]))
-		self.assertTrue({self.ALP, self.BET} <= self.names(only_alp["projects"]))  # the project list never shrinks
+		self.assertTrue(
+			{self.ALP, self.BET} <= self.names(only_alp["projects"])
+		)  # the project list never shrinks
 
 	def test_a_release_must_belong_to_one_of_the_chosen_projects(self):
 		self.data(project=[self.ALP, self.BET], release=self.bet_rel)  # fine: Beta is chosen
@@ -335,7 +364,9 @@ class TestManagementDashboardFilters(TrackerTestCase):
 
 	def test_a_project_outside_the_audience_is_refused(self):
 		self.assertRaises(frappe.PermissionError, self.data, project=self.GAM)  # Auri PMS is off there
-		self.assertRaises(frappe.PermissionError, self.data, DEV, project=self.ALP)  # a Developer has no dashboard
+		self.assertRaises(
+			frappe.PermissionError, self.data, DEV, project=self.ALP
+		)  # a Developer has no dashboard
 
 	def test_a_manager_is_offered_only_the_releases_of_the_projects_they_manage(self):
 		bet = frappe.get_doc("Project", self.BET)
@@ -354,10 +385,14 @@ class TestManagementDashboardFilters(TrackerTestCase):
 
 		with self.as_user(MGR):
 			execute({"project": self.ALP, "sprint": self.alp_sprint})
-			self.assertRaises(frappe.ValidationError, execute, {"project": self.BET, "sprint": self.alp_sprint})
+			self.assertRaises(
+				frappe.ValidationError, execute, {"project": self.BET, "sprint": self.alp_sprint}
+			)
 
 	def test_a_work_item_cannot_take_a_release_or_sprint_of_another_project(self):
 		item = self.new_item(MGR, subject="Alpha ticket")
 		self.assertThrows("does not belong to Project", lambda: self.save_as(MGR, item, release=self.bet_rel))
 		item = self.new_item(MGR, subject="Alpha ticket 2")
-		self.assertThrows("does not belong to Project", lambda: self.save_as(MGR, item, sprint=self.bet_sprint))
+		self.assertThrows(
+			"does not belong to Project", lambda: self.save_as(MGR, item, sprint=self.bet_sprint)
+		)
