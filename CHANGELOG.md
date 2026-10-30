@@ -5,6 +5,10 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-31
+
+Tested with Frappe 16.54 and ERPNext 16.53.
+
 ### Added
 - **Statuses per project.** *Project > Enabled Statuses* (new table on the Project) lists the Work Item statuses a project uses. The Status dropdown, the Close and Reopen buttons and the allowed next statuses offer only those; saving a status that is not enabled is refused. Switching Auri PMS on lists every active status as a start. With no project chosen the Status dropdown shows "Select a Project first".
 - **Modules tagged per project.** *Project Module* is now a shared record, named by its module name, and each project has an *Enabled Modules* table. The Work Item Module dropdown offers only the project's modules and a module that is not enabled is refused. Project managers and Auri PMS Managers can create modules. A patch tags every existing module on the project it belonged to.
