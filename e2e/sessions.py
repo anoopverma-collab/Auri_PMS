@@ -23,7 +23,8 @@ frappe.local.cookie_manager = frappe.auth.CookieManager()
 frappe.local.response = frappe._dict()
 out = {}
 for user in users:
-	frappe.set_user("Administrator")
+	# a separate script run by the developer: the session row is written as Administrator, as a login would
+	frappe.set_user("Administrator")  # nosemgrep
 	frappe.local.login_manager = frappe.auth.LoginManager()
 	frappe.local.login_manager.login_as(user)
 	out[user] = frappe.session.sid

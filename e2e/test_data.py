@@ -391,7 +391,8 @@ def make_project(created: dict, project: str) -> None:
 				"due_date": d(10),
 			},
 		)
-	frappe.db.commit()
+	# a standalone script, not a request: the seeded (or removed) records must be saved
+	frappe.db.commit()  # nosemgrep
 	print(
 		f"{project}: {len(modules)} modules, {len(rel)} releases, {len(sprints)} sprints, {len(items)} tickets, {len(hours)} time entries, 3 risks (assigned to {manager})"
 	)
@@ -404,7 +405,8 @@ def remove() -> None:
 			if frappe.db.exists(doctype, name):
 				frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
 		print(f"removed {len(created.get(doctype, []))} {doctype}")
-	frappe.db.commit()
+	# a standalone script, not a request: the seeded (or removed) records must be saved
+	frappe.db.commit()  # nosemgrep
 	LOG.unlink(missing_ok=True)
 
 
