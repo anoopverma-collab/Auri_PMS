@@ -150,7 +150,7 @@
   },
   {
    "default": "1",
-   "description": "Ticked: a project member sees every Work Item of the projects they are allocated to. Unticked: a member sees only the Work Items assigned to them (Assigned To or Additional Assignees). Admins and members whose Project Role can manage members always see all.",
+   "description": "Ticked: a project member sees every Work Item of the projects they are allocated to. Unticked: a member sees only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by them (Author). Admins and members whose Project Role can manage members always see all.",
    "fieldname": "members_see_all_work_items",
    "fieldtype": "Check",
    "label": "Members See All Work Items"
@@ -600,7 +600,7 @@
  ],
  "issingle": 1,
  "istable": 0,
- "modified": "2026-10-30 10:00:00.000000",
+ "modified": "2026-10-30 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "PMS Settings",

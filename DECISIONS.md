@@ -268,7 +268,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     duplicates a core field (`reference_doctype`); that used to stop `install-app`. The duplicate is left alone; removing it is the site
     owner's step in Customize Form.
 74. **Members See All Work Items.** A PMS Settings switch, ticked by default. Unticked, the Work Item visibility rule (the permission query and
-    `has_permission`) limits a *member* whose Project Role cannot manage members to the tickets assigned to them, in their projects only;
+    `has_permission`) limits a *member* whose Project Role cannot manage members to the tickets assigned to them or raised by them (*Author*), in their projects only;
     managers, admins and non-members of a public project are unchanged. Insights reads Work Items with raw SQL, so it applies the same
     condition. A Check on a Single that was never saved reads as 0, so the stored row is read: no row means ticked.
 

@@ -187,6 +187,7 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 		)
 		self.others = self.new_item(MGR, subject="Assigned to the manager", assigned_to=MGR)
 		self.nobody = self.new_item(MGR, subject="Unassigned")
+		self.raised = self.new_item(DEV, subject="Raised by dev", assigned_to=MGR)
 
 	def tearDown(self):
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 1)
@@ -197,7 +198,7 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 			return set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
 
 	def created(self):
-		return {i.name for i in (self.mine, self.extra, self.others, self.nobody)}
+		return {i.name for i in (self.mine, self.extra, self.others, self.nobody, self.raised)}
 
 	def test_ticked_by_default_a_member_sees_every_item_of_their_project(self):
 		self.assertEqual(frappe.get_meta("PMS Settings").get_field("members_see_all_work_items").default, "1")
@@ -211,10 +212,10 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 		frappe.clear_document_cache("PMS Settings", "PMS Settings")
 		self.assertTrue(self.created() <= self.names(DEV))
 
-	def test_unticked_a_member_sees_only_the_items_assigned_to_them(self):
+	def test_unticked_a_member_sees_only_the_items_assigned_to_or_raised_by_them(self):
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
 		seen = self.names(DEV) & self.created()
-		self.assertEqual(seen, {self.mine.name, self.extra.name})
+		self.assertEqual(seen, {self.mine.name, self.extra.name, self.raised.name})
 
 	def test_unticked_a_member_cannot_open_an_item_assigned_to_someone_else(self):
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
@@ -222,6 +223,7 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 		self.assertTrue(frappe.has_permission("Work Item", "write", doc=self.extra.name, user=DEV))
 		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.others.name, user=DEV))
 		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.nobody.name, user=DEV))
+		self.assertTrue(frappe.has_permission("Work Item", "read", doc=self.raised.name, user=DEV))
 
 	def test_unticked_a_manager_and_an_admin_still_see_everything(self):
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
@@ -235,5 +237,7 @@ class TestMembersSeeOnlyOwnWorkItems(TrackerTestCase):
 
 	def test_unticked_a_member_can_still_create_an_item(self):
 		frappe.db.set_single_value("PMS Settings", "members_see_all_work_items", 0)
-		item = self.new_item(DEV, subject="Raised by dev", assigned_to=DEV)
-		self.assertIn(item.name, self.names(DEV))
+		item = self.new_item(DEV, subject="Raised for the manager", assigned_to=MGR)
+		self.assertEqual(item.author, DEV)
+		self.assertIn(item.name, self.names(DEV))  # the member who raised it still sees it
+		self.assertNotIn(item.name, self.names(REP))

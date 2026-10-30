@@ -65,7 +65,8 @@ def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
 	"""permission_query_conditions for Work Item.
 
 	With *Members See All Work Items* unticked, a member whose Project Role cannot manage members sees in
-	their projects only the Work Items assigned to them (Assigned To or Additional Assignees); every other
+	their projects only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by
+	them (Author); every other
 	project (a project they manage, or a public project they are not a member of) is unchanged."""
 	user = user or frappe.session.user
 	scope = _project_scope(user, "`tabWork Item`.project")
@@ -78,7 +79,7 @@ def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
 		"(select pr.name from `tabProject Role` pr where pr.can_manage_members = 1))"
 	)
 	own = (
-		f"(`tabWork Item`.assigned_to = {quoted} or `tabWork Item`.name in "
+		f"(`tabWork Item`.assigned_to = {quoted} or `tabWork Item`.author = {quoted} or `tabWork Item`.name in "
 		"(select wa.parent from `tabWork Item Assignee` wa "
 		f"where wa.parenttype = 'Work Item' and wa.user = {quoted}))"
 	)
@@ -178,7 +179,7 @@ def work_item_has_permission(doc, ptype: str | None = None, user: str | None = N
 		return False
 	if ptype == "create" or doc.is_new() or not sees_only_own_work_items(doc.get("project"), user):
 		return True
-	return doc.get("assigned_to") == user or any(
+	return user in (doc.get("assigned_to"), doc.get("author")) or any(
 		row.user == user for row in doc.get("additional_assignees") or []
 	)
 
