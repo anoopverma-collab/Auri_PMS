@@ -59,11 +59,11 @@ class TestUiApi(TrackerTestCase):
 		with self.as_user(REP):
 			rows = {r[0] for r in api.project_create_query("Project", "", "name", 0, 20, {})}
 		self.assertIn(self.ALP, rows)
-		self.assertIn(self.BET, rows)  # public project, Reporter may create
+		self.assertNotIn(self.BET, rows)  # public is read-only: rep is not allocated, so cannot create there
 		self.assertNotIn(self.GAM, rows)
 		with self.as_user(OUT):
 			rows = {r[0] for r in api.project_create_query("Project", "", "name", 0, 20, {})}
-		self.assertEqual(rows, {self.BET})
+		self.assertEqual(rows, set())  # out is allocated to no project
 
 	def test_log_time_api(self):
 		"""log_time creates a Time Entry for the session user."""

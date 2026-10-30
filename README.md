@@ -30,7 +30,7 @@ A centralized platform for project planning, task management, timelines, effort 
 | Gantt chart | tickets drawn from start date to due date, filtered to the project |
 | Time tracking | log hours per ticket with activity type and a *Billable* flag; limits per entry/day and lock days |
 | Dependent on Client | tick a ticket that waits on the client; tracked with a note and *Waiting since* and counted everywhere |
-| Dashboards | Project Health (with a risk heat map and tickets by module), Portfolio (billing, team capacity, notes and a period table), My Work (greeting, focus list, risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
+| Dashboards | Project Health (with a risk heat map and tickets by module), Delivery & Health (every project, release, sprint and person on one page, plus a Health and cost tab with billing, team capacity, notes and a period table: the former Portfolio), My Work (greeting, focus list, risks I own), Quality (bugs by module) and Client Status Report (progress by module, risks and mitigation) |
 | Themes and range | 8 themes in light and dark and a 1 month / 3 months / 6 months / Overall range, shared by all dashboards |
 | Reports | Work Item Summary, Time Log Summary, Release Progress, Overdue Work Items, Sprint Summary, Sprint Burndown, Client Dependencies |
 | Email | email a project's status report (choice of layouts, sections you can switch and drag into order, tickets you can remove or add with a note, preview, PDF, weekly and monthly schedule, delivery tracking), daily due-date digests, optional email-to-ticket intake |
@@ -137,6 +137,9 @@ number cards, charts, reports) and creates the default data **once**: 6 statuses
 4 ticket types (Bug has a workflow), activity types, PMS Settings and the Kanban board
 "Work Items by Status". A later `migrate` never overwrites changes you made to that data.
 
+The status report PDF needs `wkhtmltopdf` on the server. CI runs on Ubuntu 24.04 for that reason, as the `wkhtmltopdf` package
+is missing from Ubuntu 26.04 (`ubuntu-latest`).
+
 Uninstall: `bench --site <site> uninstall-app auri_pms` (removes the Project and Email Account
 custom fields, the Kanban board, the workspace and the Project permissions it added; ERPNext
 Activity Types are left alone).
@@ -145,17 +148,18 @@ Activity Types are left alone).
 
 | Where | What |
 |---|---|
-| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), time limits (per entry, per day, lock days), due reminder days, max subtask depth |
+| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), **Members See All Work Items** (ticked by default: a member sees every ticket of their projects; unticked: only the tickets assigned to them (Assigned To or Additional Assignee) or raised by them (Author); admins and members whose Project Role can manage members still see all), time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
 | **PMS Settings > Risk & Health** | the Medium, High and Critical risk score levels and every project health threshold and score penalty (see *How the health status is worked out*) |
 | **PMS Settings > Status Report** | default Email Template, which sections the report includes, the Section Order table, default recipients and default subject (see *Client Status Report: layouts, sections and defaults*) |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
 | **Ticket Type** | kind of ticket (Bug, Feature, Task, Support): default status, *Counts as Defect*, optional allowed-transition table per project role (empty = everything allowed) |
 | **Project Role** | the nine capability flags (create/edit/delete items, manage releases/categories/members, log time, edit others' time, be assigned) |
-| **Project > Auri PMS tab** | identifier (2-10 chars, set once), parent project, public flag, members + role, enabled ticket types, client status report recipients and weekly/monthly schedule |
+| **Project > Auri PMS tab** | *Project* (identifier, 2-10 chars set once; parent project; budget hours; public flag), *Members* + role, *Ticket Types*, *Client Status Report* (recipients, CC, weekly/monthly schedule), *Health Status* and *Custom Fields* (a count of 1-10 and that many text fields, three to a row) |
+| **Work Item** | besides the usual fields: **Additional Assignees** (more people on a ticket: each must be a member who can be assigned, gets a ToDo, and sees the ticket in My Work and the due digest; *Assigned To* stays the main assignee and the other dashboards count only that person), **Project Custom Fields** (the project's Custom 1-10 copied to the ticket, editable, usable as list columns and filters; a changed project value reaches tickets that still hold the old one) |
 | **Project > Auri PMS tab > Health Status** | three checkboxes (all off by default) that show or hide the health status (On Track / At Risk / Off Track, score, reasons) on the Project Hub health dashboard, the Portfolio and the Client Status Report (email, PDF). Counts and charts are always shown |
 | **Project Module** | the modules of a project (name, optional lead); project managers maintain them and tickets pick one in the *Module* field |
 | **Risk Register** | project, risk, category, owner, probability and impact (1-5 each; the score is the product), status (Identified, Mitigating, Monitoring, Occurred, Closed), mitigation due date, mitigation and contingency plan, related ticket, and *Show in Client Status Report*; anyone who can create tickets in the project can raise and edit risks, project managers delete them |
-| **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint; Sprint Board (Kanban) and Burndown |
+| **Sprint** | project, name, start/end date, goal; status buttons Start / Complete Sprint (and Reopen Sprint when the PMS Settings switch is on, only while no other sprint of the project is Active); Sprint Board (Kanban) and Burndown |
 | **PMS Settings > Weekly Capacity** | working hours per person per week, used by My Work |
 | **Email Account** | optional: *Auri PMS Project* (+ default ticket type) turns received mail into work items |
 
@@ -214,12 +218,12 @@ Open **Client Status Report** from the sidebar, choose a project and period, pre
 **Download PDF**.
 
 **Layouts.** With no template chosen the report uses the built-in layout. The ready-made Email Templates are **Summary**,
-**Summary Dark**, **Corporate** and **Corporate Grey**. Make your own by writing an Email Template and ticking **Enable for Auri PMS**
+**Summary Dark**, **Corporate** and **Corporate Grey**. All of them draw every section, including Progress by module, Plan and Time recorded. Make your own by writing an Email Template and ticking **Enable for Auri PMS**
 on it; only enabled templates appear in the pickers. Choose the default in **PMS Settings > Status Report**, or pick one for a single
 send with the **Email Template** field (or **Built-in layout**) on the report page.
 
 **Sections.** The sections are Progress by module, Waiting on client, Delivered, In progress, Coming up next, Additional tickets,
-Risks and issues, Plan, Risk register mitigation and Time spent, plus the summary figures (New tickets, Completion).
+Risks and issues, Plan, Risk register mitigation and Time spent, plus the summary figures and tiles (New tickets, Completion, and a tile each for Delivered, Open, Overdue, Waiting on you and Hours, which can be hidden without hiding their section).
 
 * **Defaults:** in **PMS Settings > Status Report** tick the sections to include and drag the rows of **Section Order** (an empty
   table keeps each layout's own order).
@@ -229,11 +233,13 @@ Risks and issues, Plan, Risk register mitigation and Time spent, plus the summar
 * Switching a section off also removes its summary figure and the status reasons that belong to it.
 
 **Tickets.** Every ticket of a section is listed. In **Tickets in this report** on the right you can remove a ticket from the
-current send (x), and add any ticket of the project with an optional note for the client (it appears under *Additional tickets*).
+current send (x), or tick several tickets (a checkbox on each ticket, one per section, and *Select all*) and use **Remove selected** to take them all out at once after a confirmation; **Restore** brings one back. A pencil in front of each ticket adds a note for the client (up to 500 characters) that is shown under the ticket in the report, for this send only. You can also add any ticket of the project with an optional note for the client (it appears under *Additional tickets*).
 Tick **Hide from Client Report** on a ticket to keep it out of every report and out of the client's health status.
 
 **Email defaults.** **Default Recipients** are added to each project's own recipients (dialog and scheduled sends); **Default Subject**
 is used when the chosen template has no subject (`{project}`, `{from_date}`, `{to_date}`).
+
+**Attachments.** The email dialog has an **Additional attachments** list with **Add files** (up to 10 files, counted in the 10 MB limit). Only files uploaded there by the sender are accepted; they are attached to the email and to the *Status Reports Sent* record.
 
 **Delivery.** Each sent report is a **Project Status Report** with *Emails Triggered*, *Delivered*, *Failed*, *Delivery Status*
 (Queued, Sent, Partially Sent, Failed) and the error; the status is refreshed from the Email Queue. A report over 10 MB is refused
@@ -256,7 +262,8 @@ Dashboards (all share one theme choice, 8 themes in light and dark, and the *Ran
 | Screen | For | What it shows |
 |---|---|---|
 | **Project Hub > Health Dashboard** | project manager, client | On Track / At Risk / Off Track with reasons, open vs closed, created vs resolved, backlog trend, sprint velocity, ticket aging, Billing graph, billable vs non-billable tickets, time by ticket category, team load and burnout risk, project notes, a final tickets and billable time by period table, tickets waiting on the client; every count opens its tickets |
-| **Portfolio** | management | a status banner like the other dashboards (worst health, average score and the projects that need attention, for projects with the Portfolio switch ticked) and one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; ticket, budget, flow and hour charts; project focus with Apply, trends by project, Billing graph, billable tickets, category treemap, team capacity, a tickets and billable time by period table and project notes; every count is clickable |
+| **Delivery & Health > Health and cost** (formerly **Portfolio**) | management | a tab of Delivery & Health with a status banner like the other dashboards (worst health, average score and the projects that need attention, for projects with the Portfolio switch ticked) and one row per project: health, open, overdue %, done %, budget burn, billable %, tickets waiting on the client; ticket, budget, flow and hour charts; project focus with Apply, trends by project, Billing graph, billable tickets, category treemap, team capacity, a tickets and billable time by period table and project notes; every count is clickable |
+| **Delivery & Health** | management | one page for all Auri PMS projects the user manages (the same audience as the Health and cost tab): *Project overview* (total, active, completed, delayed), *Task overview* (total, open, in progress, completed, overdue), *Project-wise progress*, *Release-wise tracking* (planned = due date, actual = day the last ticket closed, completion, tasks and sprints per release), *Sprint overview* (progress, overdue, the releases of its tickets, tasks per sprint), *User-wise workload* (assigned, pending, overdue, open hours per person, Assigned To and Additional Assignees) and *Delivery health* (upcoming deadlines, delayed releases, pending activities = unassigned or waiting on the client). Project, Release and Sprint filters at the top narrow every block (the Release and Sprint dropdowns list only what was created for the chosen project). A project is *delayed* when it is Open and has an overdue release, sprint or task |
 | **My Work** | everyone | my tickets by due date (overdue / today / this week / later), blocked and client-waiting badges, my sprints, hours this week against the weekly capacity, one-click *Log time*, a greeting, rings and a focus list; every count opens its list |
 | **Quality Dashboard** | QA, project manager | bugs opened vs fixed, critical bugs, time to fix by priority, reopen rate, defects per 100 hours, bugs by category and project (ticket types marked *Counts as Defect*) |
 | **Client Dependencies** (report) | project manager | every open ticket waiting on the client, how long, and what is needed; opened from the *Waiting on client* tiles |

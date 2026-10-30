@@ -5,11 +5,16 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import cint, getdate
 
-from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, recalc_sprint
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, linked_tickets, recalc_sprint
 
 STATUS_ORDER = {"Planned": 0, "Active": 1, "Completed": 2}
+
+
+def reopen_allowed() -> bool:
+	"""PMS Settings > Allow Reopening a Completed Sprint."""
+	return bool(cint(frappe.db.get_single_value("PMS Settings", "allow_reopen_sprint")))
 
 
 class Sprint(Document):
@@ -29,6 +34,10 @@ class Sprint(Document):
 		self.validate_status()
 		self.validate_completed_is_locked()
 		self.validate_carry_over()
+
+	def onload(self) -> None:
+		"""Tell the form whether a Completed sprint can be reopened (PMS Settings)."""
+		self.set_onload("allow_reopen_sprint", reopen_allowed())
 
 	def set_project_identifier(self) -> None:
 		"""Copy the project identifier (needed for the document name)."""
@@ -65,7 +74,8 @@ class Sprint(Document):
 			return
 		if self.status == "Completed" and previous != "Active":
 			frappe.throw(_("Start the sprint before completing it"))
-		if previous and STATUS_ORDER[self.status] < STATUS_ORDER[previous]:
+		reopening = previous == "Completed" and self.status == "Active" and reopen_allowed()
+		if previous and STATUS_ORDER[self.status] < STATUS_ORDER[previous] and not reopening:
 			frappe.throw(_("A {0} sprint cannot move back to {1}").format(previous, self.status))
 		if self.status == "Active":
 			other = frappe.db.get_value(
@@ -124,3 +134,10 @@ class Sprint(Document):
 	def on_trash(self) -> None:
 		"""Deleting needs the same capability; a sprint with items is refused by Frappe's link check."""
 		self.validate_can_manage()
+
+
+@frappe.whitelist()
+def get_sprint_tickets(sprint: str) -> dict:
+	"""The tickets allocated to a sprint: a count per status and per person, plus the tickets themselves."""
+	frappe.has_permission("Sprint", "read", doc=sprint, throw=True)
+	return linked_tickets("sprint", sprint)

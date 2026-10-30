@@ -1,551 +1,641 @@
 {
-	"actions": [],
-	"creation": "2026-10-10 10:00:00.000000",
-	"doctype": "DocType",
-	"engine": "InnoDB",
-	"field_order": [
-		"general_tab",
-		"defaults_section",
-		"default_status",
-		"defaults_col",
-		"default_priority",
-		"column_break_defaults_2",
-		"public_project_role",
-		"ticket_rules_section",
-		"require_children_closed",
-		"require_blockers_closed",
-		"ticket_rules_col",
-		"max_subtask_depth",
-		"column_break_ticket_rules_2",
-		"due_reminder_days",
-		"time_tab",
-		"time_rules_section",
-		"allow_time_on_closed_items",
-		"time_entry_lock_days",
-		"time_rules_col",
-		"max_hours_per_entry",
-		"max_hours_per_day",
-		"column_break_time_rules_2",
-		"weekly_capacity_hours",
-		"allocation_section",
-		"utilisation_window_weeks",
-		"allocation_col",
-		"over_utilisation_pct",
-		"allocation_col_2",
-		"under_utilisation_pct",
-		"risk_health_tab",
-		"risk_section",
-		"risk_medium_from",
-		"risk_col_1",
-		"risk_high_from",
-		"risk_col_2",
-		"risk_critical_from",
-		"health_section",
-		"overdue_amber_pct",
-		"overdue_red_pct",
-		"burndown_amber_pct",
-		"burndown_red_pct",
-		"health_col",
-		"effort_ahead_amber_pct",
-		"release_progress_pct",
-		"release_due_soon_days",
-		"column_break_health_2",
-		"backlog_growth_ratio",
-		"backlog_growth_min_created",
-		"score_red_penalty",
-		"score_amber_penalty",
-		"report_tab",
-		"report_section",
-		"report_email_template",
-		"report_sections_section",
-		"show_report_modules",
-		"show_report_delivered",
-		"show_report_in_progress",
-		"report_col_1",
-		"show_report_waiting",
-		"show_report_next_up",
-		"show_report_extra",
-		"show_report_issues",
-		"report_col_2",
-		"show_report_plan",
-		"show_report_risks",
-		"show_report_time",
-		"show_report_created",
-		"show_report_completion",
-		"report_order_section",
-		"report_section_order",
-		"report_defaults_section",
-		"report_default_recipients",
-		"report_default_subject",
-		"limits_col"
-	],
-	"fields": [
-		{
-			"fieldname": "general_tab",
-			"fieldtype": "Tab Break",
-			"label": "General"
-		},
-		{
-			"fieldname": "defaults_section",
-			"fieldtype": "Section Break",
-			"label": "Defaults"
-		},
-		{
-			"description": "Used when a ticket type has no default",
-			"fieldname": "default_status",
-			"fieldtype": "Link",
-			"label": "Default Status",
-			"options": "Work Item Status",
-			"reqd": 1
-		},
-		{
-			"default": "Normal",
-			"fieldname": "default_priority",
-			"fieldtype": "Select",
-			"label": "Default Priority",
-			"options": "Low\nNormal\nHigh\nUrgent\nImmediate",
-			"reqd": 1
-		},
-		{
-			"fieldname": "defaults_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"description": "Capabilities for non-members on public projects",
-			"fieldname": "public_project_role",
-			"fieldtype": "Link",
-			"label": "Role on Public Projects",
-			"options": "Project Role",
-			"reqd": 1
-		},
-		{
-			"fieldname": "ticket_rules_section",
-			"fieldtype": "Section Break",
-			"label": "Ticket Rules"
-		},
-		{
-			"default": "1",
-			"fieldname": "require_children_closed",
-			"fieldtype": "Check",
-			"label": "Parent Closes Only After Children"
-		},
-		{
-			"default": "1",
-			"fieldname": "require_blockers_closed",
-			"fieldtype": "Check",
-			"label": "Item Closes Only After Blockers"
-		},
-		{
-			"fieldname": "ticket_rules_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "5",
-			"fieldname": "max_subtask_depth",
-			"fieldtype": "Int",
-			"label": "Max Subtask Depth"
-		},
-		{
-			"default": "1",
-			"description": "Daily scheduler",
-			"fieldname": "due_reminder_days",
-			"fieldtype": "Int",
-			"label": "Due Reminder (Days Before)"
-		},
-		{
-			"fieldname": "time_tab",
-			"fieldtype": "Tab Break",
-			"label": "Time Tracking"
-		},
-		{
-			"fieldname": "time_rules_section",
-			"fieldtype": "Section Break",
-			"label": "Time Entry Rules"
-		},
-		{
-			"default": "0",
-			"fieldname": "allow_time_on_closed_items",
-			"fieldtype": "Check",
-			"label": "Allow Time on Closed Items"
-		},
-		{
-			"default": "0",
-			"description": "0 = no lock; Auri PMS Manager bypasses",
-			"fieldname": "time_entry_lock_days",
-			"fieldtype": "Int",
-			"label": "Lock Time Entries Older Than (Days)"
-		},
-		{
-			"fieldname": "time_rules_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "24",
-			"fieldname": "max_hours_per_entry",
-			"fieldtype": "Float",
-			"label": "Max Hours per Entry"
-		},
-		{
-			"default": "24",
-			"fieldname": "max_hours_per_day",
-			"fieldtype": "Float",
-			"label": "Max Hours per User per Day"
-		},
-		{
-			"default": "40",
-			"description": "Working hours per person per week; used by My Work to compare logged hours",
-			"fieldname": "weekly_capacity_hours",
-			"fieldtype": "Float",
-			"label": "Weekly Capacity (Hours)"
-		},
-		{
-			"fieldname": "allocation_section",
-			"fieldtype": "Section Break",
-			"label": "Allocation & Utilisation"
-		},
-		{
-			"default": "4",
-			"description": "Utilisation compares the average hours logged per week over this many weeks with the hours allocated",
-			"fieldname": "utilisation_window_weeks",
-			"fieldtype": "Int",
-			"label": "Utilisation Window (Weeks)",
-			"non_negative": 1
-		},
-		{
-			"fieldname": "allocation_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "110",
-			"description": "Logged hours above this % of the allocated hours are flagged as over-used; a person whose logged hours across all projects exceed this % of their weekly capacity is flagged as a burnout risk",
-			"fieldname": "over_utilisation_pct",
-			"fieldtype": "Int",
-			"label": "Over-utilised Above (%)",
-			"non_negative": 1
-		},
-		{
-			"fieldname": "allocation_col_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "50",
-			"description": "Logged hours below this % of the allocated hours are flagged as under-used",
-			"fieldname": "under_utilisation_pct",
-			"fieldtype": "Int",
-			"label": "Under-utilised Below (%)",
-			"non_negative": 1
-		},
-		{
-			"fieldname": "risk_health_tab",
-			"fieldtype": "Tab Break",
-			"label": "Risk & Health"
-		},
-		{
-			"description": "Risk Score = Probability x Impact (1-25). A score at or above a threshold gets that level; below Medium is Low.",
-			"fieldname": "risk_section",
-			"fieldtype": "Section Break",
-			"label": "Risk Register"
-		},
-		{
-			"default": "5",
-			"fieldname": "risk_medium_from",
-			"fieldtype": "Int",
-			"label": "Medium From Score"
-		},
-		{
-			"fieldname": "risk_col_1",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "10",
-			"fieldname": "risk_high_from",
-			"fieldtype": "Int",
-			"label": "High From Score"
-		},
-		{
-			"fieldname": "risk_col_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "15",
-			"fieldname": "risk_critical_from",
-			"fieldtype": "Int",
-			"label": "Critical From Score"
-		},
-		{
-			"description": "Thresholds behind the On Track / At Risk / Off Track status",
-			"fieldname": "health_section",
-			"fieldtype": "Section Break",
-			"label": "Project Health"
-		},
-		{
-			"default": "10",
-			"description": "Share of open tickets past their due date",
-			"fieldname": "overdue_amber_pct",
-			"fieldtype": "Int",
-			"label": "Overdue Tickets: At Risk Above (%)"
-		},
-		{
-			"default": "25",
-			"fieldname": "overdue_red_pct",
-			"fieldtype": "Int",
-			"label": "Overdue Tickets: Off Track Above (%)"
-		},
-		{
-			"default": "10",
-			"description": "Gap between actual and ideal remaining work, as a share of sprint scope",
-			"fieldname": "burndown_amber_pct",
-			"fieldtype": "Int",
-			"label": "Sprint Behind Burndown: At Risk Above (%)"
-		},
-		{
-			"default": "25",
-			"fieldname": "burndown_red_pct",
-			"fieldtype": "Int",
-			"label": "Sprint Behind Burndown: Off Track Above (%)"
-		},
-		{
-			"default": "25",
-			"description": "Effort used (%) minus work completed (%)",
-			"fieldname": "effort_ahead_amber_pct",
-			"fieldtype": "Int",
-			"label": "Effort Ahead of Progress: At Risk Above (Points)"
-		},
-		{
-			"fieldname": "health_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "80",
-			"description": "A release below this progress is flagged when due soon or past due",
-			"fieldname": "release_progress_pct",
-			"fieldtype": "Int",
-			"label": "Release Progress Considered Safe (%)"
-		},
-		{
-			"default": "7",
-			"fieldname": "release_due_soon_days",
-			"fieldtype": "Int",
-			"label": "Release Due Soon (Days)"
-		},
-		{
-			"default": "1.5",
-			"description": "Compared over the last 4 weeks",
-			"fieldname": "backlog_growth_ratio",
-			"fieldtype": "Float",
-			"label": "Backlog Growth: At Risk When Created Exceeds Resolved By (x)"
-		},
-		{
-			"default": "4",
-			"fieldname": "backlog_growth_min_created",
-			"fieldtype": "Int",
-			"label": "Backlog Growth: Minimum Tickets Created"
-		},
-		{
-			"default": "25",
-			"fieldname": "score_red_penalty",
-			"fieldtype": "Int",
-			"label": "Health Score Penalty per Off Track Reason"
-		},
-		{
-			"default": "10",
-			"fieldname": "score_amber_penalty",
-			"fieldtype": "Int",
-			"label": "Health Score Penalty per At Risk Reason"
-		},
-		{
-			"fieldname": "report_tab",
-			"fieldtype": "Tab Break",
-			"label": "Status Report"
-		},
-		{
-			"description": "Applies to every client status report, manual or scheduled",
-			"fieldname": "report_section",
-			"fieldtype": "Section Break",
-			"label": "Email Template"
-		},
-		{
-			"description": "Only templates with Enable for Auri PMS ticked are listed. Leave empty to use the built-in layout. A chosen template is rendered with the report data (r, note, colour, tiles, show)",
-			"fieldname": "report_email_template",
-			"fieldtype": "Link",
-			"label": "Email Template",
-			"options": "Email Template",
-			"link_filters": "[[\"Email Template\",\"auri_pms_enabled\",\"=\",1]]"
-		},
-		{
-			"fieldname": "report_sections_section",
-			"fieldtype": "Section Break",
-			"label": "Sections to Include"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_modules",
-			"fieldtype": "Check",
-			"label": "Show Progress by Module"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_delivered",
-			"fieldtype": "Check",
-			"label": "Show Delivered"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_in_progress",
-			"fieldtype": "Check",
-			"label": "Show In Progress"
-		},
-		{
-			"fieldname": "report_col_1",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_waiting",
-			"fieldtype": "Check",
-			"label": "Show Waiting on Client"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_next_up",
-			"fieldtype": "Check",
-			"label": "Show Coming Up Next"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_issues",
-			"fieldtype": "Check",
-			"label": "Show Risks and Issues (Overdue, Blocked, Releases)"
-		},
-		{
-			"fieldname": "report_col_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_plan",
-			"fieldtype": "Check",
-			"label": "Show Plan (Sprint and Releases)"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_risks",
-			"fieldtype": "Check",
-			"label": "Show Risk Register Mitigation"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_time",
-			"fieldtype": "Check",
-			"label": "Show Time Spent"
-		},
-		{
-			"description": "Drag the rows to change the order the report lists its sections in. A section that is not listed goes to the end.",
-			"fieldname": "report_order_section",
-			"fieldtype": "Section Break",
-			"label": "Section Order"
-		},
-		{
-			"fieldname": "report_section_order",
-			"fieldtype": "Table",
-			"label": "Order",
-			"options": "PMS Report Section"
-		},
-		{
-			"fieldname": "limits_col",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_created",
-			"fieldtype": "Check",
-			"label": "Show New Tickets Count and Sentence"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_completion",
-			"fieldtype": "Check",
-			"label": "Show Completion Percentage"
-		},
-		{
-			"default": "1",
-			"fieldname": "show_report_extra",
-			"fieldtype": "Check",
-			"label": "Show Additional Tickets"
-		},
-		{
-			"description": "Applied to every status report; the report page still lets you change them before sending",
-			"fieldname": "report_defaults_section",
-			"fieldtype": "Section Break",
-			"label": "Email Defaults"
-		},
-		{
-			"description": "Added to each project's own report recipients (separate addresses with commas or new lines)",
-			"fieldname": "report_default_recipients",
-			"fieldtype": "Small Text",
-			"label": "Default Recipients"
-		},
-		{
-			"description": "Used when the chosen template has no subject. Placeholders: {project}, {from_date}, {to_date}",
-			"fieldname": "report_default_subject",
-			"fieldtype": "Data",
-			"label": "Default Subject"
-		},
-		{
-			"fieldname": "column_break_defaults_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_ticket_rules_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_time_rules_2",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_health_2",
-			"fieldtype": "Column Break"
-		}
-	],
-	"issingle": 1,
-	"istable": 0,
-	"modified": "2026-10-24 19:00:00.000000",
-	"modified_by": "Administrator",
-	"module": "Auri PMS",
-	"name": "PMS Settings",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"create": 1,
-			"email": 1,
-			"print": 1,
-			"read": 1,
-			"role": "Auri PMS Manager",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"print": 1,
-			"read": 1,
-			"role": "Auri PMS Admin",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"print": 1,
-			"read": 1,
-			"role": "System Manager",
-			"write": 1
-		},
-		{
-			"read": 1,
-			"role": "Auri PMS User"
-		}
-	],
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": []
+ "actions": [],
+ "creation": "2026-10-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_tab",
+  "defaults_section",
+  "default_status",
+  "defaults_col",
+  "default_priority",
+  "column_break_defaults_2",
+  "public_project_role",
+  "ticket_rules_section",
+  "require_children_closed",
+  "require_blockers_closed",
+  "members_see_all_work_items",
+  "ticket_rules_col",
+  "max_subtask_depth",
+  "column_break_ticket_rules_2",
+  "due_reminder_days",
+  "closed_sprint_section",
+  "keep_closed_on_editable",
+  "closed_sprint_col_1",
+  "allow_completed_sprint_for_closed",
+  "closed_sprint_col_2",
+  "allow_reopen_sprint",
+  "time_tab",
+  "time_rules_section",
+  "allow_time_on_closed_items",
+  "time_entry_lock_days",
+  "time_rules_col",
+  "max_hours_per_entry",
+  "max_hours_per_day",
+  "column_break_time_rules_2",
+  "weekly_capacity_hours",
+  "allocation_section",
+  "utilisation_window_weeks",
+  "allocation_col",
+  "over_utilisation_pct",
+  "allocation_col_2",
+  "under_utilisation_pct",
+  "risk_health_tab",
+  "risk_section",
+  "risk_medium_from",
+  "risk_col_1",
+  "risk_high_from",
+  "risk_col_2",
+  "risk_critical_from",
+  "health_section",
+  "overdue_amber_pct",
+  "overdue_red_pct",
+  "burndown_amber_pct",
+  "burndown_red_pct",
+  "health_col",
+  "effort_ahead_amber_pct",
+  "release_progress_pct",
+  "release_due_soon_days",
+  "column_break_health_2",
+  "backlog_growth_ratio",
+  "backlog_growth_min_created",
+  "score_red_penalty",
+  "score_amber_penalty",
+  "report_tab",
+  "report_section",
+  "report_email_template",
+  "report_sections_section",
+  "show_report_modules",
+  "show_report_delivered",
+  "show_report_in_progress",
+  "report_col_1",
+  "show_report_waiting",
+  "show_report_next_up",
+  "show_report_extra",
+  "show_report_issues",
+  "report_col_2",
+  "show_report_plan",
+  "show_report_risks",
+  "show_report_time",
+  "show_report_created",
+  "show_report_completion",
+  "show_report_tile_delivered",
+  "show_report_tile_open",
+  "show_report_tile_overdue",
+  "show_report_tile_waiting",
+  "show_report_tile_time",
+  "report_order_section",
+  "report_section_order",
+  "report_defaults_section",
+  "report_default_recipients",
+  "report_default_cc",
+  "report_default_subject",
+  "limits_col"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_tab",
+   "fieldtype": "Tab Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Defaults"
+  },
+  {
+   "description": "Used when a ticket type has no default",
+   "fieldname": "default_status",
+   "fieldtype": "Link",
+   "label": "Default Status",
+   "options": "Work Item Status",
+   "reqd": 1
+  },
+  {
+   "default": "Normal",
+   "fieldname": "default_priority",
+   "fieldtype": "Select",
+   "label": "Default Priority",
+   "options": "Low\nNormal\nHigh\nUrgent\nImmediate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "defaults_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Capabilities for non-members on public projects",
+   "fieldname": "public_project_role",
+   "fieldtype": "Link",
+   "label": "Role on Public Projects",
+   "options": "Project Role",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ticket_rules_section",
+   "fieldtype": "Section Break",
+   "label": "Ticket Rules"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_children_closed",
+   "fieldtype": "Check",
+   "label": "Parent Closes Only After Children"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_blockers_closed",
+   "fieldtype": "Check",
+   "label": "Item Closes Only After Blockers"
+  },
+  {
+   "default": "1",
+   "description": "Ticked: a project member sees every Work Item of the projects they are allocated to. Unticked: a member sees only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by them (Author). Admins and members whose Project Role can manage members always see all.",
+   "fieldname": "members_see_all_work_items",
+   "fieldtype": "Check",
+   "label": "Members See All Work Items"
+  },
+  {
+   "fieldname": "ticket_rules_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "5",
+   "fieldname": "max_subtask_depth",
+   "fieldtype": "Int",
+   "label": "Max Subtask Depth"
+  },
+  {
+   "default": "1",
+   "description": "Daily scheduler",
+   "fieldname": "due_reminder_days",
+   "fieldtype": "Int",
+   "label": "Due Reminder (Days Before)"
+  },
+  {
+   "fieldname": "closed_sprint_section",
+   "fieldtype": "Section Break",
+   "label": "Closed Tickets and Sprints"
+  },
+  {
+   "fieldname": "closed_sprint_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "closed_sprint_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Show Closed On on every ticket and let people edit it. A date entered while closing a ticket is kept; without one it is set to the closing time.",
+   "fieldname": "keep_closed_on_editable",
+   "fieldtype": "Check",
+   "label": "Keep Closed On Visible and Editable"
+  },
+  {
+   "default": "0",
+   "description": "A closed ticket can be moved to a Completed sprint, for example to record the sprint it was really delivered in. Open tickets still only accept Planned or Active sprints.",
+   "fieldname": "allow_completed_sprint_for_closed",
+   "fieldtype": "Check",
+   "label": "Allow Completed Sprint for Closed Tickets"
+  },
+  {
+   "default": "0",
+   "description": "Adds a Reopen Sprint button to a Completed sprint (back to Active, when no other sprint of the project is active). Tickets already carried over to another sprint or the backlog stay there.",
+   "fieldname": "allow_reopen_sprint",
+   "fieldtype": "Check",
+   "label": "Allow Reopening a Completed Sprint"
+  },
+  {
+   "fieldname": "time_tab",
+   "fieldtype": "Tab Break",
+   "label": "Time Tracking"
+  },
+  {
+   "fieldname": "time_rules_section",
+   "fieldtype": "Section Break",
+   "label": "Time Entry Rules"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_time_on_closed_items",
+   "fieldtype": "Check",
+   "label": "Allow Time on Closed Items"
+  },
+  {
+   "default": "0",
+   "description": "0 = no lock; Auri PMS Manager bypasses",
+   "fieldname": "time_entry_lock_days",
+   "fieldtype": "Int",
+   "label": "Lock Time Entries Older Than (Days)"
+  },
+  {
+   "fieldname": "time_rules_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "24",
+   "fieldname": "max_hours_per_entry",
+   "fieldtype": "Float",
+   "label": "Max Hours per Entry"
+  },
+  {
+   "default": "24",
+   "fieldname": "max_hours_per_day",
+   "fieldtype": "Float",
+   "label": "Max Hours per User per Day"
+  },
+  {
+   "default": "40",
+   "description": "Working hours per person per week; used by My Work to compare logged hours",
+   "fieldname": "weekly_capacity_hours",
+   "fieldtype": "Float",
+   "label": "Weekly Capacity (Hours)"
+  },
+  {
+   "fieldname": "allocation_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation & Utilisation"
+  },
+  {
+   "default": "4",
+   "description": "Utilisation compares the average hours logged per week over this many weeks with the hours allocated",
+   "fieldname": "utilisation_window_weeks",
+   "fieldtype": "Int",
+   "label": "Utilisation Window (Weeks)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "allocation_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "110",
+   "description": "Logged hours above this % of the allocated hours are flagged as over-used; a person whose logged hours across all projects exceed this % of their weekly capacity is flagged as a burnout risk",
+   "fieldname": "over_utilisation_pct",
+   "fieldtype": "Int",
+   "label": "Over-utilised Above (%)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "allocation_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "50",
+   "description": "Logged hours below this % of the allocated hours are flagged as under-used",
+   "fieldname": "under_utilisation_pct",
+   "fieldtype": "Int",
+   "label": "Under-utilised Below (%)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "risk_health_tab",
+   "fieldtype": "Tab Break",
+   "label": "Risk & Health"
+  },
+  {
+   "description": "Risk Score = Probability x Impact (1-25). A score at or above a threshold gets that level; below Medium is Low.",
+   "fieldname": "risk_section",
+   "fieldtype": "Section Break",
+   "label": "Risk Register"
+  },
+  {
+   "default": "5",
+   "fieldname": "risk_medium_from",
+   "fieldtype": "Int",
+   "label": "Medium From Score"
+  },
+  {
+   "fieldname": "risk_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "10",
+   "fieldname": "risk_high_from",
+   "fieldtype": "Int",
+   "label": "High From Score"
+  },
+  {
+   "fieldname": "risk_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "15",
+   "fieldname": "risk_critical_from",
+   "fieldtype": "Int",
+   "label": "Critical From Score"
+  },
+  {
+   "description": "Thresholds behind the On Track / At Risk / Off Track status",
+   "fieldname": "health_section",
+   "fieldtype": "Section Break",
+   "label": "Project Health"
+  },
+  {
+   "default": "10",
+   "description": "Share of open tickets past their due date",
+   "fieldname": "overdue_amber_pct",
+   "fieldtype": "Int",
+   "label": "Overdue Tickets: At Risk Above (%)"
+  },
+  {
+   "default": "25",
+   "fieldname": "overdue_red_pct",
+   "fieldtype": "Int",
+   "label": "Overdue Tickets: Off Track Above (%)"
+  },
+  {
+   "default": "10",
+   "description": "Gap between actual and ideal remaining work, as a share of sprint scope",
+   "fieldname": "burndown_amber_pct",
+   "fieldtype": "Int",
+   "label": "Sprint Behind Burndown: At Risk Above (%)"
+  },
+  {
+   "default": "25",
+   "fieldname": "burndown_red_pct",
+   "fieldtype": "Int",
+   "label": "Sprint Behind Burndown: Off Track Above (%)"
+  },
+  {
+   "default": "25",
+   "description": "Effort used (%) minus work completed (%)",
+   "fieldname": "effort_ahead_amber_pct",
+   "fieldtype": "Int",
+   "label": "Effort Ahead of Progress: At Risk Above (Points)"
+  },
+  {
+   "fieldname": "health_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "80",
+   "description": "A release below this progress is flagged when due soon or past due",
+   "fieldname": "release_progress_pct",
+   "fieldtype": "Int",
+   "label": "Release Progress Considered Safe (%)"
+  },
+  {
+   "default": "7",
+   "fieldname": "release_due_soon_days",
+   "fieldtype": "Int",
+   "label": "Release Due Soon (Days)"
+  },
+  {
+   "default": "1.5",
+   "description": "Compared over the last 4 weeks",
+   "fieldname": "backlog_growth_ratio",
+   "fieldtype": "Float",
+   "label": "Backlog Growth: At Risk When Created Exceeds Resolved By (x)"
+  },
+  {
+   "default": "4",
+   "fieldname": "backlog_growth_min_created",
+   "fieldtype": "Int",
+   "label": "Backlog Growth: Minimum Tickets Created"
+  },
+  {
+   "default": "25",
+   "fieldname": "score_red_penalty",
+   "fieldtype": "Int",
+   "label": "Health Score Penalty per Off Track Reason"
+  },
+  {
+   "default": "10",
+   "fieldname": "score_amber_penalty",
+   "fieldtype": "Int",
+   "label": "Health Score Penalty per At Risk Reason"
+  },
+  {
+   "fieldname": "report_tab",
+   "fieldtype": "Tab Break",
+   "label": "Status Report"
+  },
+  {
+   "description": "Applies to every client status report, manual or scheduled",
+   "fieldname": "report_section",
+   "fieldtype": "Section Break",
+   "label": "Email Template"
+  },
+  {
+   "description": "Only templates with Enable for Auri PMS ticked are listed. Leave empty to use the built-in layout. A chosen template is rendered with the report data (r, note, colour, tiles, show)",
+   "fieldname": "report_email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template",
+   "link_filters": "[[\"Email Template\",\"auri_pms_enabled\",\"=\",1]]"
+  },
+  {
+   "fieldname": "report_sections_section",
+   "fieldtype": "Section Break",
+   "label": "Sections to Include"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_modules",
+   "fieldtype": "Check",
+   "label": "Show Progress by Module"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_delivered",
+   "fieldtype": "Check",
+   "label": "Show Delivered"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_in_progress",
+   "fieldtype": "Check",
+   "label": "Show In Progress"
+  },
+  {
+   "fieldname": "report_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_waiting",
+   "fieldtype": "Check",
+   "label": "Show Waiting on Client"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_next_up",
+   "fieldtype": "Check",
+   "label": "Show Coming Up Next"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_issues",
+   "fieldtype": "Check",
+   "label": "Show Risks and Issues (Overdue, Blocked, Releases)"
+  },
+  {
+   "fieldname": "report_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_plan",
+   "fieldtype": "Check",
+   "label": "Show Plan (Sprint and Releases)"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_risks",
+   "fieldtype": "Check",
+   "label": "Show Risk Register Mitigation"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_time",
+   "fieldtype": "Check",
+   "label": "Show Time Spent"
+  },
+  {
+   "description": "Drag the rows to change the order the report lists its sections in. A section that is not listed goes to the end.",
+   "fieldname": "report_order_section",
+   "fieldtype": "Section Break",
+   "label": "Section Order"
+  },
+  {
+   "fieldname": "report_section_order",
+   "fieldtype": "Table",
+   "label": "Order",
+   "options": "PMS Report Section"
+  },
+  {
+   "fieldname": "limits_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_created",
+   "fieldtype": "Check",
+   "label": "Show New Tickets Count and Sentence"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_completion",
+   "fieldtype": "Check",
+   "label": "Show Completion Percentage"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_delivered",
+   "fieldtype": "Check",
+   "label": "Show Delivered Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_open",
+   "fieldtype": "Check",
+   "label": "Show Open Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_overdue",
+   "fieldtype": "Check",
+   "label": "Show Overdue Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_waiting",
+   "fieldtype": "Check",
+   "label": "Show Waiting on you Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_tile_time",
+   "fieldtype": "Check",
+   "label": "Show Hours Tile"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_report_extra",
+   "fieldtype": "Check",
+   "label": "Show Additional Tickets"
+  },
+  {
+   "description": "Applied to every status report; the report page still lets you change them before sending",
+   "fieldname": "report_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Email Defaults"
+  },
+  {
+   "description": "Added to each project's own report recipients (separate addresses with commas or new lines)",
+   "fieldname": "report_default_recipients",
+   "fieldtype": "Small Text",
+   "label": "Default Recipients"
+  },
+  {
+   "description": "Used when the chosen template has no subject. Placeholders: {project}, {from_date}, {to_date}",
+   "fieldname": "report_default_subject",
+   "fieldtype": "Data",
+   "label": "Default Subject"
+  },
+  {
+   "fieldname": "column_break_defaults_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ticket_rules_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_time_rules_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_health_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Added to each project's own report CC",
+   "fieldname": "report_default_cc",
+   "fieldtype": "Small Text",
+   "label": "Default CC"
+  }
+ ],
+ "issingle": 1,
+ "istable": 0,
+ "modified": "2026-10-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Auri PMS",
+ "name": "PMS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Auri PMS Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Auri PMS Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Auri PMS User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }

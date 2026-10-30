@@ -2,6 +2,7 @@
 
 import frappe
 
+from auri_pms.auri_pms.project_hooks import apply_custom_values
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, REP, TM, TrackerTestCase
 
 
@@ -29,9 +30,10 @@ class TestWorkItem(TrackerTestCase):
 		"""T-023: out cannot create on ALP."""
 		self.assertThrows("You are not allowed to create work items in Project", lambda: self.new_item(OUT))
 
-	def test_t024_outsider_can_create_on_public(self):
-		"""T-024: out can create on BET through the public Reporter role."""
-		self.assertTrue(self.new_item(OUT, self.BET).name.startswith("BET-"))
+	def test_t024_outsider_cannot_create_on_public(self):
+		"""T-024: out is not allocated to the public project BET, so cannot create there."""
+		with self.assertRaises(frappe.ValidationError):
+			self.new_item(OUT, self.BET)
 
 	def test_t025_tracker_not_enabled(self):
 		"""T-025: Feature is not enabled on BET."""
@@ -55,6 +57,15 @@ class TestWorkItem(TrackerTestCase):
 			"Due Date cannot be before Start Date",
 			lambda: self.new_item(DEV, start_date="2026-10-10", due_date="2026-10-01"),
 		)
+
+	def test_actual_end_before_actual_start(self):
+		"""The actual end date cannot come before the actual start date."""
+		self.assertThrows(
+			"Actual End Date cannot be before Actual Start Date",
+			lambda: self.new_item(DEV, actual_start_date="2026-10-10", actual_end_date="2026-10-01"),
+		)
+		item = self.new_item(DEV, actual_start_date="2026-10-01", actual_end_date="2026-10-05")
+		self.assertEqual(str(item.actual_end_date), "2026-10-05")
 
 	def test_t029_negative_estimate_and_percent(self):
 		"""T-029: estimated_hours -1 and done_percent 120 are each rejected."""
@@ -159,3 +170,204 @@ class TestWorkItem(TrackerTestCase):
 		item = self.new_item(MGR)
 		self.save_as(DEV, item, subject="by dev")
 		self.assertEqual(frappe.db.get_value("Work Item", item.name, "subject"), "by dev")
+
+	# ---- Closed On: PMS Settings > Keep Closed On Visible and Editable ------------------------------
+	def close_with_date(self, date: str):
+		item = self.new_item(MGR, tracker="Task")
+		self.save_as(MGR, item, status="Closed", closed_on=date)
+		return frappe.get_doc("Work Item", item.name)
+
+	def test_closed_on_entered_date_is_kept_when_setting_is_on(self):
+		"""With the switch on, a Closed On typed while closing a ticket is kept."""
+		frappe.db.set_single_value("PMS Settings", "keep_closed_on_editable", 1)
+		item = self.close_with_date("2026-10-01 10:30:00")
+		self.assertEqual(str(item.closed_on), "2026-10-01 10:30:00")
+		self.assertEqual(item.closed_by, MGR)
+
+	def test_closed_on_is_stamped_when_setting_is_off(self):
+		"""With the switch off (the default) the closing time is set whatever was typed."""
+		frappe.db.set_single_value("PMS Settings", "keep_closed_on_editable", 0)
+		item = self.close_with_date("2026-10-01 10:30:00")
+		self.assertNotEqual(str(item.closed_on), "2026-10-01 10:30:00")
+		self.assertTrue(item.closed_on)
+
+	def test_closed_on_is_stamped_when_none_is_entered(self):
+		"""With the switch on and no date typed, the closing time is still set."""
+		frappe.db.set_single_value("PMS Settings", "keep_closed_on_editable", 1)
+		item = self.new_item(MGR, tracker="Task")
+		self.save_as(MGR, item, status="Closed")
+		self.assertTrue(frappe.db.get_value("Work Item", item.name, "closed_on"))
+
+	def test_reopening_clears_closed_on(self):
+		"""A ticket that is opened again loses Closed On and Closed By, with the switch on too."""
+		frappe.db.set_single_value("PMS Settings", "keep_closed_on_editable", 1)
+		item = self.close_with_date("2026-10-01 10:30:00")
+		self.save_as(MGR, item, status="New")
+		self.assertEqual(
+			frappe.db.get_value("Work Item", item.name, ["closed_on", "closed_by"]), (None, None)
+		)
+
+	# ---- Project custom fields (Project > Custom Fields) copied to the tickets -----------------------
+	def set_project_custom(self, count, **values):
+		frappe.db.set_value("Project", self.ALP, {"pms_custom_count": str(count), **values})
+
+	def custom_of(self, item):
+		fields = ["project_custom_count", *(f"project_custom_{n}" for n in range(1, 6))]
+		return dict(zip(fields, frappe.db.get_value("Work Item", item.name, fields), strict=True))
+
+	def test_ticket_starts_with_the_projects_custom_values(self):
+		"""A new ticket gets the project's count and the values up to that count, and nothing beyond it."""
+		self.set_project_custom(3, pms_custom_1="Alpha", pms_custom_2="Beta", pms_custom_4="Hidden")
+		got = self.custom_of(self.new_item(MGR))
+		self.assertEqual(got["project_custom_count"], 3)
+		self.assertEqual((got["project_custom_1"], got["project_custom_2"]), ("Alpha", "Beta"))
+		self.assertIsNone(got["project_custom_4"])
+
+	def test_value_typed_on_a_ticket_is_kept(self):
+		"""The fields are editable on the ticket, and saving again does not put the project's value back."""
+		self.set_project_custom(3, pms_custom_1="Alpha")
+		item = self.new_item(MGR)
+		self.save_as(MGR, item, project_custom_1="Mine", project_custom_2="Typed")
+		self.save_as(MGR, item, subject="saved again")
+		got = self.custom_of(item)
+		self.assertEqual((got["project_custom_1"], got["project_custom_2"]), ("Mine", "Typed"))
+
+	def test_project_change_follows_unless_the_ticket_has_its_own(self):
+		"""A changed project value reaches a ticket that held the old one; a value typed on the ticket stays."""
+		self.set_project_custom(5, pms_custom_1="Alpha", pms_custom_5="Old5")
+		item = self.new_item(MGR)
+		self.save_as(MGR, item, project_custom_5="Mine")
+		old = frappe.db.get_value(
+			"Project",
+			self.ALP,
+			["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))],
+			as_dict=True,
+		)
+		self.set_project_custom(5, pms_custom_1="Alpha2", pms_custom_5="New5")
+		apply_custom_values(self.ALP, dict(old))
+		got = self.custom_of(item)
+		self.assertEqual((got["project_custom_1"], got["project_custom_5"]), ("Alpha2", "Mine"))
+
+	def test_lowering_the_count_clears_the_extra_values(self):
+		"""Custom fields beyond the project's new number are emptied on its tickets."""
+		self.set_project_custom(5, pms_custom_1="Alpha", pms_custom_4="Four")
+		item = self.new_item(MGR)
+		self.assertEqual(self.custom_of(item)["project_custom_4"], "Four")
+		old = frappe.db.get_value(
+			"Project",
+			self.ALP,
+			["pms_custom_count", *(f"pms_custom_{n}" for n in range(1, 11))],
+			as_dict=True,
+		)
+		self.set_project_custom(2)
+		apply_custom_values(self.ALP, dict(old))
+		got = self.custom_of(item)
+		self.assertEqual((got["project_custom_count"], got["project_custom_1"]), (2, "Alpha"))
+		self.assertIsNone(got["project_custom_4"])
+
+	def test_project_without_custom_fields_leaves_tickets_empty(self):
+		"""Count 0 (or unset): the ticket carries no custom values."""
+		got = self.custom_of(self.new_item(MGR))
+		self.assertFalse(got["project_custom_count"])
+		self.assertIsNone(got["project_custom_1"])
+
+	# ---- Additional Assignees ----------------------------------------------------------------------
+	def open_todos(self, item, user):
+		return frappe.get_all(
+			"ToDo",
+			filters={
+				"reference_type": "Work Item",
+				"reference_name": item.name,
+				"allocated_to": user,
+				"status": "Open",
+			},
+		)
+
+	def test_additional_assignee_gets_a_todo(self):
+		"""Each person in Additional Assignees gets the ticket in their ToDo list."""
+		item = self.new_item(MGR, assigned_to=MGR)
+		self.save_as(MGR, item, additional_assignees=[{"user": DEV}])
+		self.assertEqual(len(self.open_todos(item, DEV)), 1)
+		self.assertEqual(len(self.open_todos(item, MGR)), 1)
+
+	def test_removing_an_additional_assignee_closes_the_todo(self):
+		item = self.new_item(MGR, assigned_to=MGR)
+		self.save_as(MGR, item, additional_assignees=[{"user": DEV}])
+		item.reload()
+		self.save_as(MGR, item, additional_assignees=[])
+		self.assertFalse(self.open_todos(item, DEV))
+
+	def test_additional_assignee_must_be_assignable_in_the_project(self):
+		"""Same rule as Assigned To (R-11): someone outside the project is refused."""
+		item = self.new_item(MGR)
+		self.assertThrows(
+			"cannot be assigned work items",
+			lambda: self.save_as(MGR, item, additional_assignees=[{"user": OUT}]),
+		)
+
+	def test_duplicates_and_the_main_assignee_are_dropped(self):
+		"""A person listed twice, or already the Assigned To, is kept once / not at all."""
+		item = self.new_item(MGR, assigned_to=MGR)
+		self.save_as(MGR, item, additional_assignees=[{"user": DEV}, {"user": DEV}, {"user": MGR}])
+		item.reload()
+		self.assertEqual([r.user for r in item.additional_assignees], [DEV])
+
+	def test_my_work_lists_tickets_where_i_am_an_additional_assignee(self):
+		"""My Work shows the ticket to the additional assignee as well as the main one."""
+		from auri_pms.auri_pms.dashboards import get_my_work_data
+
+		item = self.new_item(MGR, assigned_to=MGR)
+		self.save_as(MGR, item, additional_assignees=[{"user": DEV}])
+		data = get_my_work_data(DEV)
+		names = {row.name for rows in data.groups.values() for row in rows}
+		self.assertIn(item.name, names)
+
+	def test_adding_assignees_does_not_change_assigned_to(self):
+		"""Frappe's Assign To would make the last person the Assigned To; the real one must stay."""
+		item = self.new_item(MGR, assigned_to=MGR)
+		self.save_as(MGR, item, additional_assignees=[{"user": DEV}])
+		self.assertEqual(frappe.db.get_value("Work Item", item.name, "assigned_to"), MGR)
+		item.reload()
+		self.save_as(MGR, item, additional_assignees=[])
+		self.assertEqual(frappe.db.get_value("Work Item", item.name, "assigned_to"), MGR)
+
+	# ---- Sprint on a closed ticket: PMS Settings > Allow Completed Sprint for Closed Tickets -----------
+	def completed_sprint(self):
+		sprint = frappe.get_doc(
+			{
+				"doctype": "Sprint",
+				"sprint_name": "Done sprint",
+				"project": self.ALP,
+				"start_date": "2026-01-01",
+				"end_date": "2026-01-14",
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("Sprint", sprint.name, "status", "Completed")
+		return sprint
+
+	def test_closed_ticket_cannot_move_to_a_completed_sprint_by_default(self):
+		sprint = self.completed_sprint()
+		item = self.closed_ticket()
+		self.assertThrows(
+			"only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name)
+		)
+
+	def test_closed_ticket_can_move_to_a_completed_sprint_when_allowed(self):
+		frappe.db.set_single_value("PMS Settings", "allow_completed_sprint_for_closed", 1)
+		sprint = self.completed_sprint()
+		item = self.closed_ticket()
+		self.save_as(MGR, item, sprint=sprint.name)
+		self.assertEqual(frappe.db.get_value("Work Item", item.name, "sprint"), sprint.name)
+
+	def test_open_ticket_still_refuses_a_completed_sprint_when_allowed(self):
+		frappe.db.set_single_value("PMS Settings", "allow_completed_sprint_for_closed", 1)
+		sprint = self.completed_sprint()
+		item = self.new_item(MGR, tracker="Task")
+		self.assertThrows(
+			"only Planned or Active sprints", lambda: self.save_as(MGR, item, sprint=sprint.name)
+		)
+
+	def closed_ticket(self):
+		item = self.new_item(MGR, tracker="Task")
+		self.save_as(MGR, item, status="Closed")
+		return item

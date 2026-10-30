@@ -5,11 +5,11 @@
   <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:24px;font-weight:700;margin-top:4px;">{{ r.project.project_name | e }} <span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:600;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 10px;vertical-align:middle;">{{ r.project.tracker_identifier | e }}</span></div>
   <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;opacity:.85;margin-top:6px;">{{ frappe.utils.formatdate(r.from_date) }} &ndash; {{ frappe.utils.formatdate(r.to_date) }}</div>
 </td></tr>
-{% if r.status %}<tr><td style="padding:22px 28px 6px;">
+{% if r.status and client_status %}<tr><td style="padding:22px 28px 6px;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e5e7eb;border-left:6px solid {{ colour }};border-radius:8px;"><tr>
     <td style="padding:14px 16px;">
-      <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:20px;font-weight:700;color:{{ colour }};">{{ r.status.label | e }}{% if r.status.score is not none %} <span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;color:#6b7280;font-weight:600;">&middot; {{ _("score") }} {{ r.status.score }}/100</span>{% endif %}</div>
-      {% for reason in r.status.reasons %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;margin-top:4px;color:#374151;">&bull; {{ reason.text | e }}</div>{% endfor %}
+      <div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:20px;font-weight:700;color:{{ colour }};">{{ client_status.label | e }}</div>
+      {% for point in client_status.points %}<div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:13px;margin-top:4px;color:#374151;">&bull; {{ point | e }}</div>{% endfor %}
     </td></tr></table>
 </td></tr>{% endif %}
 {% if note %}<tr><td style="padding:14px 28px 0;"><div style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;background:#e6f3fd;border-radius:8px;padding:12px 16px;font-size:14px;line-height:1.5;">{{ note | e | replace("\n", "<br>") | safe }}</div></td></tr>{% endif %}

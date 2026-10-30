@@ -7,7 +7,7 @@ from frappe import _
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.model.document import Document
 
-from auri_pms.auri_pms.utils import ensure_pms_project, has_capability
+from auri_pms.auri_pms.utils import ensure_pms_project, has_capability, linked_tickets
 
 
 class Release(Document):
@@ -72,3 +72,10 @@ class Release(Document):
 	def on_trash(self) -> None:
 		"""R-34 applies to deletion; R-36 (items linked) is enforced by Frappe's link check."""
 		self.validate_can_manage()
+
+
+@frappe.whitelist()
+def get_release_tickets(release: str) -> dict:
+	"""The tickets allocated to a release: a count per status and per person, plus the tickets themselves."""
+	frappe.has_permission("Release", "read", doc=release, throw=True)
+	return linked_tickets("release", release)

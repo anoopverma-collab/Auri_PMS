@@ -22,12 +22,20 @@ frappe.ui.form.on("Work Item", {
 			query: `${WI_API}.assignee_query`,
 			filters: { project: frm.doc.project },
 		}));
+		frm.set_query("user", "additional_assignees", () => ({
+			query: `${WI_API}.assignee_query`,
+			filters: { project: frm.doc.project },
+		}));
 		frm.set_query("category", () => ({ filters: { project: frm.doc.project } }));
 		frm.set_query("project_module", () => ({ filters: { project: frm.doc.project } }));
 		frm.set_query("release", () => ({ filters: { project: frm.doc.project, status: "Open" } }));
-		frm.set_query("sprint", () => ({
-			filters: { project: frm.doc.project, status: ["in", ["Planned", "Active"]] },
-		}));
+		frm.set_query("sprint", () => {
+			const statuses = ["Planned", "Active"];
+			// PMS Settings > Allow Completed Sprint for Closed Tickets
+			const closed_ok = frm.doc.__onload && cint(frm.doc.__onload.allow_completed_sprint_for_closed) && cint(frm.doc.is_closed);
+			if (closed_ok) statuses.push("Completed");
+			return { filters: { project: frm.doc.project, status: ["in", statuses] } };
+		});
 		frm.set_query("parent_work_item", () => ({
 			query: `${WI_API}.parent_query`,
 			filters: { project: frm.doc.project, work_item: frm.is_new() ? "" : frm.doc.name },
@@ -40,6 +48,8 @@ frappe.ui.form.on("Work Item", {
 		frm.trigger("summary_chips");
 		frm.trigger("client_headline");
 		frm.trigger("lock_done_percent");
+		// PMS Settings > Keep Closed On Visible and Editable: an editable field is also shown while empty
+		if (frm.doc.__onload && cint(frm.doc.__onload.keep_closed_on_editable)) frm.set_df_property("closed_on", "read_only", 0);
 		if (frm.is_new()) return;
 		frm.add_custom_button(__("Log Time"), () => wi_log_time(frm));
 		frm.add_custom_button(__("Add Subtask"), () => {
@@ -83,6 +93,7 @@ frappe.ui.form.on("Work Item", {
 
 	summary_chips(frm) {
 		if (frm.is_new()) return;
+		frm.dashboard.clear_headline(); // refresh runs more than once after a first save; do not stack the chips
 		frm.dashboard.set_headline(
 			auri_pms.ui.chips([
 				auri_pms.ui.priority(frm.doc.priority),
@@ -121,8 +132,24 @@ frappe.ui.form.on("Work Item", {
 		["tracker", "assigned_to", "category", "project_module", "release", "sprint", "parent_work_item"].forEach((f) => {
 			if (frm.doc[f] && f !== "parent_work_item") frm.set_value(f, null);
 		});
+		wi_load_project_custom(frm);
 	},
 });
+
+// Choosing the project shows its custom fields (Project > Custom Fields) at once, filled with the project's values.
+function wi_load_project_custom(frm) {
+	const range = Array.from({ length: 10 }, (_, i) => i + 1);
+	if (!frm.doc.project) {
+		frm.set_value("project_custom_count", 0);
+		range.forEach((n) => frm.set_value(`project_custom_${n}`, ""));
+		return;
+	}
+	frappe.db.get_value("Project", frm.doc.project, ["pms_custom_count", ...range.map((n) => `pms_custom_${n}`)]).then(({ message }) => {
+		const count = cint(message && message.pms_custom_count);
+		frm.set_value("project_custom_count", count);
+		range.forEach((n) => frm.set_value(`project_custom_${n}`, n <= count ? (message[`pms_custom_${n}`] || "") : ""));
+	});
+}
 
 function wi_change_status(frm, status) {
 	frm.set_value("status", status).then(() => frm.save());

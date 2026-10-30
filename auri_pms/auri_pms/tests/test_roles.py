@@ -27,7 +27,7 @@ class TestRoles(TrackerTestCase):
 		"""Auri PMS Manager and no membership: private projects stay hidden, and there is no Portfolio."""
 		self.new_item(DEV, subject="hidden")
 		self.assertNotIn(self.ALP, self.projects(BOSS))  # private
-		self.assertIn(self.BET, self.projects(BOSS))  # public
+		self.assertIn(self.BET, self.projects(BOSS))  # public: visible, read-only
 		with self.as_user(BOSS):
 			self.assertNotIn(self.ALP, {p["name"] for p in api.get_hub_projects()})
 			self.assertFalse(frappe.get_list("Work Item", filters={"project": self.ALP}))

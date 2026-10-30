@@ -12,6 +12,8 @@ frappe.ui.form.on("Sprint", {
 		if (frm.is_new()) return;
 		const colors = { Planned: "blue", Active: "green", Completed: "gray" };
 		frm.page.set_indicator(__(frm.doc.status), colors[frm.doc.status] || "gray");
+		// set_headline appends a block on every call and a new document refreshes more than once after its first save, so start clean.
+		frm.dashboard.clear_headline();
 		frm.dashboard.set_headline(
 			auri_pms.ui.chips([
 				frm.doc.start_date && frm.doc.end_date &&
@@ -19,10 +21,15 @@ frappe.ui.form.on("Sprint", {
 				`${cint(frm.doc.closed_items)} / ${cint(frm.doc.total_items)} ${__("items closed")}`,
 			])
 		);
-		frm.dashboard.add_progress(__("% Complete"), flt(frm.doc.percent_complete));
+		frm.dashboard.show_progress(__("% Complete"), flt(frm.doc.percent_complete)); // updates in place on every refresh
 		const completed = frm.doc.status === "Completed";
 		if (frm.doc.status === "Planned") {
 			frm.add_custom_button(__("Start Sprint"), () => sprint_set_status(frm, "Active")).addClass("btn-primary");
+		}
+		if (completed && frm.doc.__onload && cint(frm.doc.__onload.allow_reopen_sprint)) {
+			frm.add_custom_button(__("Reopen Sprint"), () =>
+				frappe.confirm(__("Reopen {0}? Tickets already carried over to another sprint stay there.", [frm.doc.name]), () => sprint_set_status(frm, "Active"))
+			).addClass("btn-primary");
 		}
 		if (frm.doc.status === "Active") {
 			frm.add_custom_button(__("Complete Sprint"), () => sprint_complete(frm)).addClass("btn-primary");
@@ -44,6 +51,12 @@ frappe.ui.form.on("Sprint", {
 			}, __("View"));
 		}
 		frm.set_df_property("carry_over_to", "hidden", completed ? 1 : 0);
+		const $box = frm.fields_dict.tickets_html && frm.fields_dict.tickets_html.$wrapper;
+		if ($box) {
+			frappe.xcall("auri_pms.auri_pms.doctype.sprint.sprint.get_sprint_tickets", { sprint: frm.doc.name }).then((d) =>
+				auri_pms.ui.ticketsPanel($box, d, __("No tickets are allocated to this sprint yet. Set the Sprint field on a Work Item."))
+			);
+		}
 	},
 });
 

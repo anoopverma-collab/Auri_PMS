@@ -11,10 +11,13 @@ import frappe
 from frappe.utils import cint
 
 from auri_pms.auri_pms.utils import (
+	get_capabilities,
 	get_member_role,
 	has_unrestricted_project_view,
 	is_admin,
+	is_allocated,
 	is_user_enabled,
+	members_see_all_work_items,
 )
 
 
@@ -36,7 +39,7 @@ def _project_scope(user: str, column: str) -> str:
 
 
 def can_see_project(project: str | None, user: str | None = None) -> bool:
-	"""Return True if ``user`` is a manager, a member of ``project`` or the project is public."""
+	"""Return True if ``user`` may VIEW ``project``: an admin, a member, or anyone for a public project (editing needs allocation)."""
 	user = user or frappe.session.user
 	if is_admin(user):
 		return True
@@ -44,7 +47,9 @@ def can_see_project(project: str | None, user: str | None = None) -> bool:
 		return False
 	if get_member_role(project, user):
 		return True
-	return bool(cint(frappe.db.get_value("Project", project, "is_public")))
+	return bool(
+		cint(frappe.db.get_value("Project", project, "is_public"))
+	)  # public: viewable, never editable
 
 
 # --------------------------------------------------------------------------- query conditions
@@ -57,8 +62,37 @@ def project_query(user: str | None = None, doctype: str | None = None) -> str:
 
 
 def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
-	"""permission_query_conditions for Work Item."""
-	return _project_scope(user or frappe.session.user, "`tabWork Item`.project")
+	"""permission_query_conditions for Work Item.
+
+	With *Members See All Work Items* unticked, a member whose Project Role cannot manage members sees in
+	their projects only the Work Items assigned to them (Assigned To or Additional Assignees) or raised by
+	them (Author); every other
+	project (a project they manage, or a public project they are not a member of) is unchanged."""
+	user = user or frappe.session.user
+	scope = _project_scope(user, "`tabWork Item`.project")
+	if not scope or not is_user_enabled(user) or members_see_all_work_items():
+		return scope
+	quoted = frappe.db.escape(user)
+	limited = (
+		"`tabWork Item`.project in (select pm.parent from `tabProject Member` pm "
+		f"where pm.parenttype = 'Project' and pm.user = {quoted} and ifnull(pm.project_role, '') not in "
+		"(select pr.name from `tabProject Role` pr where pr.can_manage_members = 1))"
+	)
+	own = (
+		f"(`tabWork Item`.assigned_to = {quoted} or `tabWork Item`.author = {quoted} or `tabWork Item`.name in "
+		"(select wa.parent from `tabWork Item Assignee` wa "
+		f"where wa.parenttype = 'Work Item' and wa.user = {quoted}))"
+	)
+	return f"({scope} and not ({limited} and not {own}))"
+
+
+def sees_only_own_work_items(project: str | None, user: str) -> bool:
+	"""True when ``user`` is a member of ``project`` who may see only the Work Items assigned to them."""
+	if not project or is_admin(user) or members_see_all_work_items():
+		return False
+	if not get_member_role(project, user):
+		return False
+	return not get_capabilities(project, user, members_only=True)["can_manage_members"]
 
 
 def release_query(user: str | None = None, doctype: str | None = None) -> str:
@@ -97,6 +131,10 @@ def category_query(user: str | None = None, doctype: str | None = None) -> str:
 
 
 # --------------------------------------------------------------------------- has_permission
+# Anything that changes a record: only the people allocated to its project (or an admin) may do it.
+CHANGE_TYPES = frozenset({"write", "delete", "submit", "cancel", "amend"})
+
+
 def _has_project_permission(doc, ptype: str | None, user: str | None, project_field: str = "project") -> bool:
 	user = user or frappe.session.user
 	if is_admin(user):
@@ -109,24 +147,41 @@ def _has_project_permission(doc, ptype: str | None, user: str | None, project_fi
 	project = doc.get(project_field)
 	if not project:
 		return True
+	if ptype in CHANGE_TYPES and not is_allocated(project, user):
+		return False
 	return can_see_project(project, user)
 
 
 def project_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Project."""
 	user = user or frappe.session.user
-	if has_unrestricted_project_view(user):
+	if is_admin(user):
 		return True
 	if not is_user_enabled(user):
 		return False
 	if ptype == "create" or doc.is_new():
+		return True
+	if (
+		ptype in CHANGE_TYPES
+		and cint(frappe.db.get_value("Project", doc.name, "pms_enabled"))
+		and not is_allocated(doc.name, user)
+	):
+		return False  # an ERPNext Projects role does not let you edit a project you are not allocated to
+	if has_unrestricted_project_view(user):
 		return True
 	return can_see_project(doc.name, user)
 
 
 def work_item_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
 	"""has_permission hook for Work Item."""
-	return _has_project_permission(doc, ptype, user)
+	user = user or frappe.session.user
+	if not _has_project_permission(doc, ptype, user):
+		return False
+	if ptype == "create" or doc.is_new() or not sees_only_own_work_items(doc.get("project"), user):
+		return True
+	return user in (doc.get("assigned_to"), doc.get("author")) or any(
+		row.user == user for row in doc.get("additional_assignees") or []
+	)
 
 
 def release_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:

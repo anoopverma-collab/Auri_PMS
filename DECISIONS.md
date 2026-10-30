@@ -246,6 +246,55 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
     client report carry them too). The client report lists only risks ticked *Show in Client Status Report*, with the mitigation plan
     as plain text. Visibility follows the project like every other document.
 
+68. **Additional Assignees.** A child table (*Work Item Assignee*) next to *Assigned To*, which stays the single main assignee. Each extra
+    person follows R-11 (enabled member, role with *can_be_assigned*), gets a ToDo and may edit the ticket like the assignee. Frappe's Assign To
+    sets or clears the *Assigned To* field to the last person it touched, so after changing the table the controller writes the real value back.
+    My Work and the due digest include the extra assignees; the team dashboards, health and reports still count the main assignee only.
+69. **Project custom fields.** *Number of Custom Fields* (1-10) on the Project shows that many text fields. Every ticket carries a copy
+    (*project_custom_n*, with the count) so they work as list columns and filters. A new ticket starts with the project's values; a value typed
+    on the ticket is kept. A changed project value is passed on by a background job that saves each ticket (validation and versions apply)
+    and only to tickets still holding the old value; lowering the count clears the extra values.
+70. **Rule relaxations are PMS Settings switches, off by default.** *Keep Closed On Visible and Editable*, *Allow Completed Sprint for Closed
+    Tickets* and *Allow Reopening a Completed Sprint* each loosen one rule and nothing else: a Closed On typed while closing is kept (otherwise
+    stamped), a closed ticket may sit in a Completed sprint (open tickets may not), and a Completed sprint may return to Active (never to
+    Planned, and never beside another Active sprint; tickets carried over earlier stay where they are).
+71. **Status report attachments.** Extra files come only from the sender's own fresh uploads: the file must be owned by the sender and attached
+    to no document, so the dialog cannot be used to email someone else's file. At most 10 files, counted in the 10 MB limit; they are then
+    attached to the *Project Status Report* record. BCC was removed from the report; the CC field and recipients remain.
+72. **Never overwrite.** Patches and fixtures only create or fill what is missing or still equals the previous shipped value (stored Email
+    Templates and PMS Settings values chosen by people are kept); stored data changes go through document saves, not raw SQL.
+73. **Install never deletes a Custom Field.** The *Enable for Auri PMS* field on Email Template is saved with `ignore_validate`, as fixture
+    import does, so Frappe does not re-check every Email Template field. A site restored from an older Frappe can hold a Custom Field that
+    duplicates a core field (`reference_doctype`); that used to stop `install-app`. The duplicate is left alone; removing it is the site
+    owner's step in Customize Form.
+74. **Members See All Work Items.** A PMS Settings switch, ticked by default. Unticked, the Work Item visibility rule (the permission query and
+    `has_permission`) limits a *member* whose Project Role cannot manage members to the tickets assigned to them or raised by them (*Author*), in their projects only;
+    managers, admins and non-members of a public project are unchanged. Insights reads Work Items with raw SQL, so it applies the same
+    condition. A Check on a Single that was never saved reads as 0, so the stored row is read: no row means ticked.
+75. **Delivery & Health.** A new page with the Portfolio's access rule (Auri PMS Admins, and the managers of a project for their projects),
+    covering projects with Auri PMS switched on. Definitions: *delayed project* = Open with an overdue release, sprint or task; *overdue
+    release* = not Closed with a due date in the past; *overdue sprint* = not Completed with an end date in the past; *completed task* = closed
+    and not Rejected. A Release has only a due date, so its actual date is the day its last ticket was closed (no new fields); a Sprint has no
+    release link, so it is listed under the releases of its tickets. Data is read with `get_list`, so the visibility rules, including *Members
+    See All Work Items*, apply. Its Project, Release and Sprint filters are project-wise like the rest of the app: a release or sprint
+    must belong to the chosen project (the server refuses a mismatch), the dropdowns offer only what was created for that project, and a
+    release keeps the sprints that hold its tickets and the other way round. The *Sprint Burndown* report got the same Project filter.
+
+76. **Portfolio merged into Delivery & Health.** Both pages had the same audience (`portfolio_projects`) and repeated project, open,
+    overdue, closed and waiting-on-client numbers. The Portfolio class moved unchanged into `auri_portfolio.bundle.js` and the Management
+    Dashboard shows it as a second tab (Delivery | Health and cost); the Project filter focuses it, Release and Sprint do not apply to it.
+    `get_portfolio` and its tests stay, so nothing about the numbers changed. The `portfolio` Page remains as a redirect (`?tab=health`) so old
+    links and bookmarks keep working; only its sidebar item was removed.
+
+77. **The client reads a plain status.** The internal status (Off Track, score, percentages, release codes) is for the team. The report
+    shows `client_status`: a heading by level and one fixed sentence per area (plan, issues, time, risks, backlog), and the tickets that
+    wait on the client are counted but listed only in their own section. Nothing about how the level is worked out changed. The four
+    ready-made Email Templates already saved on a site keep their wording until *Update* is run on them; the built-in layout changed.
+
+78. **Auri Insights covers allocated projects.** Insights reads with raw SQL across projects, so its scope is stated once, in
+    `get_insight_projects`: the Auri PMS projects the user is a member of, or every one for an admin (`is_allocated`). Reading a public
+    project elsewhere is unchanged; it simply is not part of a person's analysis. The Work Item condition (*Members See All Work Items*) still applies on top.
+
 ## Uninstall
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.
@@ -261,3 +310,11 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 * The status colour and default % done of a status are not re-applied to existing items when changed.
 
 - **Roles renamed (24 Oct 2026).** *Tracker User* / *Tracker Manager* are now *Auri PMS User* / *Auri PMS Manager* to match the app name. Behaviour is unchanged. The `rename_tracker_roles` patch renames the roles on existing sites, so people, DocType permissions and the app icon keep their access.
+
+## Allocation decides who can change a project
+
+* **Public means read-only.** A public project is visible to everyone, but `get_capabilities` gives a non-member no capability at
+  all, so they cannot create, edit, delete or log time. The PMS Settings *public project role* no longer grants anything.
+* **Changing a record needs allocation.** `has_permission` refuses write, delete, submit, cancel and amend on any project-bound
+  document (and on a PMS-enabled Project) unless `is_allocated(project, user)`: a member of the project, an Auri PMS Admin or a
+  System Manager. An ERPNext Projects role does not change that.

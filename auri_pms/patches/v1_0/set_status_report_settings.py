@@ -23,7 +23,10 @@ DEFAULTS = {
 def execute() -> None:
 	"""Only fill values that were never saved, so a later choice is not overwritten."""
 	stored = set(frappe.db.sql_list("select field from `tabSingles` where doctype = %s", "PMS Settings"))
+	meta = frappe.get_meta("PMS Settings")
 	for fieldname, value in DEFAULTS.items():
+		if not meta.has_field(fieldname):
+			continue  # a setting that no longer exists is not filled in
 		if fieldname not in stored:
 			frappe.db.set_single_value("PMS Settings", fieldname, value)
 	frappe.clear_cache(doctype="PMS Settings")

@@ -12,7 +12,7 @@ frappe.views.calendar["Work Item"] = {
 	},
 	gantt: true,
 	filters: [
-		{ fieldtype: "Link", fieldname: "project", options: "Project", label: __("Project") },
+		{ fieldtype: "Link", fieldname: "project", options: "Project", label: __("Project"), get_query: () => ({ filters: { pms_enabled: 1 } }) },
 		{ fieldtype: "Link", fieldname: "assigned_to", options: "User", label: __("Assigned To") },
 	],
 	get_events_method: "frappe.desk.calendar.get_events",

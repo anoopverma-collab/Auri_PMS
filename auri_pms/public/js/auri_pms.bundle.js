@@ -33,6 +33,24 @@ frappe.ui.form.WorkItemQuickEntryForm = class WorkItemQuickEntryForm extends fra
 // Small HTML helpers for the list and form look of Auri PMS doctypes (styles: public/css/auri_pms.bundle.css).
 frappe.provide("auri_pms.ui");
 Object.assign(auri_pms.ui, {
+	// The "Tickets in this release / sprint" panel: totals, a pill per status and per person, then the tickets.
+	ticketsPanel($box, d, empty_text) {
+		const esc = frappe.utils.escape_html;
+		if (!d.total) {
+			$box.html(`<div class="text-muted">${esc(empty_text)}</div>`);
+			return;
+		}
+		const chips = Object.entries(d.statuses).map(([s, n]) => `<span class="indicator-pill gray">${esc(__(s))}: ${n}</span>`).join(" ");
+		const people = d.open_by_person.map((p) => `<span class="indicator-pill blue">${esc(p.name)}: ${p.open}</span>`).join(" ");
+		const hours = d.rows.reduce((t, r) => [t[0] + flt(r.estimated_hours), t[1] + flt(r.spent_hours)], [0, 0]);
+		const col = (rows, key) => rows.some((r) => r[key]);
+		$box.html(`<div style="margin-bottom:10px"><b>${d.total}</b> ${__("tickets")} · <b>${d.closed}</b> ${__("closed")} · <b>${d.total - d.closed}</b> ${__("open")} · ${flt(hours[0], 1)} h ${__("estimated")} · ${flt(hours[1], 1)} h ${__("spent")}</div>
+			<div style="margin-bottom:8px">${chips}</div>${people ? `<div style="margin-bottom:12px"><span class="text-muted">${__("Open per person")}:</span> ${people}</div>` : ""}
+			<table class="table table-sm"><thead><tr><th>${__("Ticket")}</th><th>${__("Summary")}</th><th>${__("Status")}</th><th>${__("Owner")}</th><th>${__("Release")}</th><th>${__("Sprint")}</th><th>${__("Due")}</th><th class="text-right">${__("% Done")}</th></tr></thead><tbody>
+			${d.rows.map((r) => `<tr><td><a href="/desk/work-item/${encodeURIComponent(r.name)}">${esc(r.name)}</a></td><td>${esc(r.subject)}</td><td>${esc(__(r.status))}</td><td>${esc(r.assignee)}</td><td>${esc((r.release || "").replace(/^.*?-(?=[^-]+$)/, ""))}</td><td>${esc((r.sprint || "").replace(/^.*?-(?=[^-]+$)/, ""))}</td><td>${r.due_date ? frappe.datetime.str_to_user(r.due_date) : ""}</td><td class="text-right">${flt(r.done_percent, 0)}%</td></tr>`).join("")}
+			</tbody></table>`);
+	},
+
 	priority(value) {
 		if (!value) return "";
 		return `<span class="auri-priority auri-priority-${frappe.utils.escape_html(value)}">${__(value)}</span>`;
@@ -76,10 +94,10 @@ Object.assign(auri_pms.ui, {
 	},
 });
 
-// The Portfolio is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
+// Delivery & Health is for Auri PMS Admins and the managers of a project (boot flag); hide its sidebar link from everyone else.
 if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_portfolio) {
 	const style = document.createElement("style");
-	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/portfolio"]) { display: none !important; }';
+	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/management-dashboard"]) { display: none !important; }';
 	document.head.appendChild(style);
 }
 
@@ -100,7 +118,7 @@ try {
 // Frappe remembers a sidebar per screen in localStorage and keeps the sidebar that was open before, so after visiting another app
 // (for example ERPNext's Projects) our screens could show that app's sidebar until a hard refresh. Our own screens (the dashboards
 // and every screen that only the Auri PMS sidebar links to) therefore always switch to the Auri PMS sidebar.
-const PMS_PAGES = ["project-hub", "portfolio", "my-work", "quality-dashboard", "status-report"];
+const PMS_PAGES = ["project-hub", "portfolio", "management-dashboard", "pms-insights", "my-work", "quality-dashboard", "status-report"];
 const is_pms_screen = (sidebar) => {
 	const route = frappe.get_route() || [];
 	if (PMS_PAGES.includes(route[0])) return true;

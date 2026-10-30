@@ -176,11 +176,15 @@ def ensure_template_flag() -> None:
 	"""Make sure Email Template has its *Enable for Auri PMS* checkbox.
 
 	On a fresh install Frappe runs after_install before it syncs the app's fixtures, so the field is created here
-	first; the fixture later finds it already in place."""
+	first; the fixture later finds it already in place.
+
+	The field is saved with ``ignore_validate``, as the fixture import does: Frappe then does not check every
+	field of Email Template again, so a clash of other fields on a restored site (e.g. a Custom Field that
+	duplicates a field core now ships) cannot stop the install. Nothing of the site is changed or removed."""
 	name = "Email Template-auri_pms_enabled"
 	if frappe.db.exists("Custom Field", name):
 		return
-	frappe.get_doc(
+	field = frappe.get_doc(
 		{
 			"doctype": "Custom Field",
 			"dt": "Email Template",
@@ -193,7 +197,9 @@ def ensure_template_flag() -> None:
 			"insert_after": "subject",
 			"module": "Auri PMS",
 		}
-	).insert(ignore_permissions=True)
+	)
+	field.flags.ignore_validate = True
+	field.insert(ignore_permissions=True)
 
 
 def ensure_email_templates(overwrite: bool = False) -> None:

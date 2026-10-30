@@ -9,47 +9,23 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "chart-column",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Auri Insights",
+   "link_to": "pms-insights",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
    "icon": "layout-dashboard",
    "indent": 0,
    "keep_closed": 0,
-   "label": "Project Hub",
-   "link_to": "project-hub",
-   "link_type": "Page",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "briefcase",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Portfolio",
-   "link_to": "portfolio",
-   "link_type": "Page",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "user-check",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "My Work",
-   "link_to": "my-work",
-   "link_type": "Page",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "bug",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Quality Dashboard",
-   "link_to": "quality-dashboard",
+   "label": "Delivery & Health",
+   "link_to": "management-dashboard",
    "link_type": "Page",
    "show_arrow": 0,
    "type": "Link"
@@ -62,6 +38,18 @@
    "keep_closed": 0,
    "label": "Client Status Report",
    "link_to": "status-report",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "user-check",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "My Work",
+   "link_to": "my-work",
    "link_type": "Page",
    "show_arrow": 0,
    "type": "Link"
@@ -343,7 +331,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-12 12:00:00.000000",
+ "modified": "2026-10-30 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "Auri PMS",

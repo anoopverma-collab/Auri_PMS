@@ -565,6 +565,12 @@ def get_portfolio_data(period: str = "3m") -> frappe._dict:
 
 
 # --------------------------------------------------------------------------- my work
+def assigned_to_or_additional(user: str) -> list:
+	"""or_filters for the Work Items ``user`` is assigned to, as Assigned To or as one of the Additional Assignees."""
+	extra = frappe.get_all("Work Item Assignee", {"user": user, "parenttype": "Work Item"}, pluck="parent")
+	return [["Work Item", "assigned_to", "=", user], ["Work Item", "name", "in", extra or ["-"]]]
+
+
 def get_my_work_data(user: str | None = None) -> frappe._dict:
 	"""Everything assigned to (or raised by) the user, their hours this week and their active sprints."""
 	user = user or frappe.session.user
@@ -575,7 +581,8 @@ def get_my_work_data(user: str | None = None) -> frappe._dict:
 	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name") or [""]
 	items = frappe.get_list(
 		"Work Item",
-		filters={"assigned_to": user, "is_closed": 0, "project": ["in", enabled]},
+		filters={"is_closed": 0, "project": ["in", enabled]},
+		or_filters=assigned_to_or_additional(user),
 		fields=[
 			"name",
 			"subject",
@@ -890,7 +897,8 @@ def my_sprints(user: str) -> list[dict]:
 		return []
 	mine = frappe.get_all(
 		"Work Item",
-		filters={"sprint": ["in", [s.name for s in sprints]], "assigned_to": user},
+		filters={"sprint": ["in", [s.name for s in sprints]]},
+		or_filters=assigned_to_or_additional(user),
 		fields=["sprint", "is_closed"],
 	)
 	today_ = getdate(today())
@@ -922,23 +930,50 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 	empty = {"period": period, "defect_trackers": defect_trackers, "has_data": False}
 	if not defect_trackers:
 		return deep_dict(empty)
-	filters = {"project": project} if project else {}
-	everything = frappe.get_list("Work Item", filters=filters, fields=WORK_ITEM_FIELDS, limit_page_length=0)
-	bugs = [i for i in everything if i.tracker in defect_trackers]
-	entries = frappe.get_list(
-		"Time Entry", filters=filters, fields=["date", "hours", "project"], limit_page_length=0
+	# only projects with Auri PMS switched on (a project that was switched off keeps its old records)
+	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name")
+	if project and project not in enabled:
+		frappe.throw(_("Project {0} does not have Auri PMS enabled").format(project), frappe.PermissionError)
+	filters = {"project": project} if project else {"project": ["in", enabled or [""]]}
+	# the database picks out the bugs and does the counting; only the bug tickets come back as rows
+	bugs = frappe.get_list(
+		"Work Item",
+		filters={**filters, "tracker": ["in", defect_trackers]},
+		fields=WORK_ITEM_FIELDS,
+		limit_page_length=0,
 	)
-	earliest = min([as_date(i.creation) for i in everything] + [as_date(e.date) for e in entries] or [today_])
+	first_item = frappe.get_list("Work Item", filters=filters, fields=[{"MIN": "creation", "as": "first"}])
+	first_entry = frappe.get_list("Time Entry", filters=filters, fields=[{"MIN": "date", "as": "first"}])
+	earliest = min([as_date(r.first) for r in first_item + first_entry if r.first] or [today_])
 	buckets = make_buckets(period, earliest, today_)
 	start = buckets.first_day
+	created_by_project = {
+		r.project: cint(r.n)
+		for r in frappe.get_list(
+			"Work Item",
+			filters={**filters, "creation": [">=", start]},
+			fields=["project", {"COUNT": "name", "as": "n"}],
+			group_by="project",
+			limit_page_length=0,
+		)
+	}
+	hours_period = flt(
+		sum(
+			flt(r.hours)
+			for r in frappe.get_list(
+				"Time Entry",
+				filters={**filters, "date": [">=", start]},
+				fields=[{"SUM": "hours", "as": "hours"}],
+			)
+		)
+	)
 	flow = ticket_flow(bugs, buckets)
 	open_bugs = [b for b in bugs if not cint(b.is_closed)]
 	closed_bugs = [b for b in bugs if cint(b.is_closed)]
 
 	opened_period = [b for b in bugs if as_date(b.creation) >= start]
-	all_created_period = [i for i in everything if as_date(i.creation) >= start]
+	all_created_period = sum(created_by_project.values())
 	fixed_period = [b for b in closed_bugs if b.closed_on and as_date(b.closed_on) >= start]
-	hours_period = sum(flt(e.hours) for e in entries if as_date(e.date) >= start)
 
 	fix_days: dict[str, list[int]] = defaultdict(list)
 	for bug in fixed_period:
@@ -975,14 +1010,13 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			p.name: p.project_name or p.name
 			for p in frappe.get_all(
 				"Project",
-				filters={"name": ["in", list({i.project for i in everything}) or [""]]},
+				filters={"name": ["in", list({b.project for b in bugs} | set(created_by_project)) or [""]]},
 				fields=["name", "project_name"],
 			)
 		}
 		grouped: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])
-		for item in everything:
-			if as_date(item.creation) >= start:
-				grouped[item.project][2] += 1
+		for item_project, created in created_by_project.items():
+			grouped[item_project][2] += created
 		for bug in bugs:
 			grouped[bug.project][1 if cint(bug.is_closed) else 0] += 1
 		by_project = sorted(
@@ -1033,7 +1067,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 				"opened_period": len(opened_period),
 				"fixed_period": len(fixed_period),
 				"avg_fix_days": flt(sum(all_days) / len(all_days), 1) if all_days else None,
-				"bug_share_pct": flt(len(opened_period) * 100 / len(all_created_period), 1)
+				"bug_share_pct": flt(len(opened_period) * 100 / all_created_period, 1)
 				if all_created_period
 				else 0.0,
 				"density": flt(len(opened_period) * 100 / hours_period, 1) if hours_period else None,

@@ -1,0 +1,29 @@
+{
+ "creation": "2026-10-30 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Auri PMS",
+ "name": "management-dashboard",
+ "owner": "Administrator",
+ "page_name": "management-dashboard",
+ "roles": [
+  {
+   "role": "Auri PMS User"
+  },
+  {
+   "role": "Auri PMS Manager"
+  },
+  {
+   "role": "Auri PMS Admin"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Delivery & Health"
+}

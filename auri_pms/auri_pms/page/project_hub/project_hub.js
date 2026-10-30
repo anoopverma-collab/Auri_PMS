@@ -13,14 +13,14 @@ frappe.pages["project-hub"].on_page_load = function (wrapper) {
 		ui = auri_pms.ui;
 		wrapper.project_hub = new ProjectHub(page, wrapper);
 		const route = frappe.get_route();
-		wrapper.project_hub.show(route[1], route[2]);
+		wrapper.project_hub.show(route[1], route[2], route[3]);
 	});
 };
 
 frappe.pages["project-hub"].on_page_show = function (wrapper) {
 	if (!wrapper.project_hub) return; // the first render happens when the bundle has loaded
 	const route = frappe.get_route();
-	wrapper.project_hub.show(route[1], route[2]);
+	wrapper.project_hub.show(route[1], route[2], route[3]);
 };
 
 class ProjectHub {
@@ -31,8 +31,9 @@ class ProjectHub {
 		ui.applyTheme(this.$body);
 	}
 
-	show(project, view) {
-		this.view = view === "health" ? "health" : "overview";
+	show(project, view, snapshot) {
+		this.view = ["health", "history"].includes(view) ? view : "overview";
+		this.snapshot = this.view === "history" && snapshot ? decodeURIComponent(snapshot) : null;
 		ui.showSidebar();
 		this.page.clear_primary_action();
 		this.page.clear_inner_toolbar();
@@ -73,10 +74,10 @@ class ProjectHub {
 				this.render_cards();
 			});
 			this.render_cards();
-			if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Portfolio"), () => frappe.set_route("portfolio"));
+			if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Delivery & Health"), () => frappe.set_route("management-dashboard"));
 			this.page.add_inner_button(__("My Work"), () => frappe.set_route("my-work"));
 			this.page.add_inner_button(__("Quality"), () => frappe.set_route("quality-dashboard"));
-			ui.addThemeMenu(this.page, () => this.show(this.route_project, this.view));
+			ui.addThemeMenu(this.page, () => this.show(this.route_project, this.view, this.snapshot));
 		});
 	}
 
@@ -144,13 +145,88 @@ class ProjectHub {
 			this.page.set_title(`${info.project_name || info.name} (${info.tracker_identifier})`);
 			this.page.set_indicator(__(info.status), info.status === "Open" ? "blue" : "gray");
 			this.setup_actions(data);
-			ui.addThemeMenu(this.page, () => this.show(this.route_project, this.view));
+			ui.addThemeMenu(this.page, () => this.show(this.route_project, this.view, this.snapshot));
 			if (this.view === "health") this.render_health(data, health_data);
+			else if (this.view === "history") return this.render_history(data);
 			else this.render_project(data);
+			this.add_tabs();
 		}).catch((error) => {
 			// Only a real access problem is explained to the user; anything else is a bug and must surface.
 			if (!(error && String(error.exc_type || error.exc || "").includes("PermissionError"))) throw error;
 			this.$body.html(`<div class="text-muted p-4">${__("This project is not available to you.")}</div>`);
+		});
+	}
+
+	// ------------------------------------------------------------------ project tabs
+	add_tabs(note) {
+		const project = encodeURIComponent(this.project);
+		const base = window.location.pathname.split("/project-hub")[0] + "/project-hub"; // keeps a /desk/auri-pms prefix
+		const tab = (key, label, route) => `<a class="pt-tab ${this.view === key ? "pt-on" : ""}" href="${base}/${project}${route}">${label}</a>`;
+		const open = (label, doctype) => `<a class="pt-tab pt-link" href="#" data-pt-list="${doctype}">${label} <span>↗</span></a>`;
+		const $tabs = $(`<nav class="pt-tabs">${tab("overview", __("Overview"), "")}${tab("health", __("Health"), "/health")}${tab("history", __("History"), "/history")}
+			<i></i>${open(__("Tickets"), "Work Item")}${open(__("Releases"), "Release")}${open(__("Sprints"), "Sprint")}${open(__("Risks"), "Risk Register")}${open(__("Time"), "Time Entry")}</nav>${note || ""}`);
+		$tabs.filter("nav").find("[data-pt-list]").on("click", (e) => {
+			e.preventDefault();
+			frappe.route_options = { project: this.project };
+			frappe.set_route("List", $(e.currentTarget).data("pt-list"), "List");
+		});
+		this.$body.prepend($tabs);
+	}
+
+	// ------------------------------------------------------------------ history: saved dashboards of this project
+	render_history(data) {
+		if (this.snapshot) return this.render_saved(data);
+		if (data.capabilities.can_create_items) {
+			this.page.set_primary_action(__("Save snapshot"), () =>
+				frappe.xcall("auri_pms.auri_pms.snapshots.take_project_snapshot", { project: this.project }).then(() => {
+					frappe.show_alert({ message: __("Dashboard saved"), indicator: "green" });
+					this.show(this.project, "history");
+				}), "add");
+		}
+		frappe.xcall("auri_pms.auri_pms.snapshots.get_project_snapshots", { project: this.project }).then((rows) => {
+			const esc = frappe.utils.escape_html;
+			const tone = (label) => (label === "On Track" ? "ok" : label === "At Risk" ? "warn" : label ? "bad" : "");
+			const diff = (now, before, good_down) => {
+				if (before === undefined || now === before) return "";
+				const up = now > before;
+				return `<em class="ph-d ${up === !good_down ? "ph-good" : "ph-bad"}">${up ? "▲" : "▼"} ${Math.abs(flt(now - before, 1))}</em>`;
+			};
+			const [last, prev] = rows;
+			const card = (label, key, good_down, unit) => `<div class="hist-card"><span>${label}</span><b>${last ? flt(last[key], key.includes("pct") || key.includes("hours") ? 1 : 0) : "–"}${unit || ""}</b>${last ? diff(last[key], prev && prev[key], good_down) : ""}</div>`;
+			const ordered = [...rows].reverse();
+			this.$body.html(`<div class="ph2 hist">
+				<div class="hub-title"><h4>${__("History")}</h4><span class="text-muted">${__("Saved dashboards of this project: every Monday, on the 1st of each month, and whenever you press Save snapshot.")}</span></div>
+				${rows.length ? `<div class="hist-cards">${card(__("Health score"), "health_score")}${card(__("Complete"), "completion_pct", false, "%")}${card(__("Open tickets"), "open_tickets", true)}${card(__("Overdue"), "overdue_tickets", true)}${card(__("Hours spent"), "spent_hours")}${card(__("Open risks"), "open_risks", true)}</div>
+				<div class="hub-panel ph2-card"><div class="ph2-card-head"><h6>${__("Trend")}</h6></div>${rows.length > 1 ? '<div class="hub-chart" id="hc-hist"></div>' : `<div class="ph2-empty">${__("The trend appears once two dashboards are saved.")}</div>`}</div>
+				<div class="hub-panel ph2-card"><div class="ph2-card-head"><h6>${__("Saved dashboards")}</h6><span class="text-muted small">${rows.length}</span></div>
+				<table class="hist-table"><thead><tr><th>${__("Date")}</th><th>${__("Type")}</th><th>${__("Health")}</th><th>${__("Score")}</th><th>${__("Complete")}</th><th>${__("Open")}</th><th>${__("Overdue")}</th><th>${__("Hours")}</th><th></th></tr></thead><tbody>
+				${rows.map((r) => `<tr data-snap="${esc(r.name)}"><td>${frappe.datetime.str_to_user(r.snapshot_date)}</td><td>${__(r.period_type)}</td><td><span class="hub-badge pt-${tone(r.health_label)}">${esc(r.health_label || "–")}</span></td><td>${r.health_score}</td><td>${flt(r.completion_pct, 0)}%</td><td>${r.open_tickets}</td><td>${r.overdue_tickets}</td><td>${flt(r.spent_hours, 1)}</td><td class="text-right"><a href="${window.location.pathname.split("/project-hub")[0]}/project-hub/${encodeURIComponent(this.project)}/history/${encodeURIComponent(r.name)}">${__("Open")} →</a>${r.can_delete ? ` <a href="#" class="hist-del" data-del="${esc(r.name)}" title="${__("Delete this saved dashboard")}">${__("Delete")}</a>` : ""}</td></tr>`).join("")}
+				</tbody></table></div>`
+				: `<div class="hub-panel ph2-card"><div class="ph2-empty">${__("No dashboards saved yet. Press Save snapshot to keep today's figures; later ones will be added every Monday and on the 1st of each month.")}</div></div>`}
+			</div>`);
+			this.$body.find("[data-del]").on("click", (e) => {
+				e.preventDefault();
+				const name = $(e.currentTarget).data("del");
+				frappe.confirm(__("Delete the saved dashboard {0}? This cannot be undone.", [name]), () =>
+					frappe.xcall("auri_pms.auri_pms.snapshots.delete_project_snapshot", { name }).then(() => {
+						frappe.show_alert({ message: __("Deleted"), indicator: "green" });
+						this.show(this.project, "history");
+					})
+				);
+			});
+			if (rows.length > 1) {
+				this.chart("#hc-hist", { type: "line", height: 200, data: { labels: ordered.map((r) => frappe.datetime.str_to_user(r.snapshot_date)), datasets: [{ name: __("Health score"), values: ordered.map((r) => r.health_score) }, { name: __("Open tickets"), values: ordered.map((r) => r.open_tickets) }, { name: __("Complete %"), values: ordered.map((r) => flt(r.completion_pct, 0)) }] }, colors: ["#8b5cf6", "#f59e0b", "#10b981"], axisOptions: { xIsSeries: 1 } });
+			}
+			this.add_tabs();
+		});
+	}
+
+	// one saved dashboard, shown with the Health layout and a banner that says it is a record
+	render_saved(data) {
+		frappe.xcall("auri_pms.auri_pms.snapshots.get_project_snapshot", { name: this.snapshot }).then((snap) => {
+			this.render_health(data, snap.data);
+			const when = frappe.datetime.str_to_user(snap.snapshot_date);
+			this.add_tabs(`<div class="pt-banner">${__("Saved dashboard of {0} ({1}). Figures are as they were on that day.", [when, __(snap.period_type)])} <a href="${window.location.pathname.split("/project-hub")[0]}/project-hub/${encodeURIComponent(this.project)}/history">← ${__("Back to history")}</a></div>`);
 		});
 	}
 
@@ -160,12 +236,9 @@ class ProjectHub {
 		const create = (doctype, extra) => () => frappe.new_doc(doctype, { project, ...(extra || {}) });
 		if (caps.can_create_items) this.page.set_primary_action(__("New Work Item"), create("Work Item"), "add");
 		this.page.add_inner_button(__("All Projects"), () => frappe.set_route("project-hub"));
-		this.page.add_inner_button(this.view === "health" ? __("Overview") : __("Health Dashboard"), () =>
-			frappe.set_route("project-hub", project, this.view === "health" ? undefined : "health")
-		);
 		if (this.view === "health") ui.addPeriodMenu(this.page, () => this.show(this.project, "health"));
 		const dash = __("Dashboards");
-		if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Portfolio"), () => frappe.set_route("portfolio"), dash);
+		if (frappe.boot.auri_pms_portfolio) this.page.add_inner_button(__("Delivery & Health"), () => frappe.set_route("management-dashboard"), dash);
 		this.page.add_inner_button(__("My Work"), () => frappe.set_route("my-work"), dash);
 		this.page.add_inner_button(__("Quality of this project"), () => {
 			frappe.route_options = { project };
@@ -339,9 +412,19 @@ class ProjectHub {
 			const span = Math.max(frappe.datetime.get_diff(dates[dates.length - 1], lo), 1);
 			const pos = (date) => clamp((frappe.datetime.get_diff(date, lo) / span) * 100);
 			const state = (r) => (flt(r.percent_complete) >= 100 ? "ok" : days_to(r.due_date) < 0 ? "bad" : days_to(r.due_date) <= 14 ? "warn" : "acc");
+			// Labels that sit close together go to a free lane (two above the line, two below) so they never overlap.
+			const lane_end = [-Infinity, -Infinity, -Infinity, -Infinity];
+			const lane_of = {};
+			[...rels].sort((a, b) => (a.due_date > b.due_date ? 1 : -1)).forEach((r) => {
+				const x = pos(r.due_date);
+				let lane = lane_end.findIndex((end) => x - end >= 9);
+				if (lane < 0) lane = lane_end.indexOf(Math.min(...lane_end));
+				lane_end[lane] = x;
+				lane_of[r.name] = lane;
+			});
 			releases_html = `<div class="ph3-road">
 				<div class="ph3-road-line"></div><em class="ph3-today" style="left:${pos(today)}%"><span>${__("Today")}</span></em>
-				${rels.map((r, k) => `<a class="ph3-mile ph3-${state(r)} ${k % 2 ? "ph3-low" : ""}" style="left:${pos(r.due_date)}%" href="/desk/release/${encodeURIComponent(r.name)}" title="${esc(r.release_name)} · ${flt(r.percent_complete, 0)}% · ${frappe.datetime.str_to_user(r.due_date)}">
+				${rels.map((r) => `<a class="ph3-mile ph3-${state(r)} ph3-lane${lane_of[r.name]}" style="left:${pos(r.due_date)}%" href="/desk/release/${encodeURIComponent(r.name)}" title="${esc(r.release_name)} · ${flt(r.percent_complete, 0)}% · ${frappe.datetime.str_to_user(r.due_date)}">
 					<i></i><span><b>${esc(r.release_name)}</b>${flt(r.percent_complete, 0)}%</span></a>`).join("")}
 			</div>`;
 		}
@@ -651,7 +734,8 @@ class ProjectHub {
 		const p_tk = ui.billableTicketsPanel(bill, this.project);
 		const category = ui.categoryPanel(cats, this.project);
 		const p_cat = category.html;
-		const p_est = panel(__("Estimated vs spent hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}`);
+		const billable_share = t.spent ? Math.round((t.billable * 100) / t.spent) : null;
+		const p_est = panel(__("Estimated vs spent vs billable hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}<div class="small text-muted mt-2">${billable_share === null ? __("No hours logged yet") : __("Billable is {0}% of the {1} h spent", [billable_share, flt(t.spent, 1)])}</div>`);
 		const p_activity = panel(__("Hours by activity (billable vs non-billable)") + ui.viewAll(ui.go("Time Entry", { project: this.project })), stack(t.by_activity.map((a) => [a.label, a.billable, a.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]));
 		const p_vel = panel(__("Sprint velocity (tickets closed per completed sprint)") + ui.viewAll(ui.go("Sprint", { project: this.project })), h.velocity.length ? `<div class="hub-chart" id="hc-velocity"></div><div class="small text-muted mt-2">${__("Average {0} tickets / {1} hours per sprint", [flt(h.velocity.reduce((a, v) => a + v.items, 0) / h.velocity.length, 1), flt(h.velocity.reduce((a, v) => a + v.hours, 0) / h.velocity.length, 1)])}</div>` : `<div class="text-muted small">${__("No completed sprints yet")}</div>`);
 		const age_day = (n) => frappe.datetime.add_days(frappe.datetime.get_today(), -n);
@@ -676,7 +760,7 @@ class ProjectHub {
 			__("Age of open tickets") + ui.viewAll(ui.go("Work Item", { project: this.project, is_closed: 0 })),
 			stack(f.aging.map((a) => [a.label, a.count - a.client, a.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"], f.aging.map((_a, i) => ui.go("Work Item", { project: this.project, is_closed: 0, creation: age_ranges[i] })))
 		);
-		const p_rel = panel(__("Releases") + ui.viewAll(ui.go("Release", { project: this.project })), releases);
+		const p_rel = panel(__("Releases") + ui.viewAll(ui.go("Release", { project: this.project })), `<div class="ph3-rel-scroll">${releases}</div>`);
 		// two panels per row, so panels side by side share one height; a lone panel takes the full row
 		const row = (...cells) => {
 			const items = cells.filter(Boolean);
@@ -728,25 +812,29 @@ class ProjectHub {
 			${fold ? `<div class="hx-hero-foot hx-foot-fold">${fold}</div>` : ""}
 		</div>`;
 
-		this.$body.html(`<div class="hx">
-			${hero}
-			<div class="hub-tiles hx-tiles">
+		const panes = [
+			["overview", __("Overview"), `<div class="hub-tiles hx-tiles">
 				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`, items({ is_closed: 0 }))}
 				${tile(f.closed, __("Closed tickets"), "hub-green", __("{0} h estimated", [f.estimated_closed_hours]), items({ is_closed: 1 }))}
 				${tile(f.client_dependent, __("Waiting on client"), f.client_dependent ? "hub-orange" : "hub-teal", f.client_oldest_days === null ? "" : __("oldest {0} days", [f.client_oldest_days]), ui.goReport("Client Dependencies", { project: this.project }))}
 				${tile(t.non_billable, __("Non-billable hours"), "hub-orange", "", entries({ is_billable: 0 }))}
-			</div>
-			${section("01", __("Delivery"), row(p_flow, p_trend))}
-			${section("02", __("Open work"), row3(p_status, p_prio, p_age))}
-			${section("03", __("Breakdown"), row(p_type, module_panel))}
-			${section("04", __("Client and effort"), row(waiting_panel, p_est))}
-			${section("05", __("Risk"), row(risk_health))}
-			${section("06", __("Billing and time"), row(p_bill, p_tk) + row(p_cat, p_activity))}
-			${section("07", __("People"), row(p_team) + row(people_hours, people_open))}
-			${section("08", __("Plan"), row(p_vel, p_rel))}
-			${section("09", __("Tickets and billable time by period"), `<div class="hub-panel pf-tkt hx-periods"><div class="pf-tkt-body"></div>
-				<div class="pf-note pf-tkt-note">${__("Created and Closed count the tickets created and closed in the period; In progress and Waiting on client count the open tickets created in the period that are in progress or waiting on the client now. Billable time and Actual spent are the hours logged in the period (Actual spent = billable + non-billable).")}</div></div>`)}
-			</div>`);
+			</div>${section("01", __("Delivery"), row(p_flow, p_trend))}${section("02", __("Risk"), row(risk_health))}`],
+			["work", __("Work"), section("01", __("Open work"), row3(p_status, p_prio, p_age)) + section("02", __("Breakdown"), row(p_type, module_panel)) + section("03", __("Client and effort"), row(waiting_panel, p_est))],
+			["time", __("Time and billing"), section("01", __("Billing and time"), row(p_bill, p_tk) + row(p_cat, p_activity)) + section("02", __("Tickets and billable time by period"), `<div class="hub-panel pf-tkt hx-periods"><div class="pf-tkt-body"></div>
+				<div class="pf-note pf-tkt-note">${__("Created and Closed count the tickets created and closed in the period; In progress and Waiting on client count the open tickets created in the period that are in progress or waiting on the client now. Billable time and hours count the time logged in the period.")}</div></div>`)],
+			["people", __("People"), section("01", __("People"), row(p_team) + row(people_hours, people_open))],
+			["plan", __("Plan"), section("01", __("Plan"), row(p_vel, p_rel))],
+		];
+		this.pane = panes.some((x) => x[0] === this.pane) ? this.pane : "overview";
+		this.$body.html(`<div class="hx">
+			${hero}
+			<nav class="hx-panes">${panes.map(([key, label]) => `<button type="button" class="hx-pane-btn ${key === this.pane ? "on" : ""}" data-pane="${key}">${label}</button>`).join("")}</nav>
+			${panes.map(([key, , html]) => `<div class="hx-pane ${key === this.pane ? "on" : ""}" data-pane="${key}">${html}</div>`).join("")}`);
+		this.$body.find(".hx-pane-btn").on("click", (e) => {
+			this.pane = $(e.currentTarget).data("pane");
+			this.$body.find(".hx-pane-btn, .hx-pane").each((_i, el) => $(el).toggleClass("on", $(el).data("pane") === this.pane));
+			window.dispatchEvent(new Event("resize")); // charts that were hidden draw at their real width
+		});
 
 		this.bind_risk_links();
 		ui.bindTiles(this.$body);
@@ -756,8 +844,8 @@ class ProjectHub {
 		});
 		const weeks = h.labels;
 		const palette = { blue: "#7c3aed", green: "#c4b5fd", orange: "#fb923c", purple: "#8b5cf6", cyan: "#a78bfa", red: "#e11d48", pink: "#db2777" };
-		this.chart("#hc-flow", { type: "bar", height: 170, data: { labels: weeks, datasets: [{ name: __("Created"), values: f.created }, { name: __("Resolved"), values: f.resolved }] }, colors: [palette.blue, palette.green], barOptions: { spaceRatio: 0.4 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
-		this.chart("#hc-trend", { type: "line", height: 170, data: { labels: weeks, datasets: [{ name: __("Open tickets"), values: f.open_trend }, { name: __("of which waiting on client"), values: f.client_trend }] }, colors: [palette.purple, palette.orange], lineOptions: { regionFill: 1 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
+		this.chart("#hc-flow", { type: "bar", height: 220, data: { labels: weeks, datasets: [{ name: __("Created"), values: f.created }, { name: __("Resolved"), values: f.resolved }] }, colors: [palette.blue, palette.green], barOptions: { spaceRatio: 0.4 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
+		this.chart("#hc-trend", { type: "line", height: 220, data: { labels: weeks, datasets: [{ name: __("Open tickets"), values: f.open_trend }, { name: __("Waiting on client"), values: f.client_trend }] }, colors: [palette.purple, palette.orange], lineOptions: { regionFill: 1 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
 		ui.drawBilling(this.$body, { labels: weeks, starts: h.starts, billable: t.billable_by_week, non_billable: t.non_billable_by_week, project: this.project });
 		category.bind(this.$body);
 		if (h.can_note) {
@@ -768,8 +856,8 @@ class ProjectHub {
 			}));
 		}
 		this.draw_periods();
-		if (h.velocity.length) this.chart("#hc-velocity", { type: "bar", height: 170, data: { labels: h.velocity.map((v) => v.sprint), datasets: [{ name: __("Tickets closed"), values: h.velocity.map((v) => v.items) }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } }, (i) => ui.openTarget(ui.go("Work Item", { project: this.project, sprint: h.velocity[i].name, is_closed: 1 })));
-		this.chart("#hc-aging", { type: "bar", height: 170, data: { labels: f.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: f.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: f.aging.map((a) => a.client) }] }, colors: [palette.blue, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } }, (i) => {
+		if (h.velocity.length) this.chart("#hc-velocity", { type: "bar", height: 220, data: { labels: h.velocity.map((v) => v.sprint), datasets: [{ name: __("Tickets closed"), values: h.velocity.map((v) => v.items) }] }, colors: [palette.purple], barOptions: { spaceRatio: 0.5 } }, (i) => ui.openTarget(ui.go("Work Item", { project: this.project, sprint: h.velocity[i].name, is_closed: 1 })));
+		this.chart("#hc-aging", { type: "bar", height: 220, data: { labels: f.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: f.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: f.aging.map((a) => a.client) }] }, colors: [palette.blue, palette.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } }, (i) => {
 			const day = (n) => frappe.datetime.add_days(frappe.datetime.get_today(), -n);
 			const ranges = [["between", [day(7), frappe.datetime.get_today()]], ["between", [day(14), day(8)]], ["between", [day(30), day(15)]], ["between", [day(60), day(31)]], ["<", day(60)]];
 			ui.openTarget(ui.go("Work Item", { project: this.project, is_closed: 0, creation: ranges[i] }));
