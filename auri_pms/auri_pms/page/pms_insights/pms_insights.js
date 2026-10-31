@@ -48,6 +48,11 @@ class Insights {
 		this.report = report || "";
 		this.page.clear_inner_toolbar();
 		this.page.clear_menu();
+		if (!frappe.boot.auri_pms_insights) {
+			// Project Role > Can See Auri Insights
+			this.$body.html(`<div class="hub-panel p-4"><h6>${__("Auri Insights")}</h6><div class="text-muted">${__("Auri Insights is for Auri PMS Admins and for members whose Project Role can see it.")}</div></div>`);
+			return;
+		}
 		ui.applyTheme(this.$body);
 		ui.addPeriodMenu(this.page, () => this.show(this.report));
 		ui.addThemeMenu(this.page, () => this.show(this.report));

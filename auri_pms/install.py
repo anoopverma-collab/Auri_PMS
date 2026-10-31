@@ -22,7 +22,7 @@ INDICATORS = {s[0]: s[5] for s in STATUSES}
 
 _FLAGS_ALL = (
 	"can_create_items can_edit_any_item can_delete_items can_manage_releases can_manage_categories "
-	"can_log_time can_edit_others_time can_manage_members can_be_assigned can_see_all_items"
+	"can_log_time can_edit_others_time can_manage_members can_be_assigned can_see_all_items can_see_health_cost can_see_insights"
 ).split()
 PROJECT_ROLES = {
 	"Manager": _FLAGS_ALL,

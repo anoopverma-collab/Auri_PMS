@@ -32,7 +32,7 @@ class TestRoles(TrackerTestCase):
 			self.assertNotIn(self.ALP, {p["name"] for p in api.get_hub_projects()})
 			self.assertFalse(frappe.get_list("Work Item", filters={"project": self.ALP}))
 			self.assertEqual(portfolio_projects(BOSS), [])
-			self.assertThrows("Portfolio", lambda: api.get_portfolio("3m"), frappe.PermissionError)
+			self.assertThrows("Health and cost", lambda: api.get_portfolio("3m"), frappe.PermissionError)
 
 	def test_a_manager_sees_the_projects_they_are_allocated_to(self):
 		self.join(self.ALP, BOSS, "Developer")

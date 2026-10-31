@@ -166,10 +166,14 @@ class TrackerTestCase(IntegrationTestCase):
 		self.use_shipped_defaults()
 		clear_cache()
 
+	def set_role_flag(self, field: str, value: bool, role: str = "Developer") -> None:
+		"""Tick or untick a Project Role checkbox for ``role`` (within this test only)."""
+		frappe.db.set_value("Project Role", role, field, int(value))
+		clear_cache()
+
 	def set_see_all(self, value: bool, role: str = "Developer") -> None:
 		"""Project Role > Can See All Work Items for ``role`` (within this test only)."""
-		frappe.db.set_value("Project Role", role, "can_see_all_items", int(value))
-		clear_cache()
+		self.set_role_flag("can_see_all_items", value, role)
 
 	def use_shipped_defaults(self) -> None:
 		"""Within this test only (the savepoint is rolled back): the statuses and Project Role capabilities the app installs.

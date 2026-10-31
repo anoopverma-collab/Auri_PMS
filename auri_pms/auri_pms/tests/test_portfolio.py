@@ -28,6 +28,7 @@ class TestPortfolio(TrackerTestCase):
 
 	def test_only_people_outside_the_projects_have_no_portfolio(self):
 		"""Anyone outside the projects is refused, even on a public project; a Developer sees their own project."""
+		self.set_role_flag("can_see_health_cost", True)
 		with self.as_user(OUT), self.assertRaises(frappe.PermissionError):
 			api.get_portfolio("3m")
 		_data, rows = self.portfolio(DEV)
@@ -35,6 +36,7 @@ class TestPortfolio(TrackerTestCase):
 
 	def test_a_member_sees_the_projects_they_belong_to(self):
 		"""Developer on Alpha and Manager on Beta: the Portfolio shows both, and notes only where they manage."""
+		self.set_role_flag("can_see_health_cost", True)
 		bet = frappe.get_doc("Project", self.BET)
 		bet.append("tracker_members", {"user": DEV, "project_role": "Manager"})
 		bet.save(ignore_permissions=True)
@@ -285,3 +287,96 @@ class TestPortfolio(TrackerTestCase):
 		doc = frappe.get_doc("Project", project)
 		doc.append("tracker_members", {"user": user, "project_role": role})
 		doc.save(ignore_permissions=True)
+
+
+class TestRoleTicksForHealthCostAndInsights(TrackerTestCase):
+	"""Project Role > Can See Health & Cost and Can See Auri Insights."""
+
+	def test_shipped_roles_only_manager_has_both_ticks(self):
+		for role, expected in (("Manager", 1), ("Developer", 0), ("Reporter", 0)):
+			values = frappe.db.get_value("Project Role", role, ["can_see_health_cost", "can_see_insights"])
+			self.assertEqual(values, (expected, expected), role)
+
+	def test_a_role_without_the_ticks_is_refused_and_a_ticked_one_is_not(self):
+		from auri_pms.auri_pms import insights
+
+		with self.as_user(DEV):
+			self.assertRaises(frappe.PermissionError, api.get_portfolio, "3m")
+			self.assertRaises(frappe.PermissionError, api.get_portfolio_tickets)
+			self.assertRaises(frappe.PermissionError, insights.get_insight, "delivery")
+		self.set_role_flag("can_see_health_cost", True)
+		self.set_role_flag("can_see_insights", True)
+		with self.as_user(DEV):
+			api.get_portfolio("3m")
+			insights.get_insight("delivery")
+
+	def test_the_manager_role_and_an_admin_see_both(self):
+		from auri_pms.auri_pms import insights
+
+		for user in (MGR, TM):
+			with self.as_user(user):
+				api.get_portfolio("3m")
+				insights.get_insight("delivery")
+
+	def test_any_role_of_the_person_allows_it_for_that_project_only(self):
+		"""Developer (no ticks) on Alpha and Manager on Beta: both areas cover Beta only."""
+		from auri_pms.auri_pms.utils import health_cost_projects, insight_projects
+
+		bet = frappe.get_doc("Project", self.BET)
+		bet.append("tracker_members", {"user": DEV, "project_role": "Manager"})
+		bet.save(ignore_permissions=True)
+		self.assertEqual(health_cost_projects(DEV), [self.BET])
+		self.assertEqual(insight_projects(DEV), [self.BET])
+
+	def test_someone_outside_every_project_still_gets_an_empty_insight(self):
+		from auri_pms.auri_pms import insights
+
+		with self.as_user(OUT):
+			self.assertEqual(insights.get_insight_projects(), [])
+
+
+class TestProjectHubCostPanes(TrackerTestCase):
+	"""Project Hub > Health: Time and billing and People follow Can See Health & Cost; the other panes stay open."""
+
+	def log_hour(self):
+		item = self.new_item(MGR, tracker="Task")
+		self.logged_time(DEV, item.name, 3, project=self.ALP)
+
+	def test_a_member_without_the_tick_gets_the_other_panes_but_blanked_cost_data(self):
+		self.log_hour()
+		with self.as_user(DEV):
+			data = api.get_project_health(self.ALP)
+		self.assertFalse(data["can_see_cost"])
+		self.assertEqual((data["time"]["billable"], data["time"]["non_billable"]), (0, 0))
+		self.assertEqual((data["time"]["by_user"], data["time"]["by_activity"]), ([], []))
+		self.assertEqual(data["billing"]["categories"], [])
+		self.assertEqual((data["team"]["people"], data["workload"]), ([], []))
+		self.assertTrue(data["time"]["spent"])  # effort still shows: it is not billing
+		self.assertTrue(data["flow"])  # the Work and Plan panes keep their data
+
+	def test_the_manager_role_and_an_admin_get_everything(self):
+		self.log_hour()
+		for user in (MGR, TM):
+			with self.as_user(user):
+				data = api.get_project_health(self.ALP)
+			self.assertNotIn("can_see_cost", data, user)
+			self.assertTrue(data["time"]["by_user"], user)
+
+	def test_the_period_table_is_refused_without_the_tick(self):
+		ranges = [{"key": "all", "from_date": None, "to_date": None}]
+		with self.as_user(DEV):
+			self.assertRaises(frappe.PermissionError, api.get_project_periods, self.ALP, ranges)
+		self.set_role_flag("can_see_health_cost", True)
+		with self.as_user(DEV):
+			api.get_project_periods(self.ALP, ranges)
+
+	def test_a_saved_dashboard_is_blanked_the_same_way(self):
+		from auri_pms.auri_pms import snapshots
+
+		self.log_hour()
+		name = snapshots.take_snapshot(self.ALP)
+		with self.as_user(DEV):
+			saved = snapshots.get_project_snapshot(name)
+		self.assertEqual(saved["data"]["time"]["by_user"], [])
+		with self.as_user(MGR):
+			self.assertTrue(snapshots.get_project_snapshot(name)["data"]["time"]["by_user"])

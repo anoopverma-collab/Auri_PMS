@@ -14,6 +14,7 @@ from auri_pms.auri_pms.utils import (
 	get_enabled_statuses,
 	get_enabled_trackers,
 	get_parent_scope,
+	health_cost_projects,
 	is_admin,
 	nearest_indicator,
 	pms_project_rows,
@@ -581,6 +582,40 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 	data["team"] = project_team(project, managed_projects())
 	if not health_visible(project, "hub"):
 		data["status"] = None
+	if project not in health_cost_projects():
+		strip_cost_detail(data)
+	return data
+
+
+def strip_cost_detail(data: dict) -> dict:
+	"""Blank the Time and billing and People figures of a Project Health payload for a role without *Can See Health & Cost*.
+
+	The shapes stay the same (empty lists, zero hours) so the page still draws; hours spent and estimated stay, since
+	they describe effort, not billing."""
+	weeks = len(data.get("labels") or [])
+	time = data.get("time") or {}
+	time.update(
+		billable=0,
+		non_billable=0,
+		billable_pct=None,
+		billable_by_week=[0] * weeks,
+		non_billable_by_week=[0] * weeks,
+		by_user=[],
+		by_activity=[],
+	)
+	data["time"] = time
+	data["billing"] = {
+		"tickets": {"billable": 0, "non_billable": 0, "no_time": 0},
+		"names": {"billable": [], "non_billable": [], "no_time": []},
+		"names_capped": False,
+		"hours": {"billable": 0, "non_billable": 0},
+		"categories": [],
+	}
+	team = data.get("team") or {}
+	team.update(capacity=0, people=[], over_allocated=0, burnout=0, spare_week=0, avg_allocation_pct=0)
+	data["team"] = team
+	data["workload"] = []
+	data["can_see_cost"] = False
 	return data
 
 
@@ -588,6 +623,11 @@ def get_project_health(project: str, period: str = "3m") -> dict:
 @frappe.whitelist()
 def get_project_periods(project: str, ranges: str | list) -> list[dict]:
 	"""Tickets and billable time of one project for several periods: ``ranges`` is [{key, from_date, to_date}]."""
+	if project not in health_cost_projects():
+		frappe.throw(
+			_("Time and billing is for Auri PMS Admins and for members whose Project Role can see it"),
+			frappe.PermissionError,
+		)
 	from auri_pms.auri_pms.dashboards import project_period_counts
 	from auri_pms.permissions import can_see_project
 

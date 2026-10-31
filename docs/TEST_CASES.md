@@ -146,6 +146,19 @@ The site-wide *Members See All Work Items* setting was replaced by the *Can See 
 | PA-09 | Delivery & Health for a Developer and an outsider | a member sees their own project; an outsider is refused |
 | PA-10 | Company User Permission on a member | dashboards and project dropdowns still list their project; unticked, they do not |
 | PA-11 | Project Role list | the Permissions column lists capabilities and the view-only fields |
+| PA-12 | Shipped roles: Can See Health & Cost and Can See Auri Insights | only Manager is ticked |
+| PA-13 | Role without the ticks opens Health and cost data or an Insights report | refused; ticked, it works. Manager and admin work |
+| PA-14 | Developer on Alpha (no ticks) and Manager on Beta | both areas cover Beta only |
+| PA-15 | Someone on no project opens Insights | an empty list, not an error |
+| PA-16 | Browser: Health and cost tab and the Insights sidebar entry | hidden for a role without the tick; the Insights page shows a message. Manual |
+| PA-17 | Project Hub, Health view, role without Can See Health & Cost | the payload has no billable hours, hours by person or activity, billing categories, team people or per-person open tickets; hours spent and the other panes' data stay |
+| PA-18 | Same call for Manager and admin | full figures, no `can_see_cost` flag |
+| PA-19 | Hub by-period table without the tick | refused; with the tick it works |
+| PA-20 | A saved History snapshot opened without the tick | the same figures are blanked; with the tick they show |
+| PA-21 | Browser: Project Hub for a role without the tick | the Time and billing and People tabs are gone, and the hero, Overview tile and Work bars show no billable figures. Manual |
+| PA-22 | Project Hub in the sidebar | listed after My Work, in both sidebar files and on the installed sidebar |
+| PA-23 | My Work shortcut flag at login | true for an Auri PMS role or System Manager; false with the module blocked or without any of those roles |
+| PA-24 | Browser: the My Work button | a green button in the page header right after the search button on ERPNext and PMS screens; it opens My Work, hides on My Work, stays after a form is saved or reopened, and looks right in light and dark mode and on a phone. Manual |
 
 ## 7. Sidebar and pages
 

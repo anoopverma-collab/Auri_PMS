@@ -5,6 +5,16 @@ All notable changes to Auri PMS are listed here, newest first. The format follow
 
 ## [Unreleased]
 
+### Added
+- **Health & Cost and Auri Insights per Project Role.** Two new ticks on the Project Role, *Can See Health & Cost* and *Can See Auri Insights*, decide who gets the *Health and cost* tab of Delivery & Health and the *Auri Insights* page. Without the tick the tab or the sidebar entry is hidden and the server refuses the data (a member whose roles lack Insights gets a permission error; someone on no project still gets an empty result). A person with different roles on different projects sees each area for the projects where any one of their roles allows it. Admins always see both. A patch ticks both for the role that can manage members (Manager) and leaves the others unticked; the *Delivery* tab stays open to every member.
+
+- **Project Hub: Time and billing and People follow the same tick.** In the hub's *Health* view the *Overview*, *Work* and *Plan* panes stay open to every project member; *Time and billing* and *People* need *Can See Health & Cost* (Manager) or an admin. The server blanks the billing and people figures for a role without the tick (billable and non-billable hours, hours by person and activity, billing categories, team capacity, open tickets by person) and refuses the by-period table; saved history snapshots are blanked the same way. Hours spent and estimated stay visible, since they describe effort. The hero's *Billable hours*, the *Non-billable hours* tile and the billable bars of the Work pane are hidden too.
+- **Project Hub back in the sidebar**, right after *My Work*, for every member.
+- **My Work shortcut on every screen.** A green *My Work* button sits in the page header right after the search button, on ERPNext screens as well, and opens Auri PMS > My Work. It hides itself on My Work, and is added again if a screen rebuilds its header. It shows for people with an Auri PMS role or the System Manager role whose *Auri PMS* module is not blocked on their User; the server decides this at login (`auri_pms_my_work`).
+
+### Fixed
+- **Create check without string-built SQL.** `can_create_doctype` read the Project Role capability through an f-string SQL (Semgrep `frappe-sql-format-injection`); it now uses `frappe.get_all` and `frappe.db.exists`. The result is the same.
+
 ## [0.1.0] - 2026-10-31
 
 Tested with Frappe 16.54 and ERPNext 16.53.

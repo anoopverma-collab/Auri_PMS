@@ -26,10 +26,10 @@ from auri_pms.auri_pms.health import (
 from auri_pms.auri_pms.risk import my_risks, portfolio_risk_counts
 from auri_pms.auri_pms.utils import (
 	get_settings,
+	health_cost_projects,
 	is_admin,
 	managed_projects,
 	pms_project_rows,
-	portfolio_projects,
 )
 
 LEVEL_ORDER = {"red": 0, "amber": 1, "green": 2, "none": 3}
@@ -197,10 +197,10 @@ COUNT_ITEM_FIELDS = ["project", "status", "is_closed", "creation", "closed_on", 
 
 def get_portfolio_ticket_counts(from_date: str | None = None, to_date: str | None = None) -> list[dict]:
 	"""``period_counts`` for every project of the Portfolio (all time without dates); visibility follows the Portfolio."""
-	allowed = portfolio_projects()
+	allowed = health_cost_projects()
 	if not allowed:
 		frappe.throw(
-			_("The Portfolio is for people who are members of an Auri PMS project, and for Auri PMS Admins."),
+			_("Health and cost is for Auri PMS Admins and for members whose Project Role can see it."),
 			frappe.PermissionError,
 		)
 	start, end = period_range(from_date, to_date)
@@ -347,13 +347,13 @@ def billing_summary(items: list, entries: list, category_names: dict[str, str]) 
 
 
 def get_portfolio_data(period: str = "3m") -> frappe._dict:
-	"""One row of health and delivery numbers per project the user manages (``portfolio_projects``), plus totals and series."""
+	"""One row of health and delivery numbers per project the user manages (``health_cost_projects``), plus totals and series."""
 	period = period if period in PERIODS else "3m"
 	today_ = getdate(today())
-	allowed = portfolio_projects()
+	allowed = health_cost_projects()
 	if not allowed:
 		frappe.throw(
-			_("The Portfolio is for people who are members of an Auri PMS project, and for Auri PMS Admins."),
+			_("Health and cost is for Auri PMS Admins and for members whose Project Role can see it."),
 			frappe.PermissionError,
 		)
 	projects = pms_project_rows(
