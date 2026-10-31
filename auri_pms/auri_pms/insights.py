@@ -17,7 +17,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from auri_pms.auri_pms.health import make_buckets
-from auri_pms.auri_pms.utils import is_allocated
+from auri_pms.auri_pms.utils import insight_projects, portfolio_projects
 
 REPORTS = {
 	"delivery": {
@@ -96,6 +96,8 @@ def get_insight(report: str, project: str | None = None, period: str = "3m") -> 
 	"""One report for all projects the user sees, or for one project."""
 	if report not in REPORTS:
 		frappe.throw(_("Unknown report {0}").format(report))
+	if not insight_projects() and portfolio_projects():  # a member whose roles do not include Insights
+		frappe.throw(_("Auri Insights is not available to your Project Role"), frappe.PermissionError)
 	projects = visible_projects(project)
 	ctx = Context(projects, period)
 	data = REPORT_FUNCTIONS[report](ctx)
@@ -115,11 +117,11 @@ def period_notes() -> dict[str, str]:
 
 @frappe.whitelist()
 def get_insight_projects() -> list[str]:
-	"""The projects Insights covers for the user: Auri PMS projects they are allocated to (all of them for an admin).
+	"""The projects Insights covers for the user: Auri PMS projects where their Project Role has *Can See Auri Insights*
+	(all of them for an admin).
 
 	A public project the user is not a member of stays readable elsewhere but is not part of their analysis."""
-	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
-	return [p for p in enabled if is_allocated(p)]
+	return insight_projects()
 
 
 def visible_projects(project: str | None) -> list[str]:

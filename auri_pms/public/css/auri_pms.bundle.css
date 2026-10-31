@@ -95,3 +95,19 @@
 .auri-risk-critical { background-color: rgba(239, 68, 68, 0.22); }
 .auri-risk-here { outline: 3px solid var(--text-color); outline-offset: -3px; }
 .auri-risk-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+
+/* My Work button in the page header, after the search button (see auri_pms.bundle.js). */
+.auri-my-work-btn {
+	background-color: #15803d !important;
+	border-color: #15803d !important;
+	color: #fff !important;
+}
+.auri-my-work-btn:hover,
+.auri-my-work-btn:focus {
+	background-color: #166534 !important;
+	border-color: #166534 !important;
+	color: #fff !important;
+}
+.auri-my-work-btn .icon { stroke: currentColor; fill: none; }
+.auri-my-work-btn.hidden { display: none; }
+@media print { .auri-my-work-btn { display: none; } }

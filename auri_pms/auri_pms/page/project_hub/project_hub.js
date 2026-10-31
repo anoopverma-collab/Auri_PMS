@@ -735,7 +735,8 @@ class ProjectHub {
 		const category = ui.categoryPanel(cats, this.project);
 		const p_cat = category.html;
 		const billable_share = t.spent ? Math.round((t.billable * 100) / t.spent) : null;
-		const p_est = panel(__("Estimated vs spent vs billable hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}<div class="small text-muted mt-2">${billable_share === null ? __("No hours logged yet") : __("Billable is {0}% of the {1} h spent", [billable_share, flt(t.spent, 1)])}</div>`);
+		const full = h.can_see_cost !== false; // Project Role > Can See Health & Cost: Time and billing and People
+		const p_est = panel(__("Estimated vs spent vs billable hours") + ui.viewAll(ui.go("Time Entry", { project: this.project })), `${t.budget ? bar(__("Budget"), t.budget, hours_max) : ""}${bar(__("Estimated"), t.estimated, hours_max)}${bar(__("Spent"), t.spent, hours_max)}${full ? `${bar(__("Billable"), t.billable, hours_max)}${bar(__("Non-billable"), t.non_billable, hours_max)}` : ""}<div class="small text-muted mt-2">${!full ? "" : billable_share === null ? __("No hours logged yet") : __("Billable is {0}% of the {1} h spent", [billable_share, flt(t.spent, 1)])}</div>`);
 		const p_activity = panel(__("Hours by activity (billable vs non-billable)") + ui.viewAll(ui.go("Time Entry", { project: this.project })), stack(t.by_activity.map((a) => [a.label, a.billable, a.non_billable]), [__("Billable"), __("Non-billable")], ["seg-green", "seg-orange"]));
 		const p_vel = panel(__("Sprint velocity (tickets closed per completed sprint)") + ui.viewAll(ui.go("Sprint", { project: this.project })), h.velocity.length ? `<div class="hub-chart" id="hc-velocity"></div><div class="small text-muted mt-2">${__("Average {0} tickets / {1} hours per sprint", [flt(h.velocity.reduce((a, v) => a + v.items, 0) / h.velocity.length, 1), flt(h.velocity.reduce((a, v) => a + v.hours, 0) / h.velocity.length, 1)])}</div>` : `<div class="text-muted small">${__("No completed sprints yet")}</div>`);
 		const age_day = (n) => frappe.datetime.add_days(frappe.datetime.get_today(), -n);
@@ -806,7 +807,7 @@ class ProjectHub {
 					${metric(f.completion_pct, __("Complete"), __("{0} of {1} tickets", [f.closed, f.total]), items())}
 					${metric(f.overdue_pct, __("Open & overdue"), __("{0} tickets", [f.overdue]), items({ is_closed: 0, due_date: ["<", frappe.datetime.get_today()] }), f.overdue ? "hx-metric-bad" : "")}
 					${metric(t.burn_pct, __("Hours spent"), `${flt(t.spent, 1)} h${t.burn_pct === null ? "" : ` · ${t.budget ? __("{0}% of budget", [t.burn_pct]) : __("{0}% of estimate", [t.burn_pct])}`}`, entries(), t.burn_pct !== null && t.burn_pct > 100 ? "hx-metric-bad" : "")}
-					${metric(t.billable_pct, __("Billable hours"), `${flt(t.billable, 1)} h · ${__("{0}% of spent", [t.billable_pct])}`, entries({ is_billable: 1 }))}
+					${full ? metric(t.billable_pct, __("Billable hours"), `${flt(t.billable, 1)} h · ${__("{0}% of spent", [t.billable_pct])}`, entries({ is_billable: 1 })) : ""}
 				</div>
 			</div>
 			${fold ? `<div class="hx-hero-foot hx-foot-fold">${fold}</div>` : ""}
@@ -817,7 +818,7 @@ class ProjectHub {
 				${tile(f.open, __("Open tickets"), "hub-blue", `${f.client_dependent ? `${__("{0} waiting on client", [f.client_dependent])} · ` : ""}${__("{0} h estimated", [f.estimated_open_hours])}`, items({ is_closed: 0 }))}
 				${tile(f.closed, __("Closed tickets"), "hub-green", __("{0} h estimated", [f.estimated_closed_hours]), items({ is_closed: 1 }))}
 				${tile(f.client_dependent, __("Waiting on client"), f.client_dependent ? "hub-orange" : "hub-teal", f.client_oldest_days === null ? "" : __("oldest {0} days", [f.client_oldest_days]), ui.goReport("Client Dependencies", { project: this.project }))}
-				${tile(t.non_billable, __("Non-billable hours"), "hub-orange", "", entries({ is_billable: 0 }))}
+				${full ? tile(t.non_billable, __("Non-billable hours"), "hub-orange", "", entries({ is_billable: 0 })) : ""}
 			</div>${section("01", __("Delivery"), row(p_flow, p_trend))}${section("02", __("Risk"), row(risk_health))}`],
 			["work", __("Work"), section("01", __("Open work"), row3(p_status, p_prio, p_age)) + section("02", __("Breakdown"), row(p_type, module_panel)) + section("03", __("Client and effort"), row(waiting_panel, p_est))],
 			["time", __("Time and billing"), section("01", __("Billing and time"), row(p_bill, p_tk) + row(p_cat, p_activity)) + section("02", __("Tickets and billable time by period"), `<div class="hub-panel pf-tkt hx-periods"><div class="pf-tkt-body"></div>
@@ -825,6 +826,7 @@ class ProjectHub {
 			["people", __("People"), section("01", __("People"), row(p_team) + row(people_hours, people_open))],
 			["plan", __("Plan"), section("01", __("Plan"), row(p_vel, p_rel))],
 		];
+		if (!full) panes.splice(0, panes.length, ...panes.filter(([key]) => key !== "time" && key !== "people"));
 		this.pane = panes.some((x) => x[0] === this.pane) ? this.pane : "overview";
 		this.$body.html(`<div class="hx">
 			${hero}
@@ -846,8 +848,8 @@ class ProjectHub {
 		const palette = { blue: "#7c3aed", green: "#c4b5fd", orange: "#fb923c", purple: "#8b5cf6", cyan: "#a78bfa", red: "#e11d48", pink: "#db2777" };
 		this.chart("#hc-flow", { type: "bar", height: 220, data: { labels: weeks, datasets: [{ name: __("Created"), values: f.created }, { name: __("Resolved"), values: f.resolved }] }, colors: [palette.blue, palette.green], barOptions: { spaceRatio: 0.4 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
 		this.chart("#hc-trend", { type: "line", height: 220, data: { labels: weeks, datasets: [{ name: __("Open tickets"), values: f.open_trend }, { name: __("Waiting on client"), values: f.client_trend }] }, colors: [palette.purple, palette.orange], lineOptions: { regionFill: 1 }, axisOptions: { xIsSeries: 1, xAxisMode: "tick" }});
-		ui.drawBilling(this.$body, { labels: weeks, starts: h.starts, billable: t.billable_by_week, non_billable: t.non_billable_by_week, project: this.project });
-		category.bind(this.$body);
+		if (full) ui.drawBilling(this.$body, { labels: weeks, starts: h.starts, billable: t.billable_by_week, non_billable: t.non_billable_by_week, project: this.project });
+		if (full) category.bind(this.$body);
 		if (h.can_note) {
 			ui.bindNotes(this.$body, () => ui.openNotes(this.project, info.project_name || info.name, (notes) => {
 				h.notes = { count: notes.length, last: notes[0] ? { text: notes[0].text, by_name: notes[0].by_name || notes[0].by, on: notes[0].on } : null };

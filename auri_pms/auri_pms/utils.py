@@ -19,6 +19,8 @@ CAPABILITY_FIELDS: tuple[str, ...] = (
 	"can_manage_members",
 	"can_be_assigned",
 	"can_see_all_items",
+	"can_see_health_cost",
+	"can_see_insights",
 )
 # Full access to every project. Auri PMS Manager is not here: a Manager works like a member and sees only the projects they are on.
 ADMIN_ROLES = frozenset({"Auri PMS Admin", "System Manager"})
@@ -123,6 +125,37 @@ def portfolio_projects(user: str | None = None) -> list[str]:
 		)
 	)
 	return [p for p in enabled if p in mine]
+
+
+def projects_with_capability(capability: str, user: str | None = None) -> list[str]:
+	"""Auri PMS projects where ``user`` holds a Project Role with ``capability`` ticked (all of them for an admin).
+
+	A person with different roles on different projects gets the projects where any one of those roles allows it."""
+	user = user or frappe.session.user
+	enabled = portfolio_projects(user)
+	if is_admin(user) or not enabled:
+		return enabled
+	roles = set(frappe.get_all("Project Role", filters={capability: 1}, pluck="name"))
+	mine = {
+		m.parent
+		for m in frappe.get_all(
+			"Project Member",
+			filters={"parenttype": "Project", "user": user, "parent": ["in", enabled]},
+			fields=["parent", "project_role"],
+		)
+		if m.project_role in roles
+	}
+	return [p for p in enabled if p in mine]
+
+
+def health_cost_projects(user: str | None = None) -> list[str]:
+	"""Projects whose Health and cost tab ``user`` may see (Project Role > Can See Health & Cost)."""
+	return projects_with_capability("can_see_health_cost", user)
+
+
+def insight_projects(user: str | None = None) -> list[str]:
+	"""Projects Auri Insights covers for ``user`` (Project Role > Can See Auri Insights)."""
+	return projects_with_capability("can_see_insights", user)
 
 
 def managed_projects(user: str | None = None) -> list[str]:

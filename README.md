@@ -124,6 +124,36 @@ Every theme has a light and a dark version. The version follows Frappe's own lig
 | **Minimal Clean** | Plain white (or near-black) cards with thin borders and no effects. | <img src="docs/screenshots/light/theme-minimal.png" width="260" alt="Minimal Clean light"> | <img src="docs/screenshots/dark/theme-minimal.png" width="260" alt="Minimal Clean dark"> |
 | **Flat - Solid colour** | No shadows or gradients; every number tile is a solid block of colour. | <img src="docs/screenshots/light/theme-flat-solid.png" width="260" alt="Flat - Solid colour light"> | <img src="docs/screenshots/dark/theme-flat-solid.png" width="260" alt="Flat - Solid colour dark"> |
 
+## Who sees what, and how to allow it
+
+Two things decide what a person sees: the **Frappe role** they hold (*Auri PMS User*, *Auri PMS Manager*, *Auri PMS Admin*) and the **Project Role** they hold on each project (Manager, Developer, Reporter, or your own).
+
+| Area | Admin / System Manager | Manager (Project Role) | Developer | Reporter |
+|---|---|---|---|---|
+| Projects | all | their projects | their projects | their projects |
+| Work items | all | all | own only | own only |
+| Delivery & Health, *Delivery* tab | yes | yes | yes | yes |
+| Delivery & Health, *Health and cost* tab | yes | yes | no | no |
+| Auri Insights | yes | yes | no | no |
+| Project Hub: Overview, Work, Plan | yes | yes | yes | yes |
+| Project Hub: Time and billing, People | yes | yes | no | no |
+| Client Status Report: preview / send | yes / yes | yes / yes | yes / no | yes / no |
+| Project notes, team workload | yes | yes | no | no |
+| Settings (statuses, ticket types, roles, field rules) | yes | no | no | no |
+
+"Own only" means the items assigned to the person (also as an additional assignee) or raised by them. The values above are what a fresh install ships and can be changed per role.
+
+**To give a role more (or less):** open *Auri PMS > Project Role > (the role)* and tick or untick *Can See All Work Items*, *Can See Health & Cost* (also covers the Project Hub's Time and billing and People panes) and *Can See Auri Insights*, the capabilities, and the *Work Item Field Rules* (fields the role may only view). The server also refuses the data, not only the menu.
+
+**To give a person access:**
+1. Give the user the Frappe role **Auri PMS User** (or Manager / Admin), and make sure *Auri PMS* is not in their blocked modules (*User > Modules*).
+2. Add them to the project: *Project > Auri PMS tab > Members*, with the Project Role they should have there.
+3. Ask them to log out and in: the menu, tabs and the *My Work* button are decided at login.
+
+**Management** (see and edit every project): give them the **Auri PMS Admin** role.
+
+A person with different roles on different projects sees Health and cost and Auri Insights for the projects where any one of their roles allows it. The *My Work* button in the page header shows for people with an Auri PMS role or System Manager. A Company User Permission does not hide a member's project from the Auri PMS dashboards and project dropdowns while *PMS Settings > Auri PMS Projects Ignore Company Restrictions* is ticked (the default); the standard Project list and form still follow it.
+
 ## Install
 
 ```bash
@@ -148,7 +178,7 @@ Activity Types are left alone).
 
 | Where | What |
 |---|---|
-| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), **Auri PMS Projects Ignore Company Restrictions** (ticked by default: the Auri PMS screens list a member's projects even when a Company User Permission would hide them), **Waiting Since Editable**; *Can See All Work Items* (a member sees every ticket of the project, or only those assigned to or raised by them) and the view-only *Field Rules* are set on each **Project Role**, time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
+| **PMS Settings** | default status/priority, role used on public projects, close rules (children, blockers), **Auri PMS Projects Ignore Company Restrictions** (ticked by default: the Auri PMS screens list a member's projects even when a Company User Permission would hide them), **Waiting Since Editable**; *Can See All Work Items* (a member sees every ticket of the project, or only those assigned to or raised by them), *Can See Health & Cost* and *Can See Auri Insights* (who gets the Health and cost tab and Auri Insights) and the view-only *Field Rules* are set on each **Project Role**, time limits (per entry, per day, lock days), due reminder days, max subtask depth; *Closed Tickets and Sprints* (three switches, all but the first off by default): **Keep Closed On Visible and Editable** (edit *Closed On* on a ticket and keep a date typed while closing), **Allow Completed Sprint for Closed Tickets** (a closed ticket may be moved to a Completed sprint) and **Allow Reopening a Completed Sprint** (adds *Reopen Sprint*) |
 | **PMS Settings > Risk & Health** | the Medium, High and Critical risk score levels and every project health threshold and score penalty (see *How the health status is worked out*) |
 | **PMS Settings > Status Report** | default Email Template, which sections the report includes, the Section Order table, default recipients and default subject (see *Client Status Report: layouts, sections and defaults*) |
 | **Work Item Status** | name, sequence, colour, *Is Closed*, default % done; a new status automatically becomes a Kanban column |
@@ -283,7 +313,7 @@ ruff check . && ruff format --check .                      # Python
 eslint --ext .js auri_pms                              # JS (default Frappe config)
 ```
 
-Tests live in `auri_pms/auri_pms/tests/`, one file per area (451 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
+Tests live in `auri_pms/auri_pms/tests/`, one file per area (464 tests at the time of writing); `utils.py` builds the shared fixture world once per class and isolates every test with a
 database savepoint. Business rules live in the DocType controllers and `auri_pms/utils.py`; client
 scripts are UX only.
 

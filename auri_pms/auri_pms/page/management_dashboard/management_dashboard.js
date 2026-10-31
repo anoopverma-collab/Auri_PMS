@@ -88,9 +88,10 @@ class ManagementDashboard {
 		ui.addThemeMenu(this.page, () => this.load());
 		// the old Portfolio route sends people here with ?tab=health
 		if (frappe.route_options && frappe.route_options.tab) {
-			this.tab = frappe.route_options.tab === "health" ? "health" : "delivery";
+			this.tab = frappe.route_options.tab === "health" && frappe.boot.auri_pms_health_cost ? "health" : "delivery";
 			frappe.route_options = null;
 		}
+		if (this.tab === "health" && !frappe.boot.auri_pms_health_cost) this.tab = "delivery";
 		if (this.tab === "health") ui.addPeriodMenu(this.page, () => this.load());
 		if (!frappe.boot.auri_pms_portfolio) {
 			this.$body.html(`<div class="hub-panel p-4"><h6>${__("Delivery & Health")}</h6><div class="text-muted">${__("Delivery & Health is for people who are members of an Auri PMS project, and for Auri PMS Admins.")}</div></div>`);
@@ -111,7 +112,9 @@ class ManagementDashboard {
 
 	// The two views of the page: delivery (releases, sprints, tasks, people) and health and cost (the former Portfolio).
 	tabs_html() {
-		const tabs = [["delivery", __("Delivery")], ["health", __("Health and cost")]];
+		// Health and cost follows Project Role > Can See Health & Cost
+		const tabs = [["delivery", __("Delivery")]];
+		if (frappe.boot.auri_pms_health_cost) tabs.push(["health", __("Health and cost")]);
 		return `<div class="md-tabs">${tabs.map(([key, label]) => `<span class="${this.tab === key ? "active" : ""}" data-tab="${key}">${label}</span>`).join("")}</div>`;
 	}
 

@@ -139,10 +139,16 @@ def delete_project_snapshot(name: str) -> None:
 @frappe.whitelist()
 def get_project_snapshot(name: str) -> dict:
 	"""One saved dashboard, as get_project_health returned it on that day."""
+	from auri_pms.auri_pms.api import strip_cost_detail
+	from auri_pms.auri_pms.utils import health_cost_projects
+
 	doc = frappe.get_doc(DOCTYPE, name)
 	doc.check_permission("read")
+	data = json.loads(doc.data or "{}")
+	if doc.project not in health_cost_projects():
+		strip_cost_detail(data)  # a past dashboard shows the same figures the live one does
 	return {
 		"snapshot_date": doc.snapshot_date,
 		"period_type": doc.period_type,
-		"data": json.loads(doc.data or "{}"),
+		"data": data,
 	}

@@ -18,6 +18,8 @@
 		"can_manage_members",
 		"can_be_assigned",
 		"can_see_all_items",
+		"can_see_health_cost",
+		"can_see_insights",
 		"section_field_rules",
 		"field_rules"
 	],
@@ -99,6 +101,20 @@
 			"fieldname": "can_see_all_items",
 			"fieldtype": "Check",
 			"label": "Can See All Work Items"
+		},
+		{
+			"default": "0",
+			"description": "Show the Health and cost tab of Delivery & Health for the projects where this role is held",
+			"fieldname": "can_see_health_cost",
+			"fieldtype": "Check",
+			"label": "Can See Health & Cost"
+		},
+		{
+			"default": "0",
+			"description": "Show Auri Insights for the projects where this role is held",
+			"fieldname": "can_see_insights",
+			"fieldtype": "Check",
+			"label": "Can See Auri Insights"
 		},
 		{
 			"fieldname": "section_field_rules",

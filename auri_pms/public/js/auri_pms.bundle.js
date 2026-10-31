@@ -121,6 +121,51 @@ if (frappe.ui && frappe.ui.form && frappe.ui.form.ControlLink && !frappe.ui.form
 	};
 }
 
+// "My Work" shortcut: a green button in the page header, right after the search button, on every screen that has a header. It
+// opens Auri PMS > My Work and hides itself there. The server decides who gets it (an Auri PMS role or System Manager, module
+// not blocked) and sends it as a boot flag.
+if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && frappe.boot.auri_pms_my_work) {
+	$(function () {
+		const label = __("My Work");
+		const icon = '<svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user-check"></use></svg>';
+		const open_my_work = () => frappe.set_route("my-work");
+		// Frappe builds a page header per page and rebuilds it on some navigations, so every header gets its own button, once.
+		const sync = () => {
+			$(".standard-items-section").each(function () {
+				if ($(this).find(".auri-my-work-btn").length) return;
+				const $btn = $(
+					`<button type="button" class="btn btn-default icon-btn auri-my-work-btn" title="${label}" aria-label="${label}">${icon}</button>`
+				).on("click", open_my_work);
+				const $search = $(this).find(".navbar-modal-search-mobile").first();
+				if ($search.length) $search.after($btn);
+				else $(this).prepend($btn);
+			});
+			$(".auri-my-work-btn").toggleClass("hidden", (frappe.get_route() || [])[0] === "my-work");
+		};
+		const later = () => [0, 150, 600].forEach((ms) => setTimeout(sync, ms));
+		later();
+		if (frappe.router && frappe.router.on) frappe.router.on("change", later);
+		$(document).on("page-change", later);
+		// A form can build or rebuild its header after the timers above have run, so also look again whenever elements are added
+		// to the page. One check at most every 120 ms; sync only adds a missing button, so it does not trigger itself again.
+		let pending = null;
+		new MutationObserver(() => {
+			if (pending) return;
+			pending = setTimeout(() => {
+				pending = null;
+				sync();
+			}, 120);
+		}).observe(document.body, { childList: true, subtree: true });
+	});
+}
+
+// Auri Insights follows Project Role > Can See Auri Insights (boot flag); hide its sidebar link from everyone else.
+if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_insights) {
+	const style = document.createElement("style");
+	style.textContent = '.standard-sidebar-item:has(> a[href="/desk/pms-insights"]) { display: none !important; }';
+	document.head.appendChild(style);
+}
+
 // Delivery & Health is for Auri PMS Admins and the members of a project (boot flag); hide its sidebar link from everyone else.
 if (frappe.boot && frappe.boot.user && frappe.boot.user.name !== "Guest" && !frappe.boot.auri_pms_portfolio) {
 	const style = document.createElement("style");

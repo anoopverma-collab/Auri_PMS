@@ -5,7 +5,12 @@ from __future__ import annotations
 import frappe
 
 from auri_pms.auri_pms.risk import risk_thresholds
-from auri_pms.auri_pms.utils import create_permissions, portfolio_projects
+from auri_pms.auri_pms.utils import (
+	create_permissions,
+	health_cost_projects,
+	insight_projects,
+	portfolio_projects,
+)
 
 SIDEBAR = "Auri PMS"
 
@@ -36,6 +41,10 @@ def drop_stale_generated_sidebar() -> bool:
 		return False
 
 
+# the roles that may open My Work: the Auri PMS roles and System Manager (who can open every Auri PMS page)
+PMS_ROLES = frozenset({"Auri PMS User", "Auri PMS Manager", "Auri PMS Admin", "System Manager"})
+
+
 def boot_session(bootinfo) -> None:
 	"""Expose the risk thresholds of PMS Settings and the Portfolio access to the client."""
 	drop_stale_generated_sidebar()
@@ -43,5 +52,11 @@ def boot_session(bootinfo) -> None:
 		bootinfo.auri_pms_risk_thresholds = risk_thresholds()
 		# Auri PMS Admins, and everyone who is a member of at least one Auri PMS project
 		bootinfo.auri_pms_portfolio = bool(portfolio_projects())
+		# the Health and cost tab and Auri Insights follow the Project Role ticks
+		bootinfo.auri_pms_health_cost = bool(health_cost_projects())
+		bootinfo.auri_pms_insights = bool(insight_projects())
+		# the My Work button: an Auri PMS role or System Manager, and the module not blocked on the User
+		blocked = frappe.db.exists("Block Module", {"parent": frappe.session.user, "module": "Auri PMS"})
+		bootinfo.auri_pms_my_work = bool(PMS_ROLES & set(frappe.get_roles())) and not blocked
 		# the New button of each project record follows the same table as the server (CREATE_RULES)
 		bootinfo.auri_pms_can_create = create_permissions()

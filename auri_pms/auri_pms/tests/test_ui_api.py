@@ -7,7 +7,7 @@ from frappe.desk.calendar import get_events
 
 from auri_pms.auri_pms import api
 from auri_pms.auri_pms.project_hooks import get_dashboard_data
-from auri_pms.auri_pms.tests.utils import DEV, GONE, MGR, OUT, REP, TrackerTestCase
+from auri_pms.auri_pms.tests.utils import DEV, GONE, MGR, OUT, REP, TM, TrackerTestCase
 
 
 class TestUiApi(TrackerTestCase):
@@ -143,3 +143,39 @@ class TestUiApi(TrackerTestCase):
 		self.assertIn(
 			"Work Item", [d["doctype"] for d in frappe.get_hooks("global_search_doctypes")["Default"]]
 		)
+
+
+class TestMyWorkShortcut(TrackerTestCase):
+	"""The My Work row in the sidebar band: who gets it is decided at login (boot_session)."""
+
+	def flag(self, user):
+		from auri_pms.auri_pms.boot import boot_session
+
+		with self.as_user(user):
+			info = frappe._dict()
+			boot_session(info)
+			return info.auri_pms_my_work
+
+	def test_a_member_with_an_auri_pms_role_gets_it(self):
+		for user in (DEV, MGR, TM):
+			self.assertTrue(self.flag(user), user)
+
+	def test_a_user_with_the_module_blocked_does_not(self):
+		user = frappe.get_doc("User", DEV)
+		user.append("block_modules", {"module": "Auri PMS"})
+		user.save(ignore_permissions=True)
+		frappe.clear_cache(user=DEV)
+		self.assertFalse(self.flag(DEV))
+
+	def test_a_system_manager_without_an_auri_pms_role_gets_it(self):
+		from auri_pms.auri_pms.tests.utils import make_user
+
+		make_user("sysmgr@test.com", ("System Manager",))
+		self.assertTrue(self.flag("sysmgr@test.com"))
+
+	def test_a_user_without_an_auri_pms_role_does_not(self):
+		user = frappe.get_doc("User", OUT)
+		user.roles = [r for r in user.roles if not r.role.startswith("Auri PMS")]
+		user.save(ignore_permissions=True)
+		frappe.clear_cache(user=OUT)
+		self.assertFalse(self.flag(OUT))

@@ -34,3 +34,4 @@ auri_pms.patches.v1_0.tag_modules_to_projects
 auri_pms.patches.v1_0.set_role_permissions_summary
 auri_pms.patches.v1_0.planning_checkbox_to_field_rules
 auri_pms.patches.v1_0.members_see_all_to_project_role
+auri_pms.patches.v1_0.set_health_insights_capabilities

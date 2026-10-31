@@ -105,6 +105,7 @@ class TestQualityAllProjects(TrackerTestCase):
 		"""Insights reads with raw SQL, so it carries the same condition as the Work Item list."""
 		from auri_pms.auri_pms import insights
 
+		self.set_role_flag("can_see_insights", True)
 		self.bug(self.ALP, assigned_to=DEV)
 		self.bug(self.ALP)
 
@@ -222,6 +223,7 @@ class TestInsightsScope(TrackerTestCase):
 			return set(insights.get_insight_projects())
 
 	def test_a_member_gets_their_projects_only(self):
+		self.set_role_flag("can_see_insights", True)
 		self.assertIn(self.ALP, self.projects(DEV))
 		self.assertNotIn(self.BET, self.projects(DEV))  # public, but not allocated
 		self.assertNotIn(self.GAM, self.projects(DEV))  # Auri PMS is off there
@@ -239,6 +241,7 @@ class TestInsightsScope(TrackerTestCase):
 	def test_every_report_covers_only_those_projects(self):
 		from auri_pms.auri_pms import insights
 
+		self.set_role_flag("can_see_insights", True)
 		private = make_project("Project Delta", "DEL", [(MGR, "Manager")])
 		self.new_item(MGR, project=private, tracker="Bug")
 		with self.as_user(DEV):
@@ -320,10 +323,10 @@ class TestSidebarAndPages(TrackerTestCase):
 			self.assertEqual(links[:3], ["pms-insights", "management-dashboard", "status-report"], path)
 			for gone in (
 				"portfolio",
-				"project-hub",
 				"quality-dashboard",
 			):  # the pages still exist; the sidebar does not list them
 				self.assertNotIn(gone, links, path)
+			self.assertIn("project-hub", links, path)
 
 	def test_the_installed_sidebar_matches_the_file(self):
 		shipped = [i.get("link_to") or "" for i in self.items(self.FILES[0])]
