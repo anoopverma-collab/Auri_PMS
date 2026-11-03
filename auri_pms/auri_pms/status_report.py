@@ -371,6 +371,114 @@ SECTION_LABELS = {
 SECTION_KEYS = tuple(SECTION_LABELS)
 
 
+def available_columns() -> dict[str, list[dict]]:
+	"""The optional table columns of each section as {section: [{key, label}]}, labels in the reader's language."""
+	return {
+		"modules": [{"key": "delivered", "label": _("Delivered")}, {"key": "open", "label": _("Open")}],
+		"waiting": [
+			{"key": "needed", "label": _("Information needed")},
+			{"key": "since", "label": _("Waiting since")},
+		],
+		"delivered": [{"key": "type", "label": _("Type")}, {"key": "closed_on", "label": _("Closed on")}],
+		"in_progress": [
+			{"key": "status", "label": _("Status")},
+			{"key": "done", "label": _("% done")},
+			{"key": "due", "label": _("Due")},
+		],
+		"next_up": [{"key": "priority", "label": _("Priority")}, {"key": "due", "label": _("Due")}],
+		"extra": [
+			{"key": "status", "label": _("Status")},
+			{"key": "due", "label": _("Due")},
+			{"key": "note", "label": _("Note")},
+		],
+		"risks": [
+			{"key": "level", "label": _("Level")},
+			{"key": "mitigation", "label": _("Mitigation")},
+			{"key": "due", "label": _("Due")},
+		],
+		"plan": [{"key": "due", "label": _("Due")}, {"key": "progress", "label": _("Progress")}],
+		"time": [
+			{"key": "billable", "label": _("Billable")},
+			{"key": "non_billable", "label": _("Non-billable")},
+		],
+	}
+
+
+# Columns of each section that a layout does not draw unless asked; every other optional column is on.
+# The key is the Email Template name of a ready-made layout; the built-in layout and any other template use BUILTIN_LAYOUT.
+LAYOUT_COLUMNS_OFF = {
+	BUILTIN_LAYOUT: {},
+	"PMS Status Report - Summary": {
+		"delivered": ("type",),
+		"in_progress": ("done",),
+		"next_up": ("priority",),
+		"extra": ("due",),
+		"risks": ("due",),
+	},
+	"PMS Status Report - Corporate": {"extra": ("due",)},
+}
+LAYOUT_COLUMNS_OFF["PMS Status Report - Summary Dark"] = LAYOUT_COLUMNS_OFF["PMS Status Report - Summary"]
+LAYOUT_COLUMNS_OFF["PMS Status Report - Corporate Grey"] = LAYOUT_COLUMNS_OFF["PMS Status Report - Corporate"]
+
+_COLUMN_KEYS = {
+	"modules": ("delivered", "open"),
+	"waiting": ("needed", "since"),
+	"delivered": ("type", "closed_on"),
+	"in_progress": ("status", "done", "due"),
+	"next_up": ("priority", "due"),
+	"extra": ("status", "due", "note"),
+	"risks": ("level", "mitigation", "due"),
+	"plan": ("due", "progress"),
+	"time": ("billable", "non_billable"),
+}
+
+
+def layout_columns(template_name: str | None = None) -> dict[str, dict[str, int]]:
+	"""The columns a layout draws when nothing else is chosen: {section: {column: 0/1}}."""
+	off = LAYOUT_COLUMNS_OFF.get(template_name or BUILTIN_LAYOUT, LAYOUT_COLUMNS_OFF[BUILTIN_LAYOUT])
+	return {
+		section: {key: 0 if key in off.get(section, ()) else 1 for key in keys}
+		for section, keys in _COLUMN_KEYS.items()
+	}
+
+
+def clean_columns(raw) -> dict[str, dict[str, int]]:
+	"""``raw`` (a dict or its JSON text) as {section: {column: 0/1}}; unknown sections and columns, and anything that is not valid, are ignored."""
+	if isinstance(raw, str):
+		try:
+			raw = frappe.parse_json(raw) if raw.strip() else {}
+		except Exception:
+			return {}
+	if not isinstance(raw, dict):
+		return {}
+	out: dict[str, dict[str, int]] = {}
+	for section, values in raw.items():
+		if section not in _COLUMN_KEYS or not isinstance(values, dict):
+			continue
+		for key, value in values.items():
+			if key in _COLUMN_KEYS[section]:
+				try:
+					out.setdefault(section, {})[key] = 1 if cint(value) else 0
+				except Exception:
+					continue
+	return out
+
+
+def report_columns(template: str | None = None, overrides=None) -> dict[str, dict[str, int]]:
+	"""Which optional columns each section shows: the layout's own, changed by the PMS Settings
+	default (``report_columns``; the Open column of Progress by module also follows "show_report_modules_open"
+	while that JSON does not set it), then by ``overrides`` for this report only."""
+	chosen = email_template(template)
+	columns = layout_columns(chosen.name if chosen else None)
+	configured = clean_columns(setting("report_columns"))
+	if "open" not in configured.get("modules", {}):
+		columns["modules"]["open"] = 1 if cint(setting("show_report_modules_open")) else 0
+	for source in (configured, clean_columns(overrides)):
+		for section, values in source.items():
+			columns[section].update(values)
+	return columns
+
+
 def clean_order(keys) -> list[str]:
 	"""``keys`` without unknown or repeated entries, with every section not named added at the end."""
 	seen: list[str] = []
@@ -430,11 +538,12 @@ def render_html(
 	template: str | None = None,
 	sections: dict | None = None,
 	order: list[str] | None = None,
+	columns: dict | None = None,
 ) -> str:
 	"""Email-safe HTML (inline styles) for ``report``; every dynamic value is escaped.
 
 	``template`` is an Email Template name; empty uses the one chosen in PMS Settings, else the built-in
-	layout, which ``BUILTIN_LAYOUT`` forces. ``sections`` switches sections on or off and ``order`` re-orders them for this render only."""
+	layout, which ``BUILTIN_LAYOUT`` forces. ``sections`` switches sections on or off and ``order`` re-orders them for this render only; ``columns`` ({section: {column: 0/1}}) switches optional table columns."""
 	status = report.status
 	switches = section_switches(sections)
 	# the status banner only counts what the report shows
@@ -474,6 +583,7 @@ def render_html(
 		"tiles": tiles,
 		"risk_releases": [rel for rel in report.releases if rel["risk"] in ("late", "risk")],
 		"show": frappe._dict(switches),
+		"cols": frappe._dict({s: frappe._dict(v) for s, v in report_columns(template, columns).items()}),
 	}
 	# The built-in template is a module constant. A chosen Email Template is authored by users who may
 	# already edit Email Templates (Frappe renders those the same way).
@@ -605,6 +715,7 @@ def send_report(
 	order: list[str] | None = None,
 	ticket_notes: dict[str, str] | None = None,
 	attachments: list[str] | None = None,
+	columns: dict | None = None,
 ) -> str:
 	"""Email the report and log it as a Project Status Report. Returns the log document name.
 
@@ -618,7 +729,7 @@ def send_report(
 	# Frappe only notices a missing outgoing account when the queue sends; tell the user now instead of "sending" nothing.
 	EmailAccount.find_outgoing(_raise_error=True)
 	report = build_report(project, from_date, to_date, exclude, include, ticket_notes)
-	html = render_html(report, note, template, sections, order)
+	html = render_html(report, note, template, sections, order, columns)
 	files = check_attachments(attachments)
 	size = len(html.encode("utf-8")) + sum(f.file_size or 0 for f in files)
 	if size > MAX_EMAIL_BYTES:
@@ -690,6 +801,7 @@ def get_pdf_bytes(
 	sections: dict | None = None,
 	order: list[str] | None = None,
 	ticket_notes: dict[str, str] | None = None,
+	columns: dict | None = None,
 ) -> bytes:
 	"""PDF of the report (wkhtmltopdf through Frappe), laid out to fill an A4 page."""
 	import pdfkit
@@ -701,6 +813,7 @@ def get_pdf_bytes(
 		template,
 		sections,
 		order,
+		columns,
 	)
 	# Frappe's get_pdf forces 15mm top and bottom margins (white paper); call wkhtmltopdf directly so
 	# the colour behind the report reaches the edges of the sheet

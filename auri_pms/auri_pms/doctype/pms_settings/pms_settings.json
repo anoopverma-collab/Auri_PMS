@@ -67,6 +67,7 @@
   "report_email_template",
   "report_sections_section",
   "show_report_modules",
+  "show_report_modules_open",
   "show_report_delivered",
   "show_report_in_progress",
   "report_col_1",
@@ -87,6 +88,8 @@
   "show_report_tile_time",
   "report_order_section",
   "report_section_order",
+  "report_columns_section",
+  "report_columns",
   "report_defaults_section",
   "report_default_recipients",
   "report_default_cc",
@@ -514,6 +517,18 @@
    "options": "PMS Report Section"
   },
   {
+   "fieldname": "report_columns_section",
+   "fieldtype": "Section Break",
+   "label": "Table Columns"
+  },
+  {
+   "description": "Optional. JSON that sets which table columns the client status report shows for every send, e.g. {\"in_progress\": {\"due\": 0}, \"risks\": {\"due\": 1}}. Sections: modules, waiting, delivered, in_progress, next_up, extra, risks, plan, time. Leave empty to keep each layout's own columns. The Open column of Progress by module also follows the setting below unless set here. Can be changed for one report in the Sections dialog.",
+   "fieldname": "report_columns",
+   "fieldtype": "Code",
+   "label": "Report Columns (JSON)",
+   "options": "JSON"
+  },
+  {
    "fieldname": "limits_col",
    "fieldtype": "Column Break"
   },
@@ -522,6 +537,13 @@
    "fieldname": "show_report_created",
    "fieldtype": "Check",
    "label": "Show New Tickets Count and Sentence"
+  },
+  {
+   "default": "1",
+   "description": "Progress by module: show the Open column next to Delivered. Off hides it in the email and the PDF.",
+   "fieldname": "show_report_modules_open",
+   "fieldtype": "Check",
+   "label": "Show Open Count in Progress by Module"
   },
   {
    "default": "1",

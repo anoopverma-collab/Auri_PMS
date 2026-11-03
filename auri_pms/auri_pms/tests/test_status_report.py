@@ -1,15 +1,21 @@
 """Client status report: data, HTML, emailing, PDF and the weekly schedule."""
 
+from html.parser import HTMLParser
+
 import frappe
 from frappe.utils import add_days, getdate, today
 
 from auri_pms.auri_pms import api
 from auri_pms.auri_pms.status_report import (
+	REPORT_SECTIONS,
+	available_columns,
 	build_report,
+	clean_columns,
 	default_subject,
 	get_pdf_bytes,
 	parse_recipients,
 	render_html,
+	report_columns,
 	send_report,
 	send_scheduled_reports,
 )
@@ -823,3 +829,369 @@ class TestStatusReport(TrackerTestCase):
 		with self.as_user(MGR), self.assertRaises(frappe.ValidationError):
 			send_report(self.ALP, days(-7), days(0), "client@example.com", attachments=[file.name])
 		self.assertFalse(frappe.db.get_value("File", file.name, "attached_to_name"))
+
+
+# ------------------------------------------------------------------------------------------------
+# Optional table columns
+BUILTIN = "__builtin__"
+LAYOUTS = (
+	BUILTIN,
+	"PMS Status Report - Summary",
+	"PMS Status Report - Corporate",
+	"PMS Status Report - Summary Dark",
+	"PMS Status Report - Corporate Grey",
+)
+# the columns each layout leaves out unless asked (section -> columns); everything else shows
+DEFAULT_OFF = {
+	BUILTIN: {},
+	"PMS Status Report - Summary": {
+		"delivered": ("type",),
+		"in_progress": ("done",),
+		"next_up": ("priority",),
+		"extra": ("due",),
+		"risks": ("due",),
+	},
+	"PMS Status Report - Corporate": {"extra": ("due",)},
+}
+DEFAULT_OFF["PMS Status Report - Summary Dark"] = DEFAULT_OFF["PMS Status Report - Summary"]
+DEFAULT_OFF["PMS Status Report - Corporate Grey"] = DEFAULT_OFF["PMS Status Report - Corporate"]
+COLUMNS = {
+	"modules": ("delivered", "open"),
+	"waiting": ("needed", "since"),
+	"delivered": ("type", "closed_on"),
+	"in_progress": ("status", "done", "due"),
+	"next_up": ("priority", "due"),
+	"extra": ("status", "due", "note"),
+	"risks": ("level", "mitigation", "due"),
+	"plan": ("due", "progress"),
+	"time": ("billable", "non_billable"),
+}
+FIXED = {
+	"modules": 1,
+	"waiting": 2,
+	"delivered": 2,
+	"in_progress": 2,
+	"next_up": 2,
+	"extra": 2,
+	"risks": 1,
+	"plan": 1,
+	"time": 1,
+}
+# a cell in the header row of each column (the layouts word some of them differently)
+HEADERS = {
+	("modules", "delivered"): ("Delivered",),
+	("modules", "open"): ("Open",),
+	("waiting", "needed"): ("Information needed", "What we need"),
+	("waiting", "since"): ("Waiting since", "Waiting"),
+	("delivered", "type"): ("Type",),
+	("delivered", "closed_on"): ("Closed",),
+	("in_progress", "status"): ("Status",),
+	("in_progress", "done"): ("Done", "% done"),
+	("in_progress", "due"): ("Due",),
+	("next_up", "priority"): ("Priority",),
+	("next_up", "due"): ("Due",),
+	("extra", "status"): ("Status",),
+	("extra", "due"): ("Due",),
+	("extra", "note"): ("Note",),
+	("risks", "level"): ("Level",),
+	("risks", "mitigation"): ("Mitigation",),
+	("risks", "due"): ("Due",),
+	("plan", "due"): ("Due", "Due date"),
+	("plan", "progress"): ("Progress",),
+	("time", "billable"): ("Billable",),
+	("time", "non_billable"): ("Non-billable",),
+}
+# text only that column's cells carry (dates are covered by the cell counts)
+CELL_MARKERS = {
+	("modules", "open"): "OPENVAL",
+	("waiting", "needed"): "NEEDVAL",
+	("delivered", "type"): "TYPEVAL",
+	("in_progress", "status"): "STATUSVAL-ip",
+	("in_progress", "done"): "37%",
+	("next_up", "priority"): "PRIOVAL",
+	("extra", "status"): "STATUSVAL-ex",
+	("extra", "note"): "NOTEVAL",
+	("risks", "level"): "LEVELVAL",
+	("risks", "mitigation"): "MITIVAL",
+	("plan", "progress"): "61%",
+	("time", "billable"): "17.5",
+}
+ROW_MARKER = {s: f"ROW-{s}" for s in COLUMNS}
+
+
+class Tables(HTMLParser):
+	"""The cells of every table of a rendered report: a list of tables, each a list of rows of cell texts."""
+
+	def __init__(self):
+		super().__init__()
+		self.tables, self.stack = [], []
+
+	def handle_starttag(self, tag, attrs):
+		if tag == "table":
+			self.stack.append([])
+			self.tables.append(self.stack[-1])
+		elif tag == "tr" and self.stack:
+			self.stack[-1].append([])
+		elif tag in ("td", "th") and self.stack and self.stack[-1]:
+			self.stack[-1][-1].append("")
+
+	def handle_endtag(self, tag):
+		if tag == "table" and self.stack:
+			self.stack.pop()
+
+	def handle_data(self, data):
+		if self.stack and self.stack[-1] and self.stack[-1][-1]:
+			self.stack[-1][-1][-1] += data
+
+
+def table_of(html: str, section: str) -> list[list[str]]:
+	parser = Tables()
+	parser.feed(html)
+	found = [t for t in parser.tables if any(ROW_MARKER[section] in c for row in t for c in row)]
+	assert len(found) == 1, (section, len(found))
+	return [[c.strip() for c in row] for row in found[0] if row]
+
+
+def defaults(layout: str) -> dict[str, dict[str, int]]:
+	off = DEFAULT_OFF[layout]
+	return {s: {c: 0 if c in off.get(s, ()) else 1 for c in cols} for s, cols in COLUMNS.items()}
+
+
+class TestStatusReportColumns(TrackerTestCase):
+	def setUp(self):
+		super().setUp()
+		from auri_pms.install import ensure_email_templates
+
+		ensure_email_templates()
+		TestStatusReport.snapshot_settings(self)
+		frappe.db.set_single_value("PMS Settings", "report_email_template", "")
+		frappe.db.set_single_value("PMS Settings", "report_columns", "")
+		frappe.db.set_single_value("PMS Settings", "show_report_modules_open", 1)
+		frappe.clear_cache(doctype="PMS Settings")
+
+	def rich_report(self):
+		"""The data of a real report with one row in every optional-column table (known text in each cell)."""
+		report = build_report(self.ALP, days(-7), days(0))
+
+		def item(section, **kw):
+			return frappe._dict(
+				name=f"WI-{section}",
+				subject=ROW_MARKER[section],
+				module="",
+				tracker="TYPEVAL",
+				status=f"STATUSVAL-{'ip' if section == 'in_progress' else 'ex'}",
+				priority="PRIOVAL",
+				done_percent=37,
+				due_date=days(3),
+				closed_on=days(-1),
+				client_dependency_note="NEEDVAL",
+				client_dependency_since=days(-4),
+				days=4,
+				report_note="NOTEVAL",
+				client_note="",
+				**kw,
+			)
+
+		report.update(
+			waiting=[item("waiting")],
+			delivered=[item("delivered")],
+			in_progress=[item("in_progress")],
+			next_up=[item("next_up")],
+			extra=[item("extra")],
+			modules=[{"label": ROW_MARKER["modules"], "delivered": 5, "open": "OPENVAL"}],
+			risks=[
+				{
+					"title": ROW_MARKER["risks"],
+					"risk_level": "LEVELVAL",
+					"mitigation": "MITIVAL",
+					"mitigation_due": days(9),
+				}
+			],
+			releases=[
+				{
+					"label": ROW_MARKER["plan"],
+					"due_date": days(20),
+					"percent": 61,
+					"risk": "ok",
+					"days_left": 20,
+				}
+			],
+			activities=[{"label": ROW_MARKER["time"], "billable": 17.5, "non_billable": 2.5}],
+		)
+		return report
+
+	def render(self, layout, columns=None):
+		sections = dict.fromkeys(REPORT_SECTIONS, 1)
+		return render_html(self.rich_report(), template=layout, sections=sections, columns=columns)
+
+	def assert_columns(self, html, expected, label=""):
+		"""Every section table draws exactly the ``expected`` columns: its header and every row have one cell per column."""
+		for section, columns in expected.items():
+			rows = table_of(html, section)
+			on = [c for c in COLUMNS[section] if columns[c]]
+			width = FIXED[section] + len(on)
+			self.assertEqual({len(r) for r in rows}, {width}, f"{label} {section}: {rows}")
+			header = rows[0] if ROW_MARKER[section] not in " ".join(rows[0]) else None
+			text = " | ".join(" ".join(r) for r in rows)
+			for column in COLUMNS[section]:
+				if header is not None:
+					shown = any(h in header for h in HEADERS[(section, column)])
+					self.assertEqual(
+						shown, bool(columns[column]), f"{label} {section}.{column} header {header}"
+					)
+				marker = CELL_MARKERS.get((section, column))
+				if marker:
+					body = " | ".join(" ".join(r) for r in rows[1 if header is not None else 0 :])
+					self.assertEqual(
+						marker in body, bool(columns[column]), f"{label} {section}.{column} cells"
+					)
+			self.assertTrue(text)
+
+	def test_each_layout_shows_its_default_columns(self):
+		for layout in LAYOUTS:
+			self.assert_columns(self.render(layout), defaults(layout), layout)
+			self.assertEqual(report_columns(layout), defaults(layout), layout)
+
+	def test_an_unknown_template_uses_the_built_in_defaults(self):
+		self.assertEqual(report_columns(None), defaults(BUILTIN))
+		self.assertEqual(report_columns(BUILTIN), defaults(BUILTIN))
+
+	def test_unticking_a_column_removes_its_header_and_cells(self):
+		for layout in LAYOUTS:
+			for section, columns in defaults(layout).items():
+				for column, on in columns.items():
+					if not on:
+						continue
+					expected = {s: dict(v) for s, v in defaults(layout).items()}
+					expected[section][column] = 0
+					html = self.render(layout, {section: {column: 0}})
+					self.assert_columns(html, expected, f"{layout} -{section}.{column}")
+
+	def test_ticking_a_column_adds_header_and_cells(self):
+		for layout in LAYOUTS:
+			for section, columns in defaults(layout).items():
+				for column, on in columns.items():
+					if on:
+						continue
+					expected = {s: dict(v) for s, v in defaults(layout).items()}
+					expected[section][column] = 1
+					html = self.render(layout, {section: {column: 1}})
+					self.assert_columns(html, expected, f"{layout} +{section}.{column}")
+
+	def test_every_column_on_and_every_column_off(self):
+		for layout in LAYOUTS:
+			for value in (0, 1):
+				cols = {s: dict.fromkeys(c, value) for s, c in COLUMNS.items()}
+				self.assert_columns(self.render(layout, cols), cols, f"{layout} all {value}")
+
+	def test_settings_default_is_honoured_and_bad_values_are_ignored(self):
+		import json
+
+		def save(value):
+			settings = frappe.get_doc("PMS Settings")
+			settings.report_columns = value
+			settings.save()
+			frappe.clear_cache(doctype="PMS Settings")
+
+		for layout in LAYOUTS:
+			save(json.dumps({"waiting": {"since": 0}, "risks": {"due": 1}}))
+			expected = defaults(layout)
+			expected["waiting"]["since"] = 0
+			expected["risks"]["due"] = 1
+			self.assert_columns(self.render(layout), expected, layout)
+			# a column chosen for one send beats the settings default
+			expected["waiting"]["since"] = 1
+			self.assert_columns(self.render(layout, {"waiting": {"since": 1}}), expected, layout)
+		# invalid JSON, wrong shapes and unknown sections or columns change nothing
+		for junk in (
+			"{not json",
+			"[1, 2]",
+			'"text"',
+			json.dumps({"nope": {"x": 1}, "waiting": {"zzz": 0}, "time": 5}),
+		):
+			save(junk)
+			self.assertEqual(report_columns(BUILTIN), defaults(BUILTIN), junk)
+		save(json.dumps({"nope": {"x": 1}, "waiting": {"zzz": 0, "since": 0}}))
+		self.assertEqual(report_columns(BUILTIN)["waiting"], {"needed": 1, "since": 0})
+		self.assertEqual(clean_columns("{broken"), {})
+		self.assertEqual(
+			clean_columns({"waiting": {"since": "0", "x": 1}, "zz": {}}), {"waiting": {"since": 0}}
+		)
+		self.assertEqual(api.parse_columns("not json"), {})
+		self.assertEqual(api.parse_columns('{"plan": {"due": "1", "other": 1}}'), {"plan": {"due": 1}})
+
+	def test_modules_open_follows_the_old_switch_until_settings_json_sets_it(self):
+		frappe.db.set_single_value("PMS Settings", "show_report_modules_open", 0)
+		frappe.clear_cache(doctype="PMS Settings")
+		self.assertEqual(report_columns(BUILTIN)["modules"], {"delivered": 1, "open": 0})
+		self.assertEqual(report_columns(BUILTIN, {"modules": {"open": 1}})["modules"]["open"], 1)
+		settings = frappe.get_doc("PMS Settings")
+		settings.report_columns = '{"modules": {"open": 1}}'
+		settings.save()
+		frappe.clear_cache(doctype="PMS Settings")
+		self.assertEqual(report_columns(BUILTIN)["modules"]["open"], 1)
+
+	def test_preview_returns_the_columns_and_the_choices(self):
+		import json
+
+		with self.as_user(MGR):
+			data = api.get_status_report_html(
+				self.ALP,
+				days(-7),
+				days(0),
+				template=BUILTIN,
+				columns=json.dumps({"time": {"billable": 0}, "x": {"y": 1}}),
+			)
+		self.assertEqual(data["columns"]["time"], {"billable": 0, "non_billable": 1})
+		self.assertEqual(set(data["available_columns"]), set(COLUMNS))
+		for section, columns in COLUMNS.items():
+			self.assertEqual([c["key"] for c in data["available_columns"][section]], list(columns))
+			self.assertTrue(all(c["label"] for c in data["available_columns"][section]))
+		self.assertEqual(available_columns()["waiting"][0]["label"], "Information needed")
+		self.assertNotIn("modules_open", data["sections"])
+
+	def test_the_columns_travel_with_the_pdf_and_the_email(self):
+		import json
+
+		cols = {"in_progress": {"due": 0}}
+		self.assertTrue(get_pdf_bytes(self.ALP, days(-7), days(0), columns=cols).startswith(b"%PDF"))
+		frappe.db.set_value("Project", self.ALP, "tracker_report_recipients", "client@example.com")
+		item = self.new_item(MGR, tracker="Task", subject="Columns subject", due_date=days(2))
+		self.save_as(MGR, item, status="In Progress")
+		with self.as_user(MGR):
+			name = api.email_status_report(
+				self.ALP, days(-7), days(0), "client@example.com", template=BUILTIN, columns=json.dumps(cols)
+			)
+		body = frappe.db.get_value("Project Status Report", name, "body")
+		self.assertIn("Columns subject", body)
+		self.assertEqual({len(r) for r in table_of_marker(body, "Columns subject")}, {4})
+
+	def test_the_row_data_for_every_column_exists_in_a_real_report(self):
+		"""build_report carries every field a column prints, for every section that has rows."""
+		a = self.new_item(MGR, tracker="Task", subject="In flight", due_date=days(2))
+		self.save_as(MGR, a, status="In Progress")
+		self.new_item(MGR, tracker="Task", subject="Soon", due_date=days(4), priority="High")
+		c = self.new_item(MGR, tracker="Task", subject="Extra one")
+		done = self.new_item(MGR, tracker="Task", subject="Shipped")
+		self.save_as(MGR, done, status="Closed")
+		report = build_report(self.ALP, days(-7), days(0), include={c.name: "see this"})
+		for i in report.in_progress:
+			for key in ("status", "done_percent", "due_date"):
+				self.assertIn(key, i)
+		for i in report.next_up:
+			for key in ("priority", "due_date"):
+				self.assertIn(key, i)
+		for i in report.extra:
+			for key in ("status", "due_date", "report_note"):
+				self.assertIn(key, i)
+		for i in report.delivered:
+			for key in ("tracker", "closed_on"):
+				self.assertIn(key, i)
+		self.assertTrue(report.extra and report.in_progress and report.delivered)
+
+
+def table_of_marker(html: str, marker: str) -> list[list[str]]:
+	parser = Tables()
+	parser.feed(html)
+	found = [t for t in parser.tables if any(marker in c for row in t for c in row)]
+	return [[c for c in row] for row in found[-1] if row]
