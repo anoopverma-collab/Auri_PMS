@@ -987,12 +987,16 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 	reopen = reopen_stats(bugs, buckets)
 	categories = category_names([b.category for b in bugs if b.category])
 	by_category: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+	category_docs: dict[
+		str, str | None
+	] = {}  # label -> Work Item Category name, so a bar can open its tickets
 	for bug in bugs:
-		by_category[categories.get(bug.category, _("(none)")) if bug.category else _("(none)")][
-			1 if cint(bug.is_closed) else 0
-		] += 1
+		label = categories.get(bug.category, _("(none)")) if bug.category else _("(none)")
+		category_docs.setdefault(label, bug.category or None)
+		by_category[label][1 if cint(bug.is_closed) else 0] += 1
 
 	by_module: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+	module_docs: dict[str, str | None] = {}  # label -> Project Module name
 	if any(b.project_module for b in bugs):
 		module_rows = frappe.get_all(
 			"Project Module",
@@ -1001,9 +1005,11 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 		)
 		prefix = {m.name: m.module_name if project else f"{m.module_name} ({m.project})" for m in module_rows}
 		for bug in bugs:
-			by_module[
+			label = (
 				prefix.get(bug.project_module, _("(no module)")) if bug.project_module else _("(no module)")
-			][1 if cint(bug.is_closed) else 0] += 1
+			)
+			module_docs.setdefault(label, bug.project_module or None)
+			by_module[label][1 if cint(bug.is_closed) else 0] += 1
 	else:
 		for bug in bugs:
 			by_module[_("(no module)")][1 if cint(bug.is_closed) else 0] += 1
@@ -1061,6 +1067,8 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 			"range_start": str(buckets.first_day),
 			"bucket": buckets.kind,
 			"labels": buckets.labels(),
+			"bucket_ranges": [[str(b), str(buckets.end(b))] for b in buckets.starts],
+			"age_ranges": age_ranges(today_),
 			"defect_trackers": defect_trackers,
 			"status": status,
 			"tiles": {
@@ -1097,11 +1105,17 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 				for _limit, text in AGE_BUCKETS
 			],
 			"by_category": sorted(
-				[{"label": k, "open": v[0], "closed": v[1]} for k, v in by_category.items()],
+				[
+					{"label": k, "name": category_docs.get(k), "open": v[0], "closed": v[1]}
+					for k, v in by_category.items()
+				],
 				key=lambda r: -(r["open"] + r["closed"]),
 			)[:8],
 			"by_module": sorted(
-				[{"label": k, "open": v[0], "closed": v[1]} for k, v in by_module.items()],
+				[
+					{"label": k, "name": module_docs.get(k), "open": v[0], "closed": v[1]}
+					for k, v in by_module.items()
+				],
 				key=lambda r: (r["label"] == _("(no module)"), -(r["open"] + r["closed"]), r["label"]),
 			)[:8],
 			"by_project": by_project,
@@ -1164,6 +1178,20 @@ def reopen_stats(bugs: list, buckets) -> dict:
 		"rate": flt(len(reopened) * 100 / len(ever_closed), 1) if ever_closed else 0.0,
 		"by_bucket": [by_bucket.get(s, 0) for s in buckets.starts],
 	}
+
+
+def age_ranges(today_) -> list[dict]:
+	"""For each AGE_BUCKETS band the creation dates that fall in it, so a chart bar can open its tickets."""
+	out, low = [], 0
+	for limit, _text in AGE_BUCKETS:
+		out.append(
+			{
+				"from": None if limit >= 10**6 else str(today_ - timedelta(days=limit)),
+				"to": str(today_ - timedelta(days=low)),
+			}
+		)
+		low = limit + 1
+	return out
 
 
 def quality_status(

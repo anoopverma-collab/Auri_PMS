@@ -110,6 +110,20 @@ class TestQuality(TrackerTestCase):
 		self.bug(-2)
 		by = {r.label: (r.open, r.closed) for r in self.quality().by_category}
 		self.assertEqual(by["Checkout"], (2, 0))
+		# a bar opens its tickets, so the row carries the real category name (and none for "(none)")
+		names = {r.label: r.name for r in self.quality().by_category}
+		self.assertEqual(names["Checkout"], category.name)
+		self.assertIsNone(names[frappe._("(none)")])
+
+	def test_chart_bars_carry_what_a_click_needs(self):
+		"""Each time bucket has a date range and each age band a creation range, so every bar opens its bugs."""
+		self.bug(-2)
+		data = self.quality()
+		self.assertEqual(len(data.bucket_ranges), len(data.labels))
+		self.assertTrue(all(start <= end for start, end in data.bucket_ranges))
+		self.assertEqual(len(data.age_ranges), len(data.aging))
+		self.assertIsNone(data.age_ranges[-1]["from"])  # the last band has no lower date
+		self.assertTrue(all(r["from"] <= r["to"] for r in data.age_ranges[:-1]))
 
 	def test_all_projects_view_lists_projects(self):
 		"""Without a project the dashboard covers every visible project and lists them."""
