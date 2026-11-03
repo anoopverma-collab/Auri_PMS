@@ -114,7 +114,11 @@ class QualityDashboard {
 			const [from, to] = d.bucket_ranges[i];
 			ui.openTarget(bugs(ds ? { is_closed: 1, closed_on: ["between", [from, to]] } : { creation: ["between", [from, to]] }));
 		});
-		ui.chart(this.$body, "#q-trend", { type: "line", data: { labels: d.labels, datasets: [{ name: __("Open bugs"), values: d.flow.open_trend }] }, colors: [p.red], lineOptions: { regionFill: 1 } }, (i) => ui.openTarget(bugs({ is_closed: 0, creation: ["<=", `${d.bucket_ranges[i][1]} 23:59:59`] })));
+		ui.chart(this.$body, "#q-trend", { type: "line", data: { labels: d.labels, datasets: [{ name: __("Open bugs"), values: d.flow.open_trend }] }, colors: [p.red], lineOptions: { regionFill: 1 } }, (i) => {
+			// the exact bugs that were open at the end of that period; a long list falls back to the ones still open now
+			const names = d.flow.open_trend_names && d.flow.open_trend_names[i];
+			ui.openTarget(names ? ui.go("Work Item", { name: ["in", names.length ? names : ["-"]] }) : bugs({ is_closed: 0, creation: ["<=", `${d.bucket_ranges[i][1]} 23:59:59`] }));
+		});
 		ui.chart(this.$body, "#q-reopen", { type: "bar", height: 180, data: { labels: d.labels, datasets: [{ name: __("Reopened"), values: d.flow.reopened }] }, colors: [p.purple], barOptions: { spaceRatio: 0.5 } }, () => ui.openTarget(ui.go("Work Item", { name: ["in", t.reopened_names.length ? t.reopened_names : ["-"]] })));
 		ui.chart(this.$body, "#q-aging", { type: "bar", height: 200, data: { labels: d.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: d.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: d.aging.map((a) => a.client) }] }, colors: [p.blue, p.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } }, (i, ds) => {
 			const r = d.age_ranges[i];

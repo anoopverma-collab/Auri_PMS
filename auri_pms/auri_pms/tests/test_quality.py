@@ -31,6 +31,18 @@ class TestQuality(TrackerTestCase):
 		with self.as_user(user):
 			return api.get_quality(project or self.ALP, period)
 
+	def test_open_backlog_points_carry_the_exact_open_bugs(self):
+		"""A bug that was open then and is closed now is in that point's list, so a click opens exactly the plotted number."""
+		self.bug(-20, closed=-3)
+		self.bug(-20)
+		data = self.quality()
+		names, counts = data.flow.open_trend_names, data.flow.open_trend
+		self.assertEqual(len(names), len(counts))
+		self.assertEqual(
+			[len(n) for n in names], counts
+		)  # the list behind a point has exactly that many bugs
+		self.assertTrue(any(n and len(n) == 2 for n in names))  # both bugs were open at some point
+
 	def test_bug_is_a_defect_tracker(self):
 		"""The shipped Bug tracker is flagged as a defect tracker; others are not."""
 		flags = dict(frappe.get_all("Ticket Type", fields=["name", "is_defect"], as_list=True))

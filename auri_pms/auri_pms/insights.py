@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from auri_pms.auri_pms.health import make_buckets
+from auri_pms.auri_pms.health import OPEN_NAME_CAP, make_buckets
 from auri_pms.auri_pms.utils import insight_projects, nearest_indicator, portfolio_projects
 
 REPORTS = {
@@ -294,15 +294,20 @@ def report_delivery(c: Context) -> dict:
 	created = c.per_bucket(i.created for i in c.items)
 	closed_trend = c.per_bucket(i.closed_on for i in closed)
 	backlog = []
+	backlog_routes = []
 	for start in c.buckets.starts:
 		end = start + timedelta(days=6 if c.buckets.kind == "week" else 27)
-		backlog.append(
-			sum(
-				1
-				for i in c.items
-				if getdate(i.created) <= end and (not i.is_closed or getdate(i.closed_on or end) > end)
-			)
-		)
+		open_then = [
+			i
+			for i in c.items
+			if getdate(i.created) <= end and (not i.is_closed or getdate(i.closed_on or end) > end)
+		]
+		backlog.append(len(open_then))
+		# the exact tickets behind the point; a very long list falls back to the ones still open now
+		if len(open_then) <= OPEN_NAME_CAP:
+			backlog_routes.append(wi(c, name=["in", [i.name for i in open_then] or ["-"]]))
+		else:
+			backlog_routes.append(wi(c, is_closed=0, creation=span(EPOCH, end)))
 	statuses = counts(c.items, lambda i: i.status)
 	priorities = counts(open_, lambda i: i.priority or "Normal")
 	modules = defaultdict(lambda: [0, 0])
@@ -375,20 +380,7 @@ def report_delivery(c: Context) -> dict:
 				"span": 2,
 				"labels": c.labels,
 				"datasets": [{"name": _("Open tickets"), "values": backlog}],
-				# approximate: the list can only show tickets still open now that were created by the end of that
-				# bucket, not the ones that were open then and have been closed since
-				"routes": [
-					[
-						wi(
-							c,
-							is_closed=0,
-							creation=span(
-								EPOCH, start + timedelta(days=6 if c.buckets.kind == "week" else 27)
-							),
-						)
-						for start in c.buckets.starts
-					]
-				],
+				"routes": [backlog_routes],
 				"colors": ["purple"],
 			},
 			{

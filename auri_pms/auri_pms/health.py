@@ -34,6 +34,7 @@ def monday(day: date) -> date:
 	return day - timedelta(days=day.weekday())
 
 
+OPEN_NAME_CAP = 300  # most ticket names a chart point carries so that its link opens the exact list
 PERIOD_WEEKS = {"1m": 5, "3m": 13, "6m": 26}
 PERIODS = ("1m", "3m", "6m", "all")
 MAX_WEEKLY_BUCKETS = 26
@@ -260,6 +261,17 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 		)
 
 	trend = [open_at(buckets.end(start)) for start in starts]
+	# the tickets behind each point of the trend, so its link opens exactly that list (None when too many to carry)
+	trend_names = []
+	for start in starts:
+		moment = buckets.end(start)
+		names = [
+			i.name
+			for i in items
+			if as_date(i.creation) <= moment
+			and (not cint(i.is_closed) or not i.closed_on or as_date(i.closed_on) > moment)
+		]
+		trend_names.append(names if len(names) <= OPEN_NAME_CAP else None)
 	ages: dict[str, list[int]] = defaultdict(lambda: [0, 0])
 	for item in open_items:
 		age = (today_ - as_date(item.creation)).days
@@ -309,6 +321,7 @@ def ticket_flow(items: list, buckets: Buckets) -> dict:
 		"created": [created_by_week.get(w, 0) for w in starts],
 		"resolved": [resolved_by_week.get(w, 0) for w in starts],
 		"open_trend": trend,
+		"open_trend_names": trend_names,
 		"created_total": sum(created_by_week.get(w, 0) for w in starts),
 		"resolved_total": sum(resolved_by_week.get(w, 0) for w in starts),
 		"aging": [

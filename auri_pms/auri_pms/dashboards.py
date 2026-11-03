@@ -1091,6 +1091,7 @@ def get_quality_data(project: str | None = None, period: str = "3m") -> frappe._
 				"opened": flow["created"],
 				"fixed": flow["resolved"],
 				"open_trend": flow["open_trend"],
+				"open_trend_names": flow["open_trend_names"],
 				"reopened": reopen["by_bucket"],
 			},
 			"open_by_priority": count_by(open_bugs, "priority"),

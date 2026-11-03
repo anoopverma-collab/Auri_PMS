@@ -2,6 +2,8 @@
 
 from collections import Counter
 
+import frappe
+
 from auri_pms.auri_pms import insights
 from auri_pms.auri_pms.tests.utils import DEV, MGR, OUT, TrackerTestCase
 
@@ -88,6 +90,31 @@ class TestInsights(TrackerTestCase):
 		# the fixture must exercise every chart kind, or the loops above would pass on nothing
 		for kind in ("bar", "line", "donut", "stack"):
 			self.assertTrue(checked[kind], kind)
+
+	def test_open_backlog_points_open_exactly_the_plotted_tickets(self):
+		"""The Open backlog line's links list the tickets that were open then, including ones closed since."""
+		from auri_pms.auri_pms.tests.test_quality import days
+
+		first = self.new_item(MGR, tracker="Task", subject="open then closed")
+		second = self.new_item(MGR, tracker="Task", subject="still open")
+		self.save_as(MGR, first, status="Closed")
+		for item in (first, second):
+			frappe.db.set_value(
+				"Work Item", item.name, "creation", f"{days(-25)} 09:00:00", update_modified=False
+			)
+		frappe.db.set_value(
+			"Work Item", first.name, "closed_on", f"{days(-2)} 12:00:00", update_modified=False
+		)
+		with self.as_user(MGR):
+			data = insights.get_insight("delivery", self.ALP)
+		visual = next(v for v in data["visuals"] if v["title"] == "Open backlog")
+		points = visual["datasets"][0]["values"]
+		routes = visual["routes"][0]
+		self.assertEqual(len(routes), len(points))
+		for value, route in zip(points, routes, strict=True):
+			names = route["filters"]["name"][1]
+			self.assertEqual(len([n for n in names if n != "-"]), value)
+		self.assertTrue(any(first.name in r["filters"]["name"][1] for r in routes))
 
 	def test_workload_routes_use_the_real_user(self):
 		"""A person's row opens the tickets of their email, not of their full name."""
