@@ -95,14 +95,14 @@ class QualityDashboard {
 				<div class="hub-col">
 					${panel(`${__("Bugs opened vs fixed")} (${per})`, `<div class="hub-chart" id="q-flow"></div>`)}
 					${panel(__("Time to fix by priority (days)"), d.fix_time.length ? d.fix_time.map((r) => bar(`${__(r.priority)} (${r.count})`, r.days, Math.max(...d.fix_time.map((x) => x.days)))).join("") : `<div class="text-muted small">${__("Nothing fixed in this range")}</div>`)}
-					${panel(__("Bugs by category"), stack(d.by_category.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"]))}
-					${d.by_module.some((r) => r.label !== __("(no module)")) ? panel(__("Bugs by module"), stack(d.by_module.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"])) : ""}
+					${panel(__("Bugs by category"), stack(d.by_category.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"], d.by_category.map((r) => bugs(r.name ? { category: r.name } : { category: ["is", "not set"] }))))}
+					${d.by_module.some((r) => r.label !== __("(no module)")) ? panel(__("Bugs by module"), stack(d.by_module.map((r) => [r.label, r.open, r.closed]), [__("Open"), __("Fixed")], ["seg-orange", "seg-green"], d.by_module.map((r) => bugs(r.name ? { project_module: r.name } : { project_module: ["is", "not set"] })))) : ""}
 					${projects}
 				</div>
 				<div class="hub-col">
 					${panel(`${__("Open bug backlog")} (${per})`, `<div class="hub-chart" id="q-trend"></div>`)}
 					${panel(`${__("Bugs reopened")} (${per})`, `<div class="hub-chart" id="q-reopen"></div>`)}
-					${panel(__("Open bugs by priority"), stack(d.open_by_priority.map((r) => [__(r.label), r.count - r.client, r.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"]))}
+					${panel(__("Open bugs by priority"), stack(d.open_by_priority.map((r) => [__(r.label), r.count - r.client, r.client]), [__("With us"), __("Waiting on client")], ["seg-blue", "seg-orange"], d.open_by_priority.map((r) => bugs({ is_closed: 0, priority: r.label }))))}
 					${panel(__("Age of open bugs"), `<div class="hub-chart" id="q-aging"></div>`)}
 					${panel(__("Critical bugs still open"), critical)}
 				</div>
@@ -110,9 +110,20 @@ class QualityDashboard {
 		ui.bindTiles(this.$body);
 		this.$body.find("tr[data-project]").on("click", (e) => this.project_field.set_value($(e.currentTarget).data("project")));
 		const p = ui.PALETTE;
-		ui.chart(this.$body, "#q-flow", { type: "bar", data: { labels: d.labels, datasets: [{ name: __("Opened"), values: d.flow.opened }, { name: __("Fixed"), values: d.flow.fixed }] }, colors: [p.orange, p.green] });
-		ui.chart(this.$body, "#q-trend", { type: "line", data: { labels: d.labels, datasets: [{ name: __("Open bugs"), values: d.flow.open_trend }] }, colors: [p.red], lineOptions: { regionFill: 1 } });
-		ui.chart(this.$body, "#q-reopen", { type: "bar", height: 180, data: { labels: d.labels, datasets: [{ name: __("Reopened"), values: d.flow.reopened }] }, colors: [p.purple], barOptions: { spaceRatio: 0.5 } });
-		ui.chart(this.$body, "#q-aging", { type: "bar", height: 200, data: { labels: d.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: d.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: d.aging.map((a) => a.client) }] }, colors: [p.blue, p.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } });
+		ui.chart(this.$body, "#q-flow", { type: "bar", data: { labels: d.labels, datasets: [{ name: __("Opened"), values: d.flow.opened }, { name: __("Fixed"), values: d.flow.fixed }] }, colors: [p.orange, p.green] }, (i, ds) => {
+			const [from, to] = d.bucket_ranges[i];
+			ui.openTarget(bugs(ds ? { is_closed: 1, closed_on: ["between", [from, to]] } : { creation: ["between", [from, to]] }));
+		});
+		ui.chart(this.$body, "#q-trend", { type: "line", data: { labels: d.labels, datasets: [{ name: __("Open bugs"), values: d.flow.open_trend }] }, colors: [p.red], lineOptions: { regionFill: 1 } }, (i) => {
+			// the exact bugs that were open at the end of that period; a long list falls back to the ones still open now
+			const names = d.flow.open_trend_names && d.flow.open_trend_names[i];
+			ui.openTarget(names ? ui.go("Work Item", { name: ["in", names.length ? names : ["-"]] }) : bugs({ is_closed: 0, creation: ["<=", `${d.bucket_ranges[i][1]} 23:59:59`] }));
+		});
+		ui.chart(this.$body, "#q-reopen", { type: "bar", height: 180, data: { labels: d.labels, datasets: [{ name: __("Reopened"), values: d.flow.reopened }] }, colors: [p.purple], barOptions: { spaceRatio: 0.5 } }, () => ui.openTarget(ui.go("Work Item", { name: ["in", t.reopened_names.length ? t.reopened_names : ["-"]] })));
+		ui.chart(this.$body, "#q-aging", { type: "bar", height: 200, data: { labels: d.aging.map((a) => a.label), datasets: [{ name: __("With us"), values: d.aging.map((a) => a.count - a.client) }, { name: __("Waiting on client"), values: d.aging.map((a) => a.client) }] }, colors: [p.blue, p.orange], barOptions: { stacked: 1, spaceRatio: 0.5 } }, (i, ds) => {
+			const r = d.age_ranges[i];
+			const created = r.from ? ["between", [r.from, r.to]] : ["<=", r.to];
+			ui.openTarget(bugs({ is_closed: 0, dependent_on_client: ds ? 1 : 0, creation: created }));
+		});
 	}
 }

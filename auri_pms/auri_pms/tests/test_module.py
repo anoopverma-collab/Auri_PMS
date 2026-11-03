@@ -91,6 +91,30 @@ class TestProjectModule(TrackerTestCase):
 		self.assertIn("Progress by module", html)
 		self.assertIn("Sales", html)
 
+	def test_open_column_of_the_module_table_can_be_switched_off(self):
+		"""Sections dialog / PMS Settings: the Open column of Progress by module shows by default and can be hidden."""
+		sales = self.make_module("Sales")
+		self.new_item(MGR, tracker="Task", project_module=sales.name, subject="Module ticket")
+		report = build_report(self.ALP, add_days(today(), -7), today())
+		self.assertRegex(render_html(report), r">\s*Open\s*</t[dh]>")
+		for layout in ("PMS Status Report - Summary", "PMS Status Report - Corporate"):
+			self.assertRegex(render_html(report, template=layout), r">\s*Open\s*</t[dh]>")
+		off = render_html(report, columns={"modules": {"open": 0}})
+		self.assertIn("Progress by module", off)
+		self.assertNotRegex(off, r">\s*Open\s*</t[dh]>")
+		# the old PMS Settings switch is still the default for that column
+		previous = frappe.db.get_single_value("PMS Settings", "show_report_modules_open")
+		self.addCleanup(
+			lambda: (
+				frappe.db.set_single_value("PMS Settings", "show_report_modules_open", previous),
+				frappe.clear_cache(doctype="PMS Settings"),
+			)
+		)
+		frappe.db.set_single_value("PMS Settings", "show_report_modules_open", 0)
+		frappe.clear_cache(doctype="PMS Settings")
+		self.assertNotRegex(render_html(report), r">\s*Open\s*</t[dh]>")
+		self.assertRegex(render_html(report, columns={"modules": {"open": 1}}), r">\s*Open\s*</t[dh]>")
+
 	def test_client_report_has_no_module_table_when_nothing_is_tagged(self):
 		self.new_item(MGR, tracker="Task")
 		report = build_report(self.ALP, add_days(today(), -7), today())

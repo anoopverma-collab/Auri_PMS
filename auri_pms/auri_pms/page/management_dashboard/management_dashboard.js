@@ -315,6 +315,10 @@ class ManagementDashboard {
 				colors: [ui.PALETTE.purple, ui.PALETTE.orange, ui.PALETTE.green],
 				barOptions: { spaceRatio: 0.35 },
 				axisOptions: { xIsSeries: 1 },
+			}, (i, ds) => {
+				const name = hrs.projects[i].name;
+				// Estimated bars open the project's tickets; Actual and Billable bars open its time entries
+				ui.openTarget(ds === 0 ? ui.go("Work Item", { project: name }) : ui.go("Time Entry", ds === 2 ? { project: name, is_billable: 1 } : { project: name }));
 			});
 		}
 	}

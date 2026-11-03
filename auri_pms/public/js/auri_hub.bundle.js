@@ -312,7 +312,10 @@ ui.chart = ($root, selector, config, onPick) => {
 	el.style.cursor = "pointer";
 	el.addEventListener("click", (e) => {
 		const unit = e.target.closest && e.target.closest("[data-point-index]");
-		if (unit) onPick(cint(unit.getAttribute("data-point-index")));
+		if (!unit) return;
+		const group = unit.closest(".dataset-units");
+		const siblings = group && group.parentNode ? Array.from(group.parentNode.querySelectorAll(":scope > .dataset-units")) : [];
+		onPick(cint(unit.getAttribute("data-point-index")), Math.max(0, siblings.indexOf(group)));
 	});
 };
 
@@ -581,7 +584,38 @@ ui.initPage = (wrapper, title) => {
 	const $body = $(`<div class="auri-hub"></div>`).appendTo(page.main);
 	ui.injectStyle();
 	ui.applyTheme($body);
+	// every table a page draws gets its number columns right-aligned, whenever the page redraws
+	let queued = null;
+	new MutationObserver(() => {
+		clearTimeout(queued);
+		queued = setTimeout(() => ui.alignTables($body), 30);
+	}).observe($body[0], { childList: true, subtree: true });
 	return { page, $body };
+};
+
+// Right-align a column (header and cells) when every filled cell in it is a number, a percentage or an amount of hours/days.
+ui.alignTables = ($root) => {
+	const numeric = /^[-\u2013+]?\d[\d.,\s]*\s*(%|h|d|hrs?|hours?|days?)?$/i;
+	$root.find("table.hub-table").each((_t, table) => {
+		const $rows = $(table).find("tbody tr");
+		const heads = $(table).find("thead th");
+		if (!$rows.length) return;
+		heads.each((i, th) => {
+			let filled = 0;
+			let ok = true;
+			$rows.each((_r, tr) => {
+				const cell = tr.children[i];
+				if (!cell || cell.colSpan > 1) return;
+				const text = (cell.textContent || "").trim();
+				if (!text) return;
+				filled++;
+				if (!numeric.test(text)) ok = false;
+			});
+			const num = ok && filled > 0;
+			$(th).toggleClass("num", num);
+			$rows.each((_r, tr) => tr.children[i] && $(tr.children[i]).toggleClass("num", num));
+		});
+	});
 };
 
 ui.injectStyle = () => {
@@ -1210,7 +1244,10 @@ ui.injectStyle = () => {
 			.hub-toolbar .hub-search { margin: 0; flex: 1 1 260px; }
 			.hub-table.sortable th { cursor: pointer; white-space: nowrap; } .hub-table.sortable th.sorted::after { content: " \u25BE"; }
 			.hub-table.sortable th.sorted.asc::after { content: " \u25B4"; }
-			.hub-table td.num, .hub-table th.num { text-align: right; }
+			.hub-table td.num, .hub-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+			.hub-table th, .hub-table td { padding: 9px 12px; vertical-align: middle; } .hub-table th { white-space: nowrap; }
+			.hub-table th:first-child, .hub-table td:first-child { padding-left: 4px; } .hub-table th:last-child, .hub-table td:last-child { padding-right: 4px; }
+			.hub-table tbody tr { height: 44px; } .hub-table td .hub-sub { margin-top: 2px; }
 			.hub-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; background: #9ca3af; vertical-align: middle; }
 			.hub-dot.red { background: #ef4444; } .hub-dot.amber { background: #f59e0b; } .hub-dot.green { background: #10b981; }
 			.hub-clickrow { cursor: pointer; }

@@ -24,6 +24,7 @@ const ICONS = {
 	package: "M12 3l8 4v10l-8 4-8-4V7zM4 7l8 4 8-4M12 11v10",
 	bug: "M9 8a3 3 0 016 0v1H9zM7 11h10v4a5 5 0 01-10 0zM3 12h4M17 12h4M4 18l3-2M20 18l-3-2",
 	clock: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
+	tree: "M4 5h5M4 12h5M4 19h5M9 5v14M9 12h4M9 19h4M13 9h7M13 15h7",
 	timer: "M10 3h4M12 7v6l3 2M12 21a8 8 0 100-16 8 8 0 000 16z",
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name] || ICONS.package}"/></svg>`;
@@ -87,6 +88,27 @@ class Insights {
 		});
 	}
 
+	// A read-only tree: every node shows its counts, hours and progress; a count opens the matching tickets.
+	tree_html(v) {
+		const esc = ui.esc;
+		const go = (route, html) => (route ? `<a class="ins-t-go" ${ui.goAttr(ui.go(route.doctype, route.filters))}>${html}</a>` : html);
+		const num = (n) => `<span class="ins-t-n">${n}</span>`;
+		const node = (n, level, top) => {
+			const kids = (n.children || []).length;
+			const late = flt(n.overdue) ? `<span class="ins-t-n ins-t-late">${go({ doctype: "Work Item", filters: { ...n.route.filters, is_closed: 0, due_date: ["<", frappe.datetime.get_today()] } }, n.overdue)}</span>` : num(0);
+			const label = n.kind === "Status"
+				? `<i class="ins-t-dot ${esc(n.tone || "gray")}"></i><span class="ins-t-name">${esc(n.label)}</span>`
+				: `<span class="ins-t-kind ins-t-${n.kind.toLowerCase()}">${esc(__(n.kind))}</span><b class="ins-t-name">${esc(n.label)}</b>${n.meta ? `<span class="ins-t-meta">${esc(n.meta)}</span>` : ""}`;
+			const pct = n.kind === "Status" ? "" : `<span class="ins-t-pct"><span class="ins-t-bar"><i style="width:${n.pct}%"></i></span><b>${n.pct}%</b></span>`;
+			const row = `<div class="ins-t-row ins-t-${n.kind.toLowerCase()}-row" style="--lv:${level}"><i class="ins-t-chev ${kids ? "" : "ins-t-leaf"}"></i>${label}<span class="ins-t-grow"></span>${num(go(n.route, n.tickets))}${num(n.closed)}${late}${num(n.est)}${num(n.spent)}${pct || '<span class="ins-t-pct"></span>'}</div>`;
+			return `<div class="ins-t-node ${top ? "open" : ""}">${row}${kids ? `<div class="ins-t-kids">${n.children.map((k) => node(k, level + 1, false)).join("")}</div>` : ""}</div>`;
+		};
+		const cols = [__("Tickets"), __("Closed"), __("Overdue"), __("Est. h"), __("Spent h")];
+		return `<div class="ins-t-tools"><button class="btn btn-xs btn-default" data-tree="expand">${__("Expand all")}</button><button class="btn btn-xs btn-default" data-tree="collapse">${__("Collapse all")}</button></div>
+			<div class="ins-tree"><div class="ins-t-head"><span>${__("Name")}</span><span class="ins-t-grow"></span>${cols.map((c) => `<span class="ins-t-n">${c}</span>`).join("")}<span class="ins-t-pct">${__("Progress")}</span></div>${v.tree.map((n) => node(n, 0, true)).join("")}</div>
+			<div class="ins-t-note">${__("Click a count to open the matching tickets. Read-only: change tickets from the Work Item list.")}</div>`;
+	}
+
 	draw(d) {
 		const esc = ui.esc;
 		const p = ui.PALETTE;
@@ -101,21 +123,60 @@ class Insights {
 			const id = `ins-v${n}`;
 			let body = "";
 			if (["line", "bar", "donut"].includes(v.kind)) body = v.labels && v.labels.length && has_values(v) ? `<div class="hub-chart" id="${id}"></div>` : `<div class="ph2-empty">${__("Nothing yet")}</div>`;
-			else if (v.kind === "stack") body = ui.stack(v.rows, v.names, v.tones.map((t) => `seg-${t}`));
+			else if (v.kind === "tree") body = this.tree_html(v);
+			else if (v.kind === "stack") body = `<div id="${id}">${ui.stack(v.rows, v.names, v.tones.map((t) => `seg-${t}`))}</div>`;
 			else if (v.kind === "table") {
-				body = ui.table(v.rows, v.columns, (r) => `<tr>${r.map((cell, i) => `<td>${i === 0 && v.doctype && v.kind === "table" && String(cell).match(/^[A-Z]+-/) ? ui.link(v.doctype, cell) : esc(cell)}</td>`).join("")}</tr>`);
+				// a cell with its own route (cell_routes[row][col]) opens that list; otherwise the first cell opens the row's route
+				const route_of = (k, i) => ((v.cell_routes || [])[k] || [])[i] || (i === 0 ? (v.row_routes || [])[k] : null);
+				const go = (route, html) => (route ? `<a class="ins-t-go" ${ui.goAttr(goto(route))}>${html}</a>` : html);
+				body = ui.table(v.rows, v.columns, (r, k) => `<tr>${r.map((cell, i) => {
+					const route = route_of(k, i);
+					if (route) return `<td>${go(route, esc(cell))}</td>`;
+					return `<td>${i === 0 && v.doctype && v.kind === "table" && String(cell).match(/^[A-Z]+-/) ? ui.link(v.doctype, cell) : esc(cell)}</td>`;
+				}).join("")}</tr>`);
 			}
 			return `<div class="hub-panel ph2-card ph2-in ins-v ins-span${v.span || 1}"><div class="ph2-card-head"><h6>${esc(v.title)}</h6></div>${body}</div>`;
 		});
 		this.$body.html(`<div class="ph2 ins">${this.nav()}${head}<div class="hub-tiles ins-kpis">${tiles}</div><div class="ins-grid">${cards.join("")}</div></div>`);
+		// stack rows: each segment opens its own list (routes[row][segment]); the label and total open the whole row
+		d.visuals.forEach((v, n) => {
+			if (v.kind !== "stack") return;
+			const set = ($el, route, cls) => {
+				if (!route) return;
+				$el.attr({ "data-go": JSON.stringify(goto(route)), tabindex: 0, role: "link" });
+				if (cls) $el.addClass(cls);
+			};
+			this.$body.find(`#ins-v${n} .hub-stack`).each((k, row) => {
+				const $row = $(row);
+				const segments = (v.routes || [])[k] || [];
+				$row.find("> div > i").each((s, seg) => set($(seg), segments[s]));
+				const whole = (v.row_routes || [])[k];
+				set($row.children("span").first(), whole, "ins-t-go");
+				set($row.children("b").first(), whole, "ins-t-go");
+			});
+		});
 		ui.bindTiles(this.$body);
+		this.$body.find(".ins-t-row").on("click", (e) => {
+			if ($(e.target).closest("[data-go]").length) return; // a count opens its tickets instead
+			$(e.currentTarget).closest(".ins-t-node").toggleClass("open");
+		});
+		this.$body.find("[data-tree]").on("click", (e) => {
+			const open = $(e.currentTarget).attr("data-tree") === "expand";
+			this.$body.find(".ins-t-node:has(.ins-t-kids)").toggleClass("open", open);
+		});
 		d.visuals.forEach((v, n) => {
 			if (!["line", "bar", "donut"].includes(v.kind) || !(v.labels && v.labels.length && has_values(v))) return;
 			const colors = (v.colors || []).map((c) => p[c] || c);
 			const config = v.kind === "donut"
 				? { type: "donut", height: 250, data: { labels: v.labels, datasets: [{ values: v.values }] }, colors: [p.blue, p.purple, p.green, p.orange, p.cyan, p.pink, p.red, "#94a3b8"] }
 				: { type: v.kind, height: v.span >= 2 ? 250 : 230, data: { labels: v.labels, datasets: v.datasets }, colors, axisOptions: { xIsSeries: 1 }, barOptions: { spaceRatio: 0.45 }, lineOptions: { regionFill: 1 } };
-			ui.chart(this.$body, `#ins-v${n}`, config);
+			// routes: donut = one per label; bar and line = one list per dataset, one route per label
+			const route_of = (index, dataset) => (v.kind === "donut" ? (v.routes || [])[index] : ((v.routes || [])[dataset] || [])[index]);
+			const pick = v.routes ? (index, dataset) => {
+				const route = route_of(index, v.kind === "donut" ? 0 : dataset);
+				if (route) ui.openTarget(goto(route));
+			} : null;
+			ui.chart(this.$body, `#ins-v${n}`, config, pick);
 		});
 	}
 }

@@ -30,6 +30,7 @@ class StatusReport {
 		this.included = new Map(); // tickets added to this report only, with a note for the client
 		this.sections = {}; // section switches changed for this report only
 		this.order = []; // section order changed for this report only (empty: PMS Settings or the layout's own)
+		this.columns = {}; // table columns switched for this report only, {section: {column: 0/1}}
 		const refresh = () => this.refresh();
 		this.project_field = page.add_field({ fieldname: "project", label: __("Project"), fieldtype: "Link", options: "Project", reqd: 1, get_query: () => ({query: "auri_pms.auri_pms.api.project_link_query", filters: { pms_enabled: 1 }}), change: () => this.on_project_change() });
 		this.period_field = page.add_field({ fieldname: "period", label: __("Period"), fieldtype: "Select", options: Object.entries(SR_PERIODS).map(([k, v]) => ({ value: k, label: __(v) })), default: "7", change: () => this.on_period_change() });
@@ -100,6 +101,7 @@ class StatusReport {
 		this.notes.clear();
 		this.sections = {};
 		this.order = [];
+		this.columns = {};
 		try {
 			if (this.project_field.get_value()) localStorage.setItem("auri_status_project", this.project_field.get_value());
 		} catch (e) {
@@ -119,6 +121,7 @@ class StatusReport {
 			ticket_notes: JSON.stringify(Object.fromEntries(this.notes)),
 			sections: JSON.stringify(this.sections),
 			order: JSON.stringify(this.order),
+			columns: JSON.stringify(this.columns),
 			template: cint(this.builtin_field.get_value()) ? "__builtin__" : this.template_field.get_value() || "",
 		};
 	}
@@ -162,6 +165,7 @@ class StatusReport {
 					<div class="hub-panel"><h6>${__("Automatic schedule")}</h6><div class="text-muted small">${__("Set Report Recipients and Send Weekly On and/or Send Monthly On Day (use both for a weekly and a monthly report) in the Auri PMS tab of the Project to email this report automatically.")}</div></div>
 				</div>
 			</div>`);
+		ui.bindTiles(this.$body); // the summary tiles open their tickets
 		this.$body.find("[data-exclude]").on("click", (e) => {
 			this.excluded.add($(e.currentTarget).attr("data-exclude"));
 			this.refresh();
@@ -218,10 +222,12 @@ class StatusReport {
 		const top = Object.entries(by_section).sort((a, b) => b[1] - a[1]).slice(0, 2);
 		const period = `${frappe.datetime.str_to_user(this.from_field.get_value())} - ${frappe.datetime.str_to_user(this.to_field.get_value())}`;
 		const last = history[0] ? frappe.datetime.str_to_user(history[0].from_date) : "";
+		const project = this.project_field.get_value();
+		const named = (list) => ui.go("Work Item", { name: ["in", list.length ? list.map((t) => t.name) : ["-"]] });
 		return `<div class="hub-tiles">
-			${ui.tile(tickets.length, __("Tickets in this report"), "hub-blue", period)}
-			${top.map(([label, n], i) => ui.tile(n, ui.esc(label), i ? "hub-purple" : "hub-green")).join("")}
-			${ui.tile(history.length, __("Reports sent"), "hub-orange", last ? __("Last period from {0}", [last]) : __("Nothing sent yet"))}
+			${ui.tile(tickets.length, __("Tickets in this report"), "hub-blue", period, named(tickets))}
+			${top.map(([label, n], i) => ui.tile(n, ui.esc(label), i ? "hub-purple" : "hub-green", "", named(tickets.filter((t) => t.section === label)))).join("")}
+			${ui.tile(history.length, __("Reports sent"), "hub-orange", last ? __("Last period from {0}", [last]) : __("Nothing sent yet"), ui.go("Project Status Report", project ? { project } : {}))}
 		</div>`;
 	}
 
@@ -322,6 +328,9 @@ class StatusReport {
 		const order = (this.preview.order || []).filter((k) => labels[k]);
 		Object.keys(labels).forEach((k) => !order.includes(k) && order.push(k));
 		const state = { ...(this.preview.sections || {}) };
+		const available = this.preview.available_columns || {};
+		const cols = JSON.parse(JSON.stringify(this.preview.columns || {}));
+		const expanded = new Set(); // sections whose column list is open; every one starts collapsed
 		const dialog = new frappe.ui.Dialog({
 			title: __("Sections in this report"),
 			fields: [{ fieldtype: "HTML", fieldname: "list" }],
@@ -329,24 +338,41 @@ class StatusReport {
 			primary_action: () => {
 				this.order = order.slice();
 				this.sections = { ...state };
+				this.columns = JSON.parse(JSON.stringify(cols));
 				dialog.hide();
 				this.refresh();
 			},
 		});
 		const $box = dialog.fields_dict.list.$wrapper;
 		const draw = () => {
+			const column_rows = (key) => (available[key] || [])
+				.map((c) => `<label style="display:flex;align-items:center;gap:6px;margin:0 14px 0 0;font-weight:normal;font-size:var(--text-sm)"><input type="checkbox" data-section="${key}" data-column="${c.key}" ${cint((cols[key] || {})[c.key]) ? "checked" : ""}>${frappe.utils.escape_html(c.label)}</label>`)
+				.join("");
 			const rows = order
 				.map((key, i) => `<div class="sr-row" draggable="true" data-index="${i}" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-color);background:var(--control-bg, transparent)">
 					<span class="text-muted" style="cursor:grab;user-select:none" title="${__("Drag to move")}">&#9776;</span>
 					<span style="flex:1">${labels[key]}</span>
+					${available[key] ? `<button type="button" draggable="false" class="btn btn-link btn-xs text-muted sr-toggle" data-section="${key}" aria-expanded="${expanded.has(key)}" title="${__("Show or hide the table columns")}" style="display:flex;align-items:center;gap:4px;padding:0 4px;text-decoration:none"><span>${__("Columns")} ${(available[key] || []).filter((c) => cint((cols[key] || {})[c.key])).length}/${available[key].length}</span><span style="display:inline-flex;transition:transform .15s;transform:rotate(${expanded.has(key) ? 180 : 0}deg)">${frappe.utils.icon("es-line-down", "xs")}</span></button>` : ""}
 					<input type="checkbox" data-key="${key}" ${cint(state[key]) ? "checked" : ""}>
-				</div>`)
+				</div>${available[key] && expanded.has(key) ? `<div class="text-muted" style="display:flex;flex-wrap:wrap;padding:3px 4px 5px 30px;border-bottom:1px solid var(--border-color)">${column_rows(key)}</div>` : ""}`)
 				.join("");
 			const extra = Object.entries(figures)
 				.map(([key, label]) => `<div style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-color)"><span style="width:14px"></span><span style="flex:1">${label}</span><input type="checkbox" data-key="${key}" ${cint(state[key]) ? "checked" : ""}></div>`)
 				.join("");
-			$box.html(`<div class="text-muted small" style="margin-bottom:6px">${__("Tick the sections to include, then drag the rows to reorder them.")}</div>${rows}<div class="text-muted small" style="margin:14px 0 4px">${__("Summary figures and tiles")}</div>${extra}`);
+			$box.html(`<div class="text-muted small" style="margin-bottom:6px">${__("Tick the sections to include, then drag the rows to reorder them. Under each section, tick the table columns to show.")}</div>${rows}<div class="text-muted small" style="margin:14px 0 4px">${__("Summary figures and tiles")}</div>${extra}`);
 			$box.find("input[data-key]").on("change", (e) => (state[$(e.currentTarget).attr("data-key")] = e.currentTarget.checked ? 1 : 0));
+			$box.find("input[data-column]").on("change", (e) => {
+				const $c = $(e.currentTarget);
+				const section = $c.attr("data-section");
+				cols[section] = cols[section] || {};
+				cols[section][$c.attr("data-column")] = e.currentTarget.checked ? 1 : 0;
+				draw(); // refresh the "Columns n/m" counts
+			});
+			$box.find(".sr-toggle").on("click mousedown", (e) => e.stopPropagation()).on("click", (e) => {
+				const section = $(e.currentTarget).attr("data-section");
+				expanded.has(section) ? expanded.delete(section) : expanded.add(section);
+				draw();
+			});
 			const move = (from, to) => {
 				if (from === to || to < 0 || to >= order.length) return;
 				order.splice(to, 0, order.splice(from, 1)[0]);

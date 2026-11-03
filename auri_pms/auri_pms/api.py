@@ -739,6 +739,13 @@ def parse_sections(sections: str | dict | None) -> dict[str, int]:
 	return {k: cint(v) for k, v in (values or {}).items() if k in REPORT_SECTIONS}
 
 
+def parse_columns(columns: str | dict | None) -> dict[str, dict[str, int]]:
+	"""Column switches chosen for one report (a JSON object {section: {column: 0/1}}); unknown keys are ignored."""
+	from auri_pms.auri_pms.status_report import clean_columns
+
+	return clean_columns(columns)
+
+
 @frappe.whitelist()
 def get_status_report_html(
 	project: str,
@@ -751,15 +758,18 @@ def get_status_report_html(
 	sections: str | None = None,
 	order: str | None = None,
 	ticket_notes: str | None = None,
+	columns: str | None = None,
 ) -> dict:
 	"""Preview of the client status report: its data summary and the HTML that would be emailed."""
 	from auri_pms.auri_pms.health import status_for_sections
 	from auri_pms.auri_pms.status_report import (
+		available_columns,
 		build_report,
 		current_order,
 		default_subject,
 		merge_recipients,
 		render_html,
+		report_columns,
 		section_switches,
 		visible_tickets,
 	)
@@ -775,9 +785,13 @@ def get_status_report_html(
 	switches = section_switches(parse_sections(sections))
 	chosen_order = parse_order(order)
 	return {
-		"html": render_html(report, note, template or None, parse_sections(sections), chosen_order),
+		"html": render_html(
+			report, note, template or None, parse_sections(sections), chosen_order, parse_columns(columns)
+		),
 		"order": current_order(template or None, chosen_order),
 		"sections": switches,
+		"columns": report_columns(template or None, parse_columns(columns)),
+		"available_columns": available_columns(),
 		"tickets": visible_tickets(report.tickets, switches, current_order(template or None, chosen_order)),
 		"added": [{"name": i.name, "subject": i.subject} for i in report.extra],
 		"subject": default_subject(report, template or None),
@@ -811,6 +825,7 @@ def email_status_report(
 	ticket_notes: str | None = None,
 	cc: str | None = None,
 	attachments: str | None = None,
+	columns: str | None = None,
 ) -> str:
 	"""Email the status report to ``recipients`` (with optional ``cc``) and log it; returns the Project Status Report name."""
 	from auri_pms.auri_pms.status_report import send_report
@@ -827,6 +842,7 @@ def email_status_report(
 		include=parse_included(include),
 		sections=parse_sections(sections),
 		order=parse_order(order),
+		columns=parse_columns(columns),
 		cc=cc,
 		ticket_notes=parse_included(ticket_notes),
 		attachments=[str(n) for n in (frappe.parse_json(attachments) if attachments else [])],
@@ -845,6 +861,7 @@ def status_report_pdf(
 	sections: str | None = None,
 	order: str | None = None,
 	ticket_notes: str | None = None,
+	columns: str | None = None,
 ) -> None:
 	"""Download the status report as a PDF."""
 	from auri_pms.auri_pms.status_report import get_pdf_bytes
@@ -861,6 +878,7 @@ def status_report_pdf(
 		parse_sections(sections),
 		parse_order(order),
 		parse_included(ticket_notes),
+		parse_columns(columns),
 	)
 	frappe.local.response.type = "pdf"
 
