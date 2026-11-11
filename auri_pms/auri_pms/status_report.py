@@ -699,6 +699,22 @@ def default_subject(report: frappe._dict, template: str | None = None) -> str:
 	)
 
 
+SEND_SAVEPOINT = "send_status_report"
+
+
+def record_failed_send(values: dict, error: str) -> None:
+	"""Background job: store the failed attempt of ``send_report``."""
+	frappe.get_doc(
+		{
+			**values,
+			"body": "",
+			"delivery_status": "Failed",
+			"failed_count": values.get("recipient_count"),
+			"error": error[:500],
+		}
+	).insert(ignore_permissions=True)
+
+
 def send_report(
 	project: str,
 	from_date,
@@ -756,6 +772,7 @@ def send_report(
 		"body": html,
 	}
 
+	frappe.db.savepoint(SEND_SAVEPOINT)
 	log = frappe.get_doc(values).insert(ignore_permissions=True)
 	for file in files:  # the files show in the attachments of the Status Reports Sent record
 		file.attached_to_doctype, file.attached_to_name = log.doctype, log.name
@@ -773,19 +790,15 @@ def send_report(
 			add_unsubscribe_link=0,
 		)
 	except Exception as e:
-		# keep a record of the failed attempt even though the request is rolled back
-		frappe.db.rollback()
-		frappe.get_doc(
-			# without the body: the failure may be that the message is too large to store
-			{
-				**values,
-				"body": "",
-				"delivery_status": "Failed",
-				"failed_count": len(addresses) + len(cc_addresses),
-				"error": str(e)[:500],
-			}
-		).insert(ignore_permissions=True)
-		frappe.db.commit()
+		# undo this send only (the caller's transaction stays open) and record the failed attempt from a job:
+		# the exception rolls the request back, which would remove a row written here
+		frappe.db.rollback(save_point=SEND_SAVEPOINT)
+		frappe.enqueue(
+			"auri_pms.auri_pms.status_report.record_failed_send",
+			queue="short",
+			values={**values, "body": ""},  # not the body: a message too large to store may be the failure
+			error=str(e),
+		)
 		raise
 	return log.name
 

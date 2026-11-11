@@ -21,7 +21,8 @@ DEFAULTS = {
 
 
 def execute() -> None:
+	stored = set(frappe.db.sql_list("select field from `tabSingles` where doctype = %s", "PMS Settings"))
 	for fieldname, value in DEFAULTS.items():
-		if frappe.db.get_single_value("PMS Settings", fieldname) in (None, "", 0, "0"):
+		if fieldname not in stored:
 			frappe.db.set_single_value("PMS Settings", fieldname, value)
 	frappe.clear_cache(doctype="PMS Settings")

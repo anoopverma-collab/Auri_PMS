@@ -250,7 +250,7 @@ class Portfolio {
 	// keep the counts and the latest note on the cards and in the table in step with what was just added
 	set_notes(p, notes) {
 		p.notes = { count: notes.length, last: notes[0] ? { text: notes[0].text, by_name: notes[0].by_name || notes[0].by, on: notes[0].on } : null };
-		const $card = this.$body.find(`.pf-card[data-project="${p.name}"] .pf-card-foot`).html(this.note_foot(p));
+		const $card = this.$body.find(`.pf-card[data-project="${CSS.escape(p.name)}"] .pf-card-foot`).html(this.note_foot(p));
 		this.bind_notes($card);
 		this.render_table();
 		this.draw_ticket_table(this.scoped().scope);
@@ -423,7 +423,7 @@ class Portfolio {
 			});
 		};
 		$panel.find(".pf-tkt-tools").html(`<div class="pf-tabs">${options.map(([key, label]) => `<span class="${tk.key === key ? "active" : ""}" data-key="${key}">${label}</span>`).join("")}</div>
-			${tk.key === "custom" ? `<div class="pf-tkt-dates"><input type="date" class="form-control" value="${tk.from}" data-edge="from"><span>→</span><input type="date" class="form-control" value="${tk.to}" data-edge="to"></div>` : ""}`);
+			${tk.key === "custom" ? `<div class="pf-tkt-dates"><input type="date" class="form-control" value="${ui.esc(tk.from)}" data-edge="from"><span>→</span><input type="date" class="form-control" value="${ui.esc(tk.to)}" data-edge="to"></div>` : ""}`);
 		$panel.find(".pf-tabs span").on("click", (e) => {
 			tk.key = $(e.currentTarget).data("key");
 			load();
