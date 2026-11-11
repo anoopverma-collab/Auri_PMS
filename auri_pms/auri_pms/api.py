@@ -22,6 +22,8 @@ from auri_pms.auri_pms.utils import (
 )
 from auri_pms.permissions import can_see_project
 
+MAX_SPRINT_MOVE = 200  # each item is saved with all its rules, so a larger batch would hold a worker too long
+
 
 @frappe.whitelist()
 def get_allowed_statuses(work_item: str | None = None, doc: str | dict | None = None) -> list[str]:
@@ -296,6 +298,8 @@ def move_to_sprint(work_items: str | list, sprint: str | None = None) -> dict:
 	Returns ``{"moved": n, "failed": [{"name", "error"}]}``. A failing item is rolled back on its own.
 	"""
 	names = frappe.parse_json(work_items) if isinstance(work_items, str) else work_items
+	if len(names) > MAX_SPRINT_MOVE:
+		frappe.throw(_("Move at most {0} work items at a time").format(MAX_SPRINT_MOVE))
 	moved, failed = 0, []
 	for name in names:
 		message_count = len(getattr(frappe.local, "message_log", None) or [])

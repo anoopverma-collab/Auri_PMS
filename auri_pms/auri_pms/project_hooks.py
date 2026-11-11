@@ -250,10 +250,10 @@ def validate_members(doc, old) -> None:
 		if row.user in seen:
 			frappe.throw(_("{0} is added more than once in Members").format(row.user))
 		seen.add(row.user)
-		if row.user not in old_users and not cint(frappe.db.get_value("User", row.user, "enabled")):
+		if row.user not in old_users and not cint(frappe.get_cached_value("User", row.user, "enabled")):
 			frappe.throw(_("User {0} is disabled and cannot be added as a member").format(row.user))
 	if members and not any(
-		cint(frappe.db.get_value("Project Role", r.project_role, "can_manage_members")) for r in members
+		cint(frappe.get_cached_value("Project Role", r.project_role, "can_manage_members")) for r in members
 	):
 		frappe.throw(_("A project must keep at least one member with a Manager role"))
 
@@ -381,7 +381,7 @@ def _tell_managers(doc, released: dict[str, list[str]]) -> None:
 	managers = {
 		r.user
 		for r in doc.get("tracker_members") or []
-		if cint(frappe.db.get_value("Project Role", r.project_role, "can_manage_members"))
+		if cint(frappe.get_cached_value("Project Role", r.project_role, "can_manage_members"))
 	} - {frappe.session.user}
 	if not managers:
 		return

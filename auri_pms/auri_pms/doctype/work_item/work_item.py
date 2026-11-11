@@ -557,7 +557,7 @@ class WorkItem(Document):
 		if not self.old or self.old.status == self.status:
 			return
 		recipients = {self.author, self.assigned_to} - {None, frappe.session.user}
-		recipients = [u for u in recipients if frappe.db.get_value("User", u, "enabled")]
+		recipients = [u for u in recipients if frappe.get_cached_value("User", u, "enabled")]
 		if not recipients:
 			return
 		message = _("{0} changed the status of {1} ({2}) from {3} to {4}.").format(
