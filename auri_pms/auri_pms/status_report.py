@@ -29,7 +29,7 @@ from auri_pms.auri_pms.health import (
 	status_for_sections,
 )
 from auri_pms.auri_pms.risk import client_risks
-from auri_pms.auri_pms.utils import get_settings, has_capability, setting
+from auri_pms.auri_pms.utils import get_enabled_statuses, get_settings, has_capability, setting
 from auri_pms.permissions import can_see_project
 
 MAX_RANGE_DAYS = 366
@@ -169,14 +169,19 @@ def build_report(
 		item["module"] = module_names.get(item.project_module) or ""
 	statuses = frappe.get_all(
 		"Work Item Status",
-		filters={"is_active": 1},
+		filters={"is_active": 1, "name": ["in", get_enabled_statuses(project) or [""]]},
 		fields=["name", "sequence", "is_closed"],
 		order_by="sequence asc",
 	)
 	open_statuses = [s.name for s in statuses if not cint(s.is_closed)]
-	# "not started" is the status a new ticket begins in; without a usable default, the first open status
-	default_status = frappe.db.get_single_value("PMS Settings", "default_status")
-	first_open = default_status if default_status in open_statuses else next(iter(open_statuses), None)
+	# "not started" is the status a new ticket of its type begins in: the type's default, else the settings default.
+	# Only the statuses enabled on the project count; when the default is switched off, its first open status stands in.
+	settings_default = frappe.db.get_single_value("PMS Settings", "default_status")
+	type_defaults = dict(frappe.get_all("Ticket Type", fields=["name", "default_status"], as_list=True))
+	first_open = next(iter(open_statuses), None)
+	not_started = lambda tracker: next(  # noqa: E731
+		(s for s in (type_defaults.get(tracker), settings_default) if s in open_statuses), first_open
+	)
 	open_items = [i for i in items if not cint(i.is_closed)]
 	in_range = lambda value: bool(value) and start <= as_date(value) <= end  # noqa: E731
 
@@ -187,7 +192,7 @@ def build_report(
 	)
 	created = [i for i in items if in_range(i.creation)]
 	by_due = lambda i: (i.due_date is None, str(i.due_date or ""), i.name)  # noqa: E731
-	in_progress = sorted((i for i in open_items if i.status != first_open), key=by_due)
+	in_progress = sorted((i for i in open_items if i.status != not_started(i.tracker)), key=by_due)
 	sprint_states = {
 		s.name: s.status
 		for s in frappe.get_all(
@@ -201,7 +206,7 @@ def build_report(
 		(
 			i
 			for i in open_items
-			if i.status == first_open
+			if i.status == not_started(i.tracker)
 			and (i.sprint in sprint_states or (i.due_date and getdate(i.due_date) <= horizon))
 		),
 		key=by_due,
@@ -742,7 +747,8 @@ def send_report(
 		frappe.throw(_("You are not allowed to send status reports for Project {0}").format(project))
 	addresses = parse_recipients(recipients)
 	cc_addresses = parse_copies(cc)
-	if len(addresses) + len(cc_addresses) > MAX_RECIPIENTS:
+	people = set(addresses) | set(cc_addresses)  # an address in both boxes is one person
+	if len(people) > MAX_RECIPIENTS:
 		frappe.throw(_("At most {0} recipients are allowed").format(MAX_RECIPIENTS))
 	# Frappe only notices a missing outgoing account when the queue sends; tell the user now instead of "sending" nothing.
 	EmailAccount.find_outgoing(_raise_error=True)
@@ -769,7 +775,7 @@ def send_report(
 		"scheduled": 1 if scheduled else 0,
 		"sent_to": ", ".join(addresses),
 		"sent_cc": ", ".join(cc_addresses),
-		"recipient_count": len(addresses) + len(cc_addresses),
+		"recipient_count": len(people),
 		"delivery_status": "Queued",
 		"body": html,
 	}
