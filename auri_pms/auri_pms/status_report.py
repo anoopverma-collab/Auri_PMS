@@ -638,11 +638,13 @@ def parse_recipients(raw: str | list[str]) -> list[str]:
 	return addresses
 
 
-def parse_copies(raw: str | list[str] | None, taken: list[str]) -> list[str]:
-	"""CC addresses: validated and de-duplicated like recipients, but optional, and never repeating an address in ``taken``."""
+def parse_copies(raw: str | list[str] | None) -> list[str]:
+	"""CC addresses: validated and de-duplicated like recipients, but optional.
+
+	An address typed in CC stays in CC, even when it is also a recipient."""
 	if not raw or (isinstance(raw, str) and not raw.strip()):
 		return []
-	return [a for a in parse_recipients(raw) if a not in taken]
+	return parse_recipients(raw)
 
 
 def check_attachments(names: list[str] | None) -> list:
@@ -739,7 +741,7 @@ def send_report(
 	if not has_capability(project, "can_manage_releases"):
 		frappe.throw(_("You are not allowed to send status reports for Project {0}").format(project))
 	addresses = parse_recipients(recipients)
-	cc_addresses = parse_copies(cc, addresses)
+	cc_addresses = parse_copies(cc)
 	if len(addresses) + len(cc_addresses) > MAX_RECIPIENTS:
 		frappe.throw(_("At most {0} recipients are allowed").format(MAX_RECIPIENTS))
 	# Frappe only notices a missing outgoing account when the queue sends; tell the user now instead of "sending" nothing.
@@ -788,6 +790,8 @@ def send_report(
 			reference_doctype=log.doctype,
 			reference_name=log.name,
 			add_unsubscribe_link=0,
+			# Frappe sends one message per queue row; without this each copy shows only that row's address in To
+			expose_recipients="header",
 		)
 	except Exception as e:
 		# undo this send only (the caller's transaction stays open) and record the failed attempt from a job:
