@@ -167,6 +167,20 @@ class TestStatusReport(TrackerTestCase):
 		self.assertIn("Thanks all", log.body)
 		self.assertTrue(self.emails_to("client@example.com"))
 
+	def test_not_started_follows_the_statuses_enabled_on_the_project(self):
+		"""A project that switched off the settings default starts tickets in its first open status."""
+		project = frappe.get_doc("Project", self.BET)
+		project.set("enabled_statuses", [{"status": s} for s in ("In Progress", "Resolved")])
+		project.save(ignore_permissions=True)
+		fresh = self.new_item(MGR, self.BET, tracker="Task", subject="Not started", due_date=days(5))
+		moving = self.new_item(
+			MGR, self.BET, tracker="Task", subject="Moving", due_date=days(5), status="Resolved"
+		)
+		report = self.report(project=self.BET)
+		self.assertEqual(fresh.status, "In Progress")
+		self.assertIn(fresh.name, [i.name for i in report.next_up])
+		self.assertEqual([i.name for i in report.in_progress], [moving.name])
+
 	def test_cc_is_sent_and_logged(self):
 		"""CC addresses get the email too; an address typed in CC stays in CC even when it is also in To; the log keeps both lists."""
 		with self.as_user(MGR):
@@ -182,7 +196,7 @@ class TestStatusReport(TrackerTestCase):
 			(log.sent_to, log.sent_cc),
 			("client@example.com", "boss@example.com, client@example.com"),
 		)
-		self.assertEqual(log.recipient_count, 3)
+		self.assertEqual(log.recipient_count, 2)  # client is in both boxes but is one person
 		for address in ("client@example.com", "boss@example.com"):
 			self.assertTrue(self.emails_to(address), address)
 
