@@ -168,7 +168,7 @@ class TestStatusReport(TrackerTestCase):
 		self.assertTrue(self.emails_to("client@example.com"))
 
 	def test_cc_is_sent_and_logged(self):
-		"""CC addresses get the email too; an address already in To is not repeated; the log keeps both lists."""
+		"""CC addresses get the email too; an address typed in CC stays in CC even when it is also in To; the log keeps both lists."""
 		with self.as_user(MGR):
 			name = send_report(
 				self.ALP,
@@ -180,9 +180,9 @@ class TestStatusReport(TrackerTestCase):
 		log = frappe.get_doc("Project Status Report", name)
 		self.assertEqual(
 			(log.sent_to, log.sent_cc),
-			("client@example.com", "boss@example.com"),
+			("client@example.com", "boss@example.com, client@example.com"),
 		)
-		self.assertEqual(log.recipient_count, 2)
+		self.assertEqual(log.recipient_count, 3)
 		for address in ("client@example.com", "boss@example.com"):
 			self.assertTrue(self.emails_to(address), address)
 
