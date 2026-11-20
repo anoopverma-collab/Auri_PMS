@@ -148,6 +148,9 @@ def build_world() -> frappe._dict:
 	return frappe._dict(alp=alp, bet=bet, gam=gam, releases=releases)
 
 
+TEST_ACTIVITY_TYPES = ("Development", "Meeting", "Testing")
+
+
 class TrackerTestCase(IntegrationTestCase):
 	SHOW_TRANSACTION_COMMIT_WARNINGS = True
 	"""Base class: builds the world once per class and isolates every test with a savepoint."""
@@ -164,6 +167,7 @@ class TrackerTestCase(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		frappe.db.savepoint("track_test")
 		self.use_shipped_defaults()
+		self.ensure_activity_types()
 		clear_cache()
 
 	def set_role_flag(self, field: str, value: bool, role: str = "Developer") -> None:
@@ -187,6 +191,16 @@ class TrackerTestCase(IntegrationTestCase):
 		for role, flags in PROJECT_ROLES.items():
 			if frappe.db.exists("Project Role", role):
 				frappe.db.set_value("Project Role", role, {f: int(f in flags) for f in flags_all()})
+
+	def ensure_activity_types(self) -> None:
+		"""Within this test only (the savepoint is rolled back): the activity types the tests log time against.
+
+		The app ships no activity types, so a new site has none."""
+		for name in TEST_ACTIVITY_TYPES:
+			if not frappe.db.exists("PMS Activity Type", name):
+				frappe.get_doc({"doctype": "PMS Activity Type", "activity_type": name}).insert(
+					ignore_permissions=True
+				)
 
 	def tearDown(self) -> None:
 		frappe.set_user("Administrator")
@@ -236,10 +250,6 @@ class TrackerTestCase(IntegrationTestCase):
 	):
 		"""Insert a Time Entry as ``user``."""
 		kw.setdefault("comment", "Worked on it")  # a comment is required on every entry
-		if not frappe.db.exists("PMS Activity Type", activity):  # the app ships no activity types
-			frappe.get_doc({"doctype": "PMS Activity Type", "activity_type": activity}).insert(
-				ignore_permissions=True
-			)
 		with self.as_user(user):
 			return frappe.get_doc(
 				{
