@@ -8,6 +8,8 @@ def execute() -> None:
 
 	Without a stored row the setting reads as ticked, but any code that loads PMS Settings and saves it
 	would store the missing Check as 0 and switch the setting off by accident."""
-	if frappe.db.exists("Singles", {"doctype": "PMS Settings", "field": "projects_ignore_company_restrictions"}):
+	if frappe.db.exists(
+		"Singles", {"doctype": "PMS Settings", "field": "projects_ignore_company_restrictions"}
+	):
 		return
 	frappe.db.set_single_value("PMS Settings", "projects_ignore_company_restrictions", 1)
