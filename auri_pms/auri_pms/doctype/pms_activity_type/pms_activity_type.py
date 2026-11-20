@@ -13,6 +13,4 @@ class PMSActivityType(Document):
 	def on_trash(self) -> None:
 		"""An activity type used on a Time Entry cannot be deleted."""
 		if frappe.db.exists("Time Entry", {"activity_type": self.name}):
-			frappe.throw(
-				_("Activity Type {0} is used on Time Entries and cannot be deleted").format(self.name)
-			)
+			frappe.throw(_("Activity {0} is used on Time Entries and cannot be deleted").format(self.name))

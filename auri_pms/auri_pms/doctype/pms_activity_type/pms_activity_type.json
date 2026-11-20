@@ -15,7 +15,7 @@
 			"fieldname": "activity_type",
 			"fieldtype": "Data",
 			"in_list_view": 1,
-			"label": "Activity Type",
+			"label": "Activity",
 			"reqd": 1,
 			"unique": 1
 		},
