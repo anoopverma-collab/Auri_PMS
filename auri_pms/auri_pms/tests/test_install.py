@@ -7,6 +7,11 @@ from auri_pms import install
 
 
 class TestInstall(IntegrationTestCase):
+	def restore_colour(self, colour: str) -> None:
+		"""The migrate hooks commit, so the edited colour would stay in the database for the tests that run next."""
+		frappe.db.set_value("Work Item Status", "New", "color", colour)
+		frappe.db.commit()
+
 	def counts(self) -> dict:
 		doctypes = (
 			"Work Item Status",
@@ -29,6 +34,8 @@ class TestInstall(IntegrationTestCase):
 
 	def test_t002_migrate_keeps_edited_colour(self):
 		"""T-002: an edited status colour survives migrate hooks and default-data re-runs."""
+		original = frappe.db.get_value("Work Item Status", "New", "color")
+		self.addCleanup(self.restore_colour, original)
 		frappe.db.set_value("Work Item Status", "New", "color", "#112233")
 		for hook in frappe.get_hooks("after_migrate"):
 			frappe.get_attr(hook)()
