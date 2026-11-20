@@ -118,6 +118,18 @@ def ensure_workspace_docs() -> None:
 		)
 
 
+def remove_duplicate_email_template_field() -> None:
+	"""Drop an old Email Template custom field that Frappe now ships as a standard field.
+
+	A custom field named reference_doctype, made before Frappe added the standard one, makes every fixture import
+	fail with "Fieldname reference_doctype appears multiple times". Both use the same database column, so no data is lost."""
+	name = frappe.db.get_value("Custom Field", {"dt": "Email Template", "fieldname": "reference_doctype"})
+	standard = frappe.db.exists("DocField", {"parent": "Email Template", "fieldname": "reference_doctype"})
+	if name and standard:
+		frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
+		frappe.logger("auri_pms").info(f"Removed the duplicate custom field {name}")
+
+
 def after_migrate() -> None:
 	"""Keep the roles, Project permissions, the sidebar and the app icon in line with the code after migrate; master data is never touched."""
 	ensure_roles()

@@ -261,7 +261,9 @@ app_include_css = "auri_pms.bundle.css"
 # ---------------------------------------------------------------------------
 # Auri PMS configuration
 # ---------------------------------------------------------------------------
+before_install = "auri_pms.install.remove_duplicate_email_template_field"
 after_install = "auri_pms.install.after_install"
+before_migrate = ["auri_pms.install.remove_duplicate_email_template_field"]
 after_migrate = ["auri_pms.install.after_migrate"]
 before_uninstall = "auri_pms.install.before_uninstall"
 
