@@ -42,6 +42,23 @@ class TestInstall(IntegrationTestCase):
 		install.create_default_data()
 		self.assertEqual(frappe.db.get_value("Work Item Status", "New", "color"), "#112233")
 
+	def test_old_email_template_custom_field_is_removed(self):
+		"""A custom reference_doctype made before Frappe added the standard field is dropped, so fixtures can import."""
+		name = "Email Template-reference_doctype"
+		frappe.get_doc(
+			{
+				"doctype": "Custom Field",
+				"name": name,
+				"dt": "Email Template",
+				"fieldname": "reference_doctype",
+				"fieldtype": "Data",
+				"label": "Reference DocType",
+				"insert_after": "subject",
+			}
+		).db_insert()  # skips the duplicate check that the form applies
+		install.remove_duplicate_email_template_field()
+		self.assertFalse(frappe.db.exists("Custom Field", name))
+
 	def test_t003_fixtures_exist(self):
 		"""T-003: roles, custom fields, workspace and Kanban board exist."""
 		for role in ("Auri PMS Admin", "Auri PMS Manager", "Auri PMS User"):
