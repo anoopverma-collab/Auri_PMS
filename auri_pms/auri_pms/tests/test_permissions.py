@@ -16,6 +16,7 @@ from auri_pms.auri_pms.tests.utils import (
 	days_ago,
 	ensure_company,
 )
+from auri_pms.auri_pms.utils import portfolio_projects, projects_with_capability
 
 
 class TestPermissions(TrackerTestCase):
@@ -247,3 +248,52 @@ class TestRoleBoxIsPerProject(TrackerTestCase):
 			seen = set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
 		self.assertIn(on_alpha.name, seen)  # Developer role: sees all
 		self.assertNotIn(on_beta.name, seen)  # Reporter role on Beta: only their own
+
+
+class TestValidateProjectAccess(TrackerTestCase):
+	"""PMS Settings > Validate Project Access: the membership check runs only while it is ticked."""
+
+	def setUp(self):
+		super().setUp()
+		self.private = self.new_item(MGR, subject="Alpha private")
+		self.addCleanup(self.set_validate, 1)  # the real default: ticked
+
+	def set_validate(self, value: int) -> None:
+		frappe.db.set_single_value("PMS Settings", "validate_project_access", value)
+
+	def names(self, user):
+		with self.as_user(user):
+			return set(frappe.get_list("Work Item", pluck="name", limit_page_length=0))
+
+	def test_ticked_a_non_member_cannot_see_a_private_project(self):
+		self.set_validate(1)
+		self.assertNotIn(self.private.name, self.names(OUT))
+		self.assertFalse(frappe.has_permission("Work Item", "read", doc=self.private.name, user=OUT))
+
+	def test_a_site_that_never_saved_it_validates(self):
+		frappe.db.delete("Singles", {"doctype": "PMS Settings", "field": "validate_project_access"})
+		self.assertNotIn(self.private.name, self.names(OUT))
+
+	def test_unticked_a_non_member_sees_the_private_project(self):
+		self.set_validate(0)
+		self.assertIn(self.private.name, self.names(OUT))
+		self.assertTrue(frappe.has_permission("Work Item", "read", doc=self.private.name, user=OUT))
+
+	def test_unticked_a_non_member_still_cannot_change_it(self):
+		self.set_validate(0)
+		self.assertFalse(frappe.has_permission("Work Item", "write", doc=self.private.name, user=OUT))
+
+	def test_ticked_the_dashboards_list_only_member_projects(self):
+		self.set_validate(1)
+		with self.as_user(OUT):
+			self.assertNotIn(self.ALP, portfolio_projects())
+
+	def test_unticked_the_dashboards_list_every_project(self):
+		self.set_validate(0)
+		with self.as_user(OUT):
+			self.assertIn(self.ALP, portfolio_projects())
+
+	def test_unticked_a_non_member_still_has_no_health_cost_tab(self):
+		self.set_validate(0)
+		with self.as_user(OUT):
+			self.assertEqual(projects_with_capability("can_see_health_cost"), [])

@@ -353,6 +353,11 @@ def make_project(created: dict, project: str) -> None:
 		(3, 1.5, 0, "Client Meeting"),
 		(1, 3, 1, "Development"),
 	]
+	for activity in {row[3] for row in hours}:  # the app ships no activity types
+		if not frappe.db.exists("PMS Activity Type", activity):
+			frappe.get_doc({"doctype": "PMS Activity Type", "activity_type": activity}).insert(
+				ignore_permissions=True
+			)
 	loggable = [
 		i for i, row in zip(items, rows, strict=True) if row[10] != "Closed"
 	]  # no time can be logged on a closed ticket

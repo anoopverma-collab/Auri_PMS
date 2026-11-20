@@ -7,13 +7,18 @@ from auri_pms import install
 
 
 class TestInstall(IntegrationTestCase):
+	def restore_colour(self, colour: str) -> None:
+		"""The migrate hooks commit, so the edited colour would stay in the database for the tests that run next."""
+		frappe.db.set_value("Work Item Status", "New", "color", colour)
+		frappe.db.commit()
+
 	def counts(self) -> dict:
 		doctypes = (
 			"Work Item Status",
 			"Project Role",
 			"Ticket Type",
 			"Ticket Type Transition",
-			"Activity Type",
+			"PMS Activity Type",
 		)
 		result = {d: frappe.db.count(d) for d in doctypes}
 		result["columns"] = len(frappe.get_doc("Kanban Board", install.BOARD_NAME).columns)
@@ -29,6 +34,8 @@ class TestInstall(IntegrationTestCase):
 
 	def test_t002_migrate_keeps_edited_colour(self):
 		"""T-002: an edited status colour survives migrate hooks and default-data re-runs."""
+		original = frappe.db.get_value("Work Item Status", "New", "color")
+		self.addCleanup(self.restore_colour, original)
 		frappe.db.set_value("Work Item Status", "New", "color", "#112233")
 		for hook in frappe.get_hooks("after_migrate"):
 			frappe.get_attr(hook)()
@@ -71,7 +78,7 @@ class TestInstall(IntegrationTestCase):
 		self.assertEqual([c.column_name for c in board.columns if c.column_name in shipped], shipped)
 
 	def test_tracker_roles_can_use_erpnext_doctypes(self):
-		"""Tracker roles may read Project and Activity Type (needed to log time) and Auri PMS Users may edit Project."""
+		"""Tracker roles may read Project and Auri PMS Users may edit Project."""
 		for doctype, role, ptype in (
 			("Project", "Auri PMS User", "read"),
 			("Project", "Auri PMS User", "write"),
@@ -79,9 +86,6 @@ class TestInstall(IntegrationTestCase):
 			("Project", "Auri PMS Manager", "create"),
 			("Project", "System Manager", "read"),
 			("Project", "System Manager", "create"),
-			("Activity Type", "Auri PMS User", "read"),
-			("Activity Type", "Auri PMS Admin", "read"),
-			("Activity Type", "Auri PMS Manager", "read"),
 		):
 			self.assertTrue(
 				frappe.db.get_value(

@@ -32,7 +32,8 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
    `after_migrate` (never by editing ERPNext files):
    * *Project*: Auri PMS Manager and System Manager read/write/create/report (System Manager "inherits Auri PMS Manager
      rights", but ERPNext's Project never listed it); Auri PMS User read/write.
-   * *Activity Type*: Auri PMS Manager and Auri PMS User read (needed to choose an activity when logging time).
+   * *PMS Activity Type* is the app's own master (Time Entry links to it, not to ERPNext Activity Type): Auri PMS Admin and
+     Auri PMS Manager manage it, Auri PMS User reads it.
    Auri PMS User write on Project exists so that a project's own Manager can change members (section 4). A pure
    Auri PMS User (no ERPNext project role) may only change the Tracker tab; any other editable field change is
    rejected in `project_hooks`.
@@ -304,7 +305,7 @@ Spec references are to *Auri PMS - Build Specification v1.0*.
 
 41. Custom Fields, the Kanban board, workspace, sidebar, icon and the Custom DocPerms the app added are removed.
     Frappe keeps the *database columns* of deleted custom fields (so identifiers survive a re-install), and the
-    ERPNext Project / Activity Type keep the Custom DocPerm copies that mirror their standard permissions.
+    ERPNext Project keeps the Custom DocPerm copies that mirror their standard permissions.
 
 ## Known limitations and v2 ideas
 

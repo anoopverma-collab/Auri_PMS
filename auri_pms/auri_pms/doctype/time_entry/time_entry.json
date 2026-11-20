@@ -90,7 +90,7 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"label": "Activity",
-			"options": "Activity Type",
+			"options": "PMS Activity Type",
 			"reqd": 1
 		},
 		{

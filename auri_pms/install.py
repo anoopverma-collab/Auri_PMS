@@ -70,7 +70,6 @@ BUG_WORKFLOW = [
 	("Rejected", "New", "Manager"),
 ]
 TRACKERS = {"Bug": "#E24C4C", "Feature": "#2490EF", "Task": "#22C55E", "Support": "#8B5CF6"}
-ACTIVITY_TYPES = ["Development", "Design", "Testing", "Meeting", "Support", "Documentation"]
 
 
 # The roles of the app, from the widest to the narrowest. Auri PMS Admin and System Manager see and do everything in every
@@ -129,7 +128,7 @@ def after_migrate() -> None:
 
 
 def create_default_data() -> None:
-	"""Create statuses, project roles, trackers, activity types and settings; skip anything that exists."""
+	"""Create statuses, project roles, trackers and settings; skip anything that exists."""
 	for name, sequence, is_closed, done, colour, _indicator in STATUSES:
 		insert_if_missing(
 			"Work Item Status",
@@ -163,12 +162,17 @@ def create_default_data() -> None:
 				{"from_status": f, "to_status": t, "project_role": r} for f, t, r in BUG_WORKFLOW
 			]
 		insert_if_missing("Ticket Type", tracker, values)
-	for activity in ACTIVITY_TYPES:
-		insert_if_missing("Activity Type", activity, {"activity_type": activity})
 	settings = frappe.get_doc("PMS Settings")
 	if not settings.default_status:
 		settings.update(
-			{"default_status": "New", "default_priority": "Normal", "public_project_role": "Reporter"}
+			{
+				"default_status": "New",
+				"default_priority": "Normal",
+				"public_project_role": "Reporter",
+				# a Check never saved would be stored as 0, switching these two ticked-by-default settings off
+				"validate_project_access": 1,
+				"projects_ignore_company_restrictions": 1,
+			}
 		)
 		settings.flags.ignore_permissions = True
 		settings.save()
@@ -332,11 +336,6 @@ ERPNEXT_PERMISSIONS = {
 		"System Manager": ("read", "write", "create", "report"),  # inherits Auri PMS Manager rights
 		"Auri PMS User": ("read", "write"),
 	},
-	"Activity Type": {  # needed to pick an activity when logging time
-		"Auri PMS Admin": ("read",),
-		"Auri PMS Manager": ("read",),
-		"Auri PMS User": ("read",),
-	},
 }
 
 
@@ -373,7 +372,7 @@ def ensure_project_permissions() -> None:
 
 # --------------------------------------------------------------------------- uninstall
 def before_uninstall() -> None:
-	"""Remove what the app added to other doctypes; ERPNext Activity Types stay untouched."""
+	"""Remove what the app added to other doctypes."""
 	for name in frappe.get_all("Custom Field", filters={"module": "Auri PMS"}, pluck="name"):
 		frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
 	for doctype, grants in ERPNEXT_PERMISSIONS.items():
