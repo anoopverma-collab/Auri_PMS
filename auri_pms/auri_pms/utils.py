@@ -73,12 +73,24 @@ def has_unrestricted_project_view(user: str) -> bool:
 
 
 def ignore_company_restrictions() -> bool:
-	"""PMS Settings > Auri PMS Projects Ignore Company Restrictions. A site that never saved the setting keeps it ticked.
+	"""PMS Settings > Auri PMS Projects Ignore Company Restrictions. A site that never saved the setting keeps it ticked."""
+	return _ticked_unless_saved_off("projects_ignore_company_restrictions")
+
+
+def validate_project_access() -> bool:
+	"""PMS Settings > Validate Project Access. Ticked: only members (and public projects) see a project's records.
+
+	Unticked: the membership check is skipped; disabled users are still blocked. A site that never saved it keeps it ticked."""
+	return _ticked_unless_saved_off("validate_project_access")
+
+
+def _ticked_unless_saved_off(fieldname: str) -> bool:
+	"""A PMS Settings Check whose default is ticked.
 
 	A Check that was never saved reads as 0 through the settings document, so the stored row is looked at itself:
 	no row means the field default (ticked)."""
 	row = frappe.db.sql(
-		"select value from `tabSingles` where doctype = 'PMS Settings' and field = 'projects_ignore_company_restrictions'"
+		"select value from `tabSingles` where doctype = 'PMS Settings' and field = %s", fieldname
 	)
 	return True if not row else bool(cint(row[0][0]))
 
@@ -94,6 +106,8 @@ def pms_project_rows(filters: dict | None = None, **kwargs) -> list:
 	if not has_unrestricted_project_view(user):
 		if not is_user_enabled(user):
 			return []
+		if not validate_project_access():
+			return frappe.get_all("Project", filters=filters, **kwargs)
 		visible = set(
 			frappe.get_all("Project Member", filters={"parenttype": "Project", "user": user}, pluck="parent")
 		) | set(frappe.get_all("Project", filters={"is_public": 1}, pluck="name"))
@@ -109,7 +123,8 @@ def portfolio_projects(user: str | None = None) -> list[str]:
 
 	Auri PMS Admins and System Managers see every project with Auri PMS switched on. Anyone else (an Auri PMS
 	Manager or Auri PMS User) sees the projects they are a member of, whatever their Project Role; an empty list
-	means no Delivery & Health at all.
+	means no Delivery & Health at all. With *Validate Project Access* unticked every enabled user sees every
+	project; the Health & Cost, Insights and Notes tabs still need a Project Role flag, which a non-member lacks.
 	"""
 	user = user or frappe.session.user
 	enabled = frappe.get_all("Project", filters={"pms_enabled": 1}, pluck="name", order_by="name")
@@ -117,6 +132,8 @@ def portfolio_projects(user: str | None = None) -> list[str]:
 		return enabled
 	if not is_user_enabled(user):
 		return []
+	if not validate_project_access():
+		return enabled
 	mine = set(
 		frappe.get_all(
 			"Project Member",

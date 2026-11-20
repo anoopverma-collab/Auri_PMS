@@ -13,7 +13,7 @@ class TestInstall(IntegrationTestCase):
 			"Project Role",
 			"Ticket Type",
 			"Ticket Type Transition",
-			"Activity Type",
+			"PMS Activity Type",
 		)
 		result = {d: frappe.db.count(d) for d in doctypes}
 		result["columns"] = len(frappe.get_doc("Kanban Board", install.BOARD_NAME).columns)
@@ -71,7 +71,7 @@ class TestInstall(IntegrationTestCase):
 		self.assertEqual([c.column_name for c in board.columns if c.column_name in shipped], shipped)
 
 	def test_tracker_roles_can_use_erpnext_doctypes(self):
-		"""Tracker roles may read Project and Activity Type (needed to log time) and Auri PMS Users may edit Project."""
+		"""Tracker roles may read Project and Auri PMS Users may edit Project."""
 		for doctype, role, ptype in (
 			("Project", "Auri PMS User", "read"),
 			("Project", "Auri PMS User", "write"),
@@ -79,9 +79,6 @@ class TestInstall(IntegrationTestCase):
 			("Project", "Auri PMS Manager", "create"),
 			("Project", "System Manager", "read"),
 			("Project", "System Manager", "create"),
-			("Activity Type", "Auri PMS User", "read"),
-			("Activity Type", "Auri PMS Admin", "read"),
-			("Activity Type", "Auri PMS Manager", "read"),
 		):
 			self.assertTrue(
 				frappe.db.get_value(

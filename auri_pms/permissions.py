@@ -19,6 +19,7 @@ from auri_pms.auri_pms.utils import (
 	is_admin,
 	is_allocated,
 	is_user_enabled,
+	validate_project_access,
 )
 
 
@@ -31,6 +32,8 @@ def _project_scope(user: str, column: str) -> str:
 		return ""
 	if not is_user_enabled(user):
 		return "(1=0)"
+	if not validate_project_access():
+		return ""
 	quoted = frappe.db.escape(user)
 	return (
 		f"({column} in (select pm.parent from `tabProject Member` pm "
@@ -46,7 +49,7 @@ def can_see_project(project: str | None, user: str | None = None) -> bool:
 		return True
 	if not project or not is_user_enabled(user):
 		return False
-	if get_member_role(project, user):
+	if not validate_project_access() or get_member_role(project, user):
 		return True
 	return bool(
 		cint(frappe.db.get_value("Project", project, "is_public"))
@@ -59,7 +62,7 @@ def project_query(user: str | None = None, doctype: str | None = None) -> str:
 	user = user or frappe.session.user
 	if has_unrestricted_project_view(user):
 		return ""
-	return _project_scope(user, "`tabProject`.name")
+	return _project_scope(user, "`tabProject`.name")  # empty when project access is not validated
 
 
 def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
@@ -88,7 +91,7 @@ def work_item_query(user: str | None = None, doctype: str | None = None) -> str:
 
 def sees_only_own_work_items(project: str | None, user: str) -> bool:
 	"""True when ``user`` is a member of ``project`` whose Project Role may see only the Work Items assigned to them."""
-	if not project or is_admin(user):
+	if not project or is_admin(user) or not validate_project_access():
 		return False
 	if not get_member_role(project, user):
 		return False

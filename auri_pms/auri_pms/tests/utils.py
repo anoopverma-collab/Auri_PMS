@@ -236,6 +236,10 @@ class TrackerTestCase(IntegrationTestCase):
 	):
 		"""Insert a Time Entry as ``user``."""
 		kw.setdefault("comment", "Worked on it")  # a comment is required on every entry
+		if not frappe.db.exists("PMS Activity Type", activity):  # the app ships no activity types
+			frappe.get_doc({"doctype": "PMS Activity Type", "activity_type": activity}).insert(
+				ignore_permissions=True
+			)
 		with self.as_user(user):
 			return frappe.get_doc(
 				{

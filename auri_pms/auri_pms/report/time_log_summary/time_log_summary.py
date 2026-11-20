@@ -9,7 +9,7 @@ from frappe.utils import flt
 from auri_pms.auri_pms.utils import summary_card
 
 GROUP_FIELDS = {"User": "user", "Project": "project", "Activity": "activity_type", "Work Item": "work_item"}
-GROUP_OPTIONS = {"User": "User", "Project": "Project", "Activity": "Activity Type", "Work Item": "Work Item"}
+GROUP_OPTIONS = {"User": "User", "Project": "Project", "Activity": "PMS Activity Type", "Work Item": "Work Item"}
 
 
 def execute(filters: dict | None = None) -> tuple:

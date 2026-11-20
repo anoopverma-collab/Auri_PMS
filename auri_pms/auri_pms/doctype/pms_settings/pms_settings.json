@@ -12,6 +12,7 @@
   "column_break_defaults_2",
   "public_project_role",
   "projects_ignore_company_restrictions",
+  "validate_project_access",
   "ticket_rules_section",
   "require_children_closed",
   "require_blockers_closed",
@@ -121,6 +122,13 @@
    "fieldname": "projects_ignore_company_restrictions",
    "fieldtype": "Check",
    "label": "Auri PMS Projects Ignore Company Restrictions"
+  },
+  {
+   "default": "1",
+   "description": "Ticked: a person sees a project, and its work items, releases, sprints, risks, time entries and reports, only when they are a member of it or it is public. Unticked: this membership check is skipped, so everyone with the DocType role sees every project. Disabled users stay blocked, and editing still needs an allocation.",
+   "fieldname": "validate_project_access",
+   "fieldtype": "Check",
+   "label": "Validate Project Access"
   },
   {
    "default": "Normal",
