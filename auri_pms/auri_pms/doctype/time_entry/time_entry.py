@@ -28,6 +28,7 @@ class TimeEntry(Document):
 		self.set_project_from_work_item()
 		self.set_employee()
 		self.validate_permission()
+		self.validate_activity_active()
 		self.validate_date()
 		self.validate_lock()
 		self.validate_hours()
@@ -60,6 +61,15 @@ class TimeEntry(Document):
 		owners = {self.user, self.old.user if self.old else self.user}
 		if owners != {frappe.session.user} and not caps["can_edit_others_time"]:
 			frappe.throw(_("You can only change your own time entries"))
+
+	def validate_activity_active(self) -> None:
+		"""An inactive Activity cannot be picked. An older entry that already uses it keeps it."""
+		if self.old and self.old.activity_type == self.activity_type:
+			return
+		if self.activity_type and not cint(
+			frappe.db.get_value("PMS Activity Type", self.activity_type, "is_active")
+		):
+			frappe.throw(_("Activity {0} is not active").format(self.activity_type))
 
 	def validate_date(self) -> None:
 		"""R-42: no future dates."""

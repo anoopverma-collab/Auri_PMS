@@ -90,6 +90,7 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"label": "Activity",
+			"link_filters": "[[\"PMS Activity Type\",\"is_active\",\"=\",1]]",
 			"options": "PMS Activity Type",
 			"reqd": 1
 		},
@@ -147,7 +148,7 @@
 	],
 	"issingle": 0,
 	"istable": 0,
-	"modified": "2026-11-20 23:30:00.000000",
+	"modified": "2026-11-23 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Auri PMS",
 	"name": "Time Entry",

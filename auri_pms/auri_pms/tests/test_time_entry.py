@@ -104,3 +104,40 @@ class TestTimeEntry(TrackerTestCase):
 		self.assertThrows(
 			"comment", lambda: self.logged_time(DEV, project=self.ALP, comment=""), exc=frappe.MandatoryError
 		)
+
+	# ------------------------------------------------------------------ PMS Activity Type > Active
+	def set_active(self, activity: str, value: int) -> None:
+		frappe.db.set_value("PMS Activity Type", activity, "is_active", value)
+
+	def test_an_inactive_activity_is_refused(self):
+		"""An inactive Activity cannot be used on a new entry."""
+		item = self.new_item(MGR)
+		self.set_active("Testing", 0)
+		self.assertThrows(
+			"Activity Testing is not active", lambda: self.logged_time(DEV, item.name, 1, activity="Testing")
+		)
+
+	def test_an_active_activity_is_accepted_again(self):
+		item = self.new_item(MGR)
+		self.set_active("Testing", 0)
+		self.set_active("Testing", 1)
+		self.assertTrue(self.logged_time(DEV, item.name, 1, activity="Testing"))
+
+	def test_changing_to_an_inactive_activity_is_refused(self):
+		item = self.new_item(MGR)
+		entry = self.logged_time(DEV, item.name, 1, activity="Development")
+		self.set_active("Testing", 0)
+		self.assertThrows(
+			"Activity Testing is not active", lambda: self.save_as(DEV, entry, activity_type="Testing")
+		)
+
+	def test_an_older_entry_keeps_an_activity_that_became_inactive(self):
+		item = self.new_item(MGR)
+		entry = self.logged_time(DEV, item.name, 1, activity="Development")
+		self.set_active("Development", 0)
+		self.save_as(DEV, entry, hours=2)
+		self.assertEqual(frappe.db.get_value("Time Entry", entry.name, "hours"), 2)
+
+	def test_the_activity_field_offers_only_active_types(self):
+		field = frappe.get_meta("Time Entry").get_field("activity_type")
+		self.assertIn("is_active", field.link_filters)
