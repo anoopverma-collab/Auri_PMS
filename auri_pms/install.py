@@ -6,6 +6,7 @@ import frappe
 from frappe import _
 
 from auri_pms.auri_pms.utils import nearest_indicator
+from auri_pms.data_keep import KeptData, keep_data_enabled
 
 BOARD_NAME = "Work Items by Status"
 
@@ -87,13 +88,21 @@ def ensure_roles() -> None:
 
 
 def after_install() -> None:
-	"""Create the roles and default data once (idempotent) and prepare the Project permissions and Kanban board."""
+	"""Restore the data kept at the last uninstall, create the roles and default data once (idempotent) and
+	prepare the Project permissions and Kanban board."""
+	restore_kept_data()
 	ensure_roles()
 	create_default_data()
 	ensure_email_templates()
 	ensure_kanban_board()
 	ensure_project_permissions()
 	ensure_workspace_docs()
+	KeptData().restore_projects()
+
+
+def restore_kept_data() -> None:
+	"""Put back the records saved by ``before_uninstall``. Runs first, so a restored setting wins over a default."""
+	KeptData().restore_documents()
 
 
 def ensure_workspace_docs() -> None:
@@ -384,7 +393,10 @@ def ensure_project_permissions() -> None:
 
 # --------------------------------------------------------------------------- uninstall
 def before_uninstall() -> None:
-	"""Remove what the app added to other doctypes."""
+	"""Save the app data to the backup table (see ``data_keep``), then remove what the app added to other doctypes."""
+	if keep_data_enabled():
+		KeptData().save()  # first: the Custom Fields on Project are about to go
+		frappe.db.commit()  # the tables dropped next cannot be rolled back, so the copy must be safe before
 	for name in frappe.get_all("Custom Field", filters={"module": "Auri PMS"}, pluck="name"):
 		frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
 	for doctype, grants in ERPNEXT_PERMISSIONS.items():
