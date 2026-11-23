@@ -8,9 +8,11 @@ from frappe.model.document import Document
 from frappe.utils import add_days, cint, flt, getdate, today
 
 from auri_pms.auri_pms.utils import (
+	allow_time_without_allocation,
 	get_capabilities,
 	get_settings,
 	is_admin,
+	is_user_enabled,
 	recalc_chain,
 	recalc_release,
 	recalc_sprint,
@@ -48,9 +50,12 @@ class TimeEntry(Document):
 			self.employee = frappe.db.get_value("Employee", {"user_id": self.user}, "name")
 
 	def validate_permission(self) -> None:
-		"""R-39: can_log_time, and can_edit_others_time for entries of other users."""
+		"""R-39: can_log_time, and can_edit_others_time for entries of other users.
+
+		With *Allow Time Logging Without Allocation* ticked, an enabled user needs no Project Role to log time."""
 		caps = get_capabilities(self.project)
-		if not caps["can_log_time"]:
+		open_to_all = allow_time_without_allocation() and is_user_enabled(frappe.session.user)
+		if not caps["can_log_time"] and not open_to_all:
 			frappe.throw(_("You are not allowed to log time in Project {0}").format(self.project))
 		owners = {self.user, self.old.user if self.old else self.user}
 		if owners != {frappe.session.user} and not caps["can_edit_others_time"]:
