@@ -16,7 +16,7 @@ from auri_pms.auri_pms.tests.utils import (
 	days_ago,
 	ensure_company,
 )
-from auri_pms.auri_pms.utils import portfolio_projects, projects_with_capability
+from auri_pms.auri_pms.utils import can_create_doctype, portfolio_projects, projects_with_capability
 
 
 class TestPermissions(TrackerTestCase):
@@ -297,3 +297,66 @@ class TestValidateProjectAccess(TrackerTestCase):
 		self.set_validate(0)
 		with self.as_user(OUT):
 			self.assertEqual(projects_with_capability("can_see_health_cost"), [])
+
+
+class TestAllowTimeWithoutAllocation(TrackerTestCase):
+	"""PMS Settings > Allow Time Logging Without Allocation: a non-member may log their own time."""
+
+	def setUp(self):
+		super().setUp()
+		self.item = self.new_item(MGR, subject="Alpha work")
+		frappe.db.set_single_value("PMS Settings", "validate_project_access", 0)  # OUT can see the project
+		self.addCleanup(frappe.db.set_single_value, "PMS Settings", "validate_project_access", 1)
+		self.addCleanup(self.set_allow, 0)  # the real default: unticked
+
+	def set_allow(self, value: int) -> None:
+		frappe.db.set_single_value("PMS Settings", "allow_time_without_allocation", value)
+		frappe.clear_document_cache("PMS Settings", "PMS Settings")
+
+	def test_unticked_a_non_member_cannot_log_time(self):
+		self.set_allow(0)
+		self.assertThrows(
+			"not allowed to log time", lambda: self.logged_time(OUT, self.item.name), frappe.ValidationError
+		)
+
+	def test_a_site_that_never_saved_it_stays_closed(self):
+		frappe.db.delete("Singles", {"doctype": "PMS Settings", "field": "allow_time_without_allocation"})
+		frappe.clear_document_cache("PMS Settings", "PMS Settings")
+		self.assertThrows(
+			"not allowed to log time", lambda: self.logged_time(OUT, self.item.name), frappe.ValidationError
+		)
+
+	def test_ticked_a_non_member_logs_time(self):
+		self.set_allow(1)
+		entry = self.logged_time(OUT, self.item.name)
+		self.assertEqual(entry.user, OUT)
+		self.assertEqual(entry.project, self.ALP)
+
+	def test_ticked_a_non_member_may_change_their_own_entry(self):
+		self.set_allow(1)
+		entry = self.logged_time(OUT, self.item.name)
+		self.assertTrue(frappe.has_permission("Time Entry", "write", doc=entry.name, user=OUT))
+		self.save_as(OUT, entry, hours=2)
+		self.assertEqual(frappe.db.get_value("Time Entry", entry.name, "hours"), 2)
+
+	def test_ticked_a_non_member_cannot_change_another_users_entry(self):
+		self.set_allow(1)
+		entry = self.logged_time(MGR, self.item.name)
+		self.assertFalse(frappe.has_permission("Time Entry", "write", doc=entry.name, user=OUT))
+
+	def test_ticked_a_non_member_cannot_log_for_someone_else(self):
+		self.set_allow(1)
+		self.assertThrows(
+			"only change your own",
+			lambda: self.logged_time(OUT, self.item.name, entry_user=MGR),
+			frappe.ValidationError,
+		)
+
+	def test_ticked_a_non_member_still_cannot_change_the_work_item(self):
+		self.set_allow(1)
+		self.assertFalse(frappe.has_permission("Work Item", "write", doc=self.item.name, user=OUT))
+
+	def test_ticked_the_new_button_is_offered(self):
+		self.set_allow(1)
+		with self.as_user(OUT):
+			self.assertTrue(can_create_doctype("Time Entry"))

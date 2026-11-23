@@ -13,6 +13,7 @@
   "public_project_role",
   "projects_ignore_company_restrictions",
   "validate_project_access",
+  "allow_time_without_allocation",
   "ticket_rules_section",
   "require_children_closed",
   "require_blockers_closed",
@@ -129,6 +130,13 @@
    "fieldname": "validate_project_access",
    "fieldtype": "Check",
    "label": "Validate Project Access"
+  },
+  {
+   "default": "0",
+   "description": "Ticked: any enabled user can log, change and delete their own time entries on any project they can see, without being allocated to it. Unticked: only the people allocated to a project (with Can Log Time) log time on it. Other people's entries still need Can Edit Others' Time.",
+   "fieldname": "allow_time_without_allocation",
+   "fieldtype": "Check",
+   "label": "Allow Time Logging Without Allocation"
   },
   {
    "default": "Normal",
@@ -638,7 +646,7 @@
  ],
  "issingle": 1,
  "istable": 0,
- "modified": "2026-10-30 12:00:00.000000",
+ "modified": "2026-11-23 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Auri PMS",
  "name": "PMS Settings",

@@ -11,6 +11,7 @@ import frappe
 from frappe.utils import cint
 
 from auri_pms.auri_pms.utils import (
+	allow_time_without_allocation,
 	can_create_doctype,
 	can_manage_modules,
 	get_capabilities,
@@ -215,7 +216,12 @@ def risk_register_has_permission(doc, ptype: str | None = None, user: str | None
 
 
 def time_entry_has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs) -> bool:
-	"""has_permission hook for Time Entry."""
+	"""has_permission hook for Time Entry.
+
+	With *Allow Time Logging Without Allocation* ticked, an enabled user may also change and delete their own entries."""
+	user = user or frappe.session.user
+	if ptype in CHANGE_TYPES and doc.get("user") == user and allow_time_without_allocation():
+		return is_user_enabled(user) and can_see_project(doc.get("project"), user)
 	return _has_project_permission(doc, ptype, user)
 
 

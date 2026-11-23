@@ -84,6 +84,11 @@ def validate_project_access() -> bool:
 	return _ticked_unless_saved_off("validate_project_access")
 
 
+def allow_time_without_allocation() -> bool:
+	"""PMS Settings > Allow Time Logging Without Allocation. Off unless ticked (a Check never saved reads 0)."""
+	return bool(cint(get_settings().allow_time_without_allocation))
+
+
 def _ticked_unless_saved_off(fieldname: str) -> bool:
 	"""A PMS Settings Check whose default is ticked.
 
@@ -331,6 +336,8 @@ def can_create_doctype(doctype: str, user: str | None = None) -> bool:
 	rule = CREATE_RULES.get(doctype)
 	if rule is None or is_admin(user):
 		return True
+	if doctype == "Time Entry" and allow_time_without_allocation():
+		return is_user_enabled(user)
 	if rule == "admin":
 		return False
 	if rule == "modules":
